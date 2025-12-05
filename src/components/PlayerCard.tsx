@@ -27,7 +27,7 @@ const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
           <img
             src={player.imageUrl}
             alt={player.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
           />
           {/* AI Score Badge */}
           <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card/80 backdrop-blur-sm border border-border/50">
@@ -36,7 +36,9 @@ const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
           </div>
           {/* Position Badge */}
           <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-full bg-primary/80 backdrop-blur-sm">
-            <span className="text-xs font-semibold text-primary-foreground">{player.position}</span>
+            <span className="text-xs font-semibold text-primary-foreground">
+              {player.position}
+            </span>
           </div>
         </div>
 
@@ -51,13 +53,17 @@ const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
 
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs text-muted-foreground mb-0.5">Current Value</p>
+              <p className="text-xs text-muted-foreground mb-0.5">
+                Current Value
+              </p>
               <p className="text-xl   font-bold">${player.currentValue}</p>
             </div>
             <div
               className={cn(
                 "flex items-center gap-1 px-2.5 py-1.5 rounded-lg",
-                isPositive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                isPositive
+                  ? "bg-success/10 text-success"
+                  : "bg-destructive/10 text-destructive"
               )}
             >
               {isPositive ? (

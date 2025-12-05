@@ -1,5 +1,14 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Zap, TrendingUp, TrendingDown, Shield, Clock, Target, Activity } from "lucide-react";
+import {
+  ArrowLeft,
+  Zap,
+  TrendingUp,
+  TrendingDown,
+  Shield,
+  Clock,
+  Target,
+  Activity,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 import Chart from "@/components/Chart";
@@ -42,13 +51,13 @@ const PlayerDetailPage = () => {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Player Header */}
-            <div className="glass-card overflow-hidden">
-              <div className="relative h-64 md:h-80">
+            <div className="glass-card overflow-hidden w-1/2">
+              <div className="relative h-64 md:h-80   ">
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent z-10" />
                 <img
                   src={player.imageUrl}
                   alt={player.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
                   <div className="flex items-start justify-between">
@@ -57,16 +66,22 @@ const PlayerDetailPage = () => {
                         <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
                           {player.position}
                         </span>
-                        <span className="text-muted-foreground">{player.nationality}</span>
+                        <span className="text-muted-foreground">
+                          {player.nationality}
+                        </span>
                       </div>
                       <h1 className="text-3xl md:text-4xl   font-bold mb-1">
                         {player.name}
                       </h1>
-                      <p className="text-lg text-muted-foreground">{player.club}</p>
+                      <p className="text-lg text-muted-foreground">
+                        {player.club}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50">
                       <Zap className="w-4 h-4 text-warning" />
-                      <span className="font-semibold">AI Score: {player.aiScore}</span>
+                      <span className="font-semibold">
+                        AI Score: {player.aiScore}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -75,7 +90,9 @@ const PlayerDetailPage = () => {
               <div className="p-6 border-t border-border/50">
                 <div className="flex flex-wrap items-center gap-6">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Current Value</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Current Value
+                    </p>
                     <p className="text-3xl   font-bold gradient-text">
                       ${player.currentValue.toLocaleString()}
                     </p>
@@ -83,7 +100,9 @@ const PlayerDetailPage = () => {
                   <div
                     className={cn(
                       "flex items-center gap-2 px-4 py-2 rounded-xl",
-                      isPositive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                      isPositive
+                        ? "bg-success/10 text-success"
+                        : "bg-destructive/10 text-destructive"
                     )}
                   >
                     {isPositive ? (
@@ -124,12 +143,16 @@ const PlayerDetailPage = () => {
                 </div>
                 <div className="bg-muted/50 rounded-xl p-4 text-center">
                   <Clock className="w-6 h-6 text-accent mx-auto mb-2" />
-                  <p className="text-2xl   font-bold">{player.stats.minutesPlayed}</p>
+                  <p className="text-2xl   font-bold">
+                    {player.stats.minutesPlayed}
+                  </p>
                   <p className="text-sm text-muted-foreground">Minutes</p>
                 </div>
                 <div className="bg-muted/50 rounded-xl p-4 text-center">
                   <Shield className="w-6 h-6 text-warning mx-auto mb-2" />
-                  <p className="text-2xl   font-bold">{player.stats.matchesPlayed}</p>
+                  <p className="text-2xl   font-bold">
+                    {player.stats.matchesPlayed}
+                  </p>
                   <p className="text-sm text-muted-foreground">Matches</p>
                 </div>
               </div>
@@ -137,7 +160,9 @@ const PlayerDetailPage = () => {
 
             {/* AI Performance Analysis */}
             <div className="glass-card p-6">
-              <h2 className="text-xl   font-bold mb-4">AI Performance Analysis</h2>
+              <h2 className="text-xl   font-bold mb-4">
+                AI Performance Analysis
+              </h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
                   <span className="text-muted-foreground">Overall Rating</span>
@@ -164,7 +189,9 @@ const PlayerDetailPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-                  <span className="text-muted-foreground">Consistency Score</span>
+                  <span className="text-muted-foreground">
+                    Consistency Score
+                  </span>
                   <div className="flex items-center gap-2">
                     <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
                       <div
@@ -187,8 +214,8 @@ const PlayerDetailPage = () => {
                 <div>
                   <h3 className="  font-bold mb-1">Walrus Verified Data</h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    All performance data for this player is cryptographically verified and stored on Walrus
-                    decentralized storage.
+                    All performance data for this player is cryptographically
+                    verified and stored on Walrus decentralized storage.
                   </p>
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted font-mono text-sm">
                     <span className="text-muted-foreground">Proof ID:</span>
@@ -205,8 +232,12 @@ const PlayerDetailPage = () => {
               <BuySellWidget
                 playerName={player.name}
                 currentPrice={player.currentValue}
-                onBuy={(qty) => console.log(`Buy ${qty} shares of ${player.name}`)}
-                onSell={(qty) => console.log(`Sell ${qty} shares of ${player.name}`)}
+                onBuy={(qty) =>
+                  console.log(`Buy ${qty} shares of ${player.name}`)
+                }
+                onSell={(qty) =>
+                  console.log(`Sell ${qty} shares of ${player.name}`)
+                }
               />
             </div>
           </div>
