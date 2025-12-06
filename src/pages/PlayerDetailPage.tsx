@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AIAnalysisButton } from "@/components/AiAnalysisButton";
 import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
 import type { AIAnalysis } from "@/lib/openai";
@@ -24,6 +24,30 @@ const PlayerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const player = getPlayerById(id || "");
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
+  const displayAiScore = aiAnalysis?.performance_score ?? player.aiScore;
+  const displayTrend =
+    aiAnalysis?.trend ??
+    (player.weeklyChange > 5
+      ? "up"
+      : player.weeklyChange < -5
+      ? "down"
+      : "stable");
+
+  useEffect(() => {
+    const cached = localStorage.getItem(`ai-analysis-${player.id}`);
+    if (cached) {
+      try {
+        setAiAnalysis(JSON.parse(cached));
+      } catch (e) {
+        console.error("Failed to parse cached analysis");
+      }
+    }
+  }, [player.id]);
+
+  const handleAnalysisComplete = (analysis: AIAnalysis) => {
+    setAiAnalysis(analysis);
+    localStorage.setItem(`ai-analysis-${player.id}`, JSON.stringify(analysis));
+  };
 
   if (!player) {
     return (
@@ -84,8 +108,18 @@ const PlayerDetailPage = () => {
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50">
                       <Zap className="w-4 h-4 text-warning" />
-                      <span className="font-semibold">
-                        AI Score: {player.aiScore}
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          aiAnalysis && "text-accent"
+                        )}
+                      >
+                        AI Score: {displayAiScore}
+                        {aiAnalysis && (
+                          <span className="text-xs ml-1 opacity-80">
+                            (AI Updated)
+                          </span>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -168,7 +202,7 @@ const PlayerDetailPage = () => {
                 <h2 className="text-xl font-bold">AI-Powered Insights</h2>
                 <AIAnalysisButton
                   player={player}
-                  onAnalysisComplete={setAiAnalysis}
+                  onAnalysisComplete={handleAnalysisComplete}
                 />
               </div>
               {aiAnalysis ? (

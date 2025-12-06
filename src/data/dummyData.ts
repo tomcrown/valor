@@ -492,3 +492,11 @@ export const calculatePortfolioPnL = (
   );
   return ((totalCurrent - totalEntry) / totalEntry) * 100;
 };
+
+export const calculateTrend = (
+  weeklyChange: number
+): "up" | "stable" | "down" => {
+  if (weeklyChange > 5) return "up";
+  if (weeklyChange < -5) return "down";
+  return "stable";
+};
