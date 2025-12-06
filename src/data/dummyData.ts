@@ -458,16 +458,48 @@ export const getPlayerById = (id: string): Player | undefined => {
 
 export const getTopPerformers = (): Player[] => {
   return [...DUMMY_PLAYERS]
-    .sort((a, b) => b.weeklyChange - a.weeklyChange)
+    .sort((a, b) => {
+      // Sort by AI score first (quality), then by weekly change (momentum)
+      const scoreA = a.aiScore;
+      const scoreB = b.aiScore;
+
+      if (Math.abs(scoreA - scoreB) > 5) {
+        return scoreB - scoreA; // Higher AI score = better
+      }
+
+      // If AI scores are similar, sort by weekly change
+      return b.weeklyChange - a.weeklyChange;
+    })
     .slice(0, 4);
 };
 
 export const getRisingPlayers = (): Player[] => {
-  return DUMMY_PLAYERS.filter((p) => p.weeklyChange > 10);
+  // Rising = positive weekly change AND good AI score
+  return DUMMY_PLAYERS.filter(
+    (p) => p.weeklyChange > 5 && p.aiScore >= 75
+  ).sort((a, b) => b.weeklyChange - a.weeklyChange);
 };
 
 export const getUndervaluedPlayers = (): Player[] => {
-  return DUMMY_PLAYERS.filter((p) => p.aiScore > 85 && p.currentValue < 1500);
+  // Undervalued = high AI score but low/negative weekly change
+  // These are players the AI thinks are good but the market hasn't caught on yet
+  return DUMMY_PLAYERS.filter((p) => p.aiScore > 85 && p.weeklyChange < 5).sort(
+    (a, b) => b.aiScore - a.aiScore
+  );
+};
+
+export const getFallingPlayers = (): Player[] => {
+  // Players with negative weekly change
+  return DUMMY_PLAYERS.filter((p) => p.weeklyChange < -5).sort(
+    (a, b) => a.weeklyChange - b.weeklyChange
+  ); // Most negative first
+};
+
+export const getHighPerformers = (): Player[] => {
+  // Players with high AI scores regardless of price movement
+  return DUMMY_PLAYERS.filter((p) => p.aiScore >= 85).sort(
+    (a, b) => b.aiScore - a.aiScore
+  );
 };
 
 export const calculatePortfolioValue = (

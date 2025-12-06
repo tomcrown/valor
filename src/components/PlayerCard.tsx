@@ -1,6 +1,6 @@
 // ============================================================================
-// FILE 1: src/components/PlayerCard.tsx (UPDATED)
-// PlayerCard with dynamic AI score and trend updates
+// FILE 3: src/components/PlayerCard.tsx (UPDATED)
+// Use the new Dialog component
 // ============================================================================
 
 import { useState, useEffect } from "react";
@@ -8,8 +8,7 @@ import { Link } from "react-router-dom";
 import { TrendingUp, TrendingDown, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AIAnalysisButton } from "@/components/AiAnalysisButton";
-import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
+import { AIAnalysisDialog } from "@/components/AiAnalysisDialog";
 import type { Player } from "@/data/dummyData";
 import type { AIAnalysis } from "@/lib/openai";
 
@@ -21,10 +20,10 @@ interface PlayerCardProps {
 const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
 
-  // Dynamic AI score - updates when analysis is complete
+  // Dynamic AI score
   const displayAiScore = aiAnalysis?.performance_score ?? player.aiScore;
 
-  // Dynamic trend - based on AI analysis or weekly change
+  // Dynamic trend
   const displayTrend =
     aiAnalysis?.trend ??
     (player.weeklyChange > 5
@@ -43,8 +42,6 @@ const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
 
   const handleAnalysisComplete = (analysis: AIAnalysis) => {
     setAiAnalysis(analysis);
-    // Optional: Save to localStorage for persistence
-    localStorage.setItem(`ai-analysis-${player.id}`, JSON.stringify(analysis));
   };
 
   // Load cached analysis on mount
@@ -59,7 +56,6 @@ const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
     }
   }, [player.id]);
 
-  // Get trend icon and color
   const getTrendIcon = () => {
     switch (displayTrend) {
       case "up":
@@ -95,12 +91,12 @@ const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
               className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
             />
 
-            {/* AI Score Badge - NOW DYNAMIC */}
+            {/* AI Score Badge */}
             <div
               className={cn(
                 "absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm border transition-all",
                 aiAnalysis
-                  ? "bg-accent/80 border-accent animate-pulse-slow"
+                  ? "bg-accent/80 border-accent"
                   : "bg-card/80 border-border/50"
               )}
             >
@@ -130,7 +126,7 @@ const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
               </span>
             </div>
 
-            {/* Trend Indicator - NOW DYNAMIC */}
+            {/* Trend Indicator */}
             {displayTrend !== "stable" && (
               <div
                 className={cn(
@@ -181,10 +177,13 @@ const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
             </div>
 
             <div className="space-y-2">
-              <AIAnalysisButton
-                player={player}
-                onAnalysisComplete={handleAnalysisComplete}
-              />
+              {/* AI Analysis Dialog - Prevents navigation */}
+              <div onClick={(e) => e.preventDefault()}>
+                <AIAnalysisDialog
+                  player={player}
+                  onAnalysisComplete={handleAnalysisComplete}
+                />
+              </div>
 
               <Button
                 onClick={handleBuy}
@@ -196,11 +195,6 @@ const PlayerCard = ({ player, onBuy }: PlayerCardProps) => {
           </div>
         </div>
       </Link>
-
-      {/* AI Analysis Panel (appears below card) */}
-      {aiAnalysis && (
-        <AIAnalysisPanel analysis={aiAnalysis} playerName={player.name} />
-      )}
     </div>
   );
 };
