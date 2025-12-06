@@ -16,20 +16,15 @@ import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 import StatCard from "@/components/StatCard";
 import FeatureCard from "@/components/FeatureCard";
-import LeaderboardCard from "@/components/LeaderboardCard";
-import { PLATFORM_STATS, DUMMY_LEADERBOARD } from "@/data/dummyData";
+import { PLATFORM_STATS } from "@/data/dummyData";
 
 const LandingPage = () => {
   return (
     <Layout>
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-
-
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-
-
             {/* Headline */}
             <h1
               className="text-4xl md:text-6xl font-bold leading-tight mb-6 opacity-0 animate-fade-in"
@@ -45,8 +40,8 @@ const LandingPage = () => {
               className="text-md md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 opacity-0 animate-fade-in"
               style={{ animationDelay: "500ms" }}
             >
-              AI-driven player scoring, real-time value updates, and verifiable performance data on-chain.
-              The future of fantasy football is here.
+              AI-driven player scoring, real-time value updates, and verifiable
+              performance data on-chain. The future of fantasy football is here.
             </p>
 
             {/* CTA Buttons */}
@@ -145,7 +140,9 @@ const LandingPage = () => {
                   <div className="text-6xl font-bold text-primary/10 absolute top-4 left-4">
                     {item.step}
                   </div>
-                  <h3 className=" font-bold mt-16 text-xl mb-3">{item.title}</h3>
+                  <h3 className=" font-bold mt-16 text-xl mb-3">
+                    {item.title}
+                  </h3>
                   <p className="text-muted-foreground">{item.description}</p>
                 </div>
                 {i < 2 && (
@@ -249,11 +246,11 @@ const LandingPage = () => {
               />
             </motion.div>
           </div>
-        </div >
-      </section >
+        </div>
+      </section>
 
       {/* Tech Stack Section */}
-      < section className="py-24 relative overflow-hidden" >
+      <section className="py-24 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-secondary/50 to-transparent" />
 
@@ -268,7 +265,8 @@ const LandingPage = () => {
                   Powered by the <span className="gradient-text">Best</span>
                 </h2>
                 <p className="text-muted-foreground max-w-xl mx-auto">
-                  Built with cutting-edge Web3 technology for maximum performance and reliability
+                  Built with cutting-edge Web3 technology for maximum
+                  performance and reliability
                 </p>
               </div>
 
@@ -279,7 +277,8 @@ const LandingPage = () => {
                   </div>
                   <h3 className=" font-bold text-xl mb-2">Sui Network</h3>
                   <p className="text-sm text-muted-foreground">
-                    High-throughput Layer 1 blockchain with instant finality and low fees
+                    High-throughput Layer 1 blockchain with instant finality and
+                    low fees
                   </p>
                 </div>
                 <div className="text-center p-6">
@@ -288,7 +287,8 @@ const LandingPage = () => {
                   </div>
                   <h3 className="  font-bold text-xl mb-2">Walrus</h3>
                   <p className="text-sm text-muted-foreground">
-                    Decentralized storage for verifiable performance data and proofs
+                    Decentralized storage for verifiable performance data and
+                    proofs
                   </p>
                 </div>
                 <div className="text-center p-6">
@@ -297,18 +297,18 @@ const LandingPage = () => {
                   </div>
                   <h3 className="  font-bold text-xl mb-2">AI Engine</h3>
                   <p className="text-sm text-muted-foreground">
-                    Machine learning models for accurate player valuation and scoring
+                    Machine learning models for accurate player valuation and
+                    scoring
                   </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </section >
-
+      </section>
 
       {/* CTA Section */}
-      < section className="py-24" >
+      <section className="py-24">
         <div className="container mx-auto px-4">
           <div className="glass-card p-12 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 animate-gradient" />
@@ -317,7 +317,8 @@ const LandingPage = () => {
                 Ready to Start Trading?
               </h2>
               <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-                Join thousands of traders already building their dream football portfolios on Sui.
+                Join thousands of traders already building their dream football
+                portfolios on Sui.
               </p>
               <Link to="/players">
                 <Button className=" text-primary-foreground font-semibold px-10 py-6 text-lg">
@@ -328,8 +329,8 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
-      </section >
-    </Layout >
+      </section>
+    </Layout>
   );
 };
 

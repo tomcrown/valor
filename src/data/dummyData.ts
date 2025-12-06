@@ -42,16 +42,6 @@ export interface PortfolioPosition {
   imageUrl: string;
 }
 
-export interface LeaderboardEntry {
-  rank: number;
-  address: string;
-  displayName: string;
-  avatarUrl: string;
-  portfolioValue: number;
-  weeklyGrowth: number;
-  totalTrades: number;
-}
-
 export interface TradeHistoryEntry {
   id: string;
   playerName: string;
@@ -444,93 +434,6 @@ export const DUMMY_PORTFOLIO: PortfolioPosition[] = [
     averageEntryPrice: 2064,
     currentValue: 2134,
     imageUrl: "https://media.api-sports.io/football/players/2926.png",
-  },
-];
-
-// ==========================================
-// LEADERBOARD DATA
-// ==========================================
-
-export const DUMMY_LEADERBOARD: LeaderboardEntry[] = [
-  {
-    rank: 1,
-    address: "0x7f3a...8c2d",
-    displayName: "CryptoWhale",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
-    portfolioValue: 125400,
-    weeklyGrowth: 34.5,
-    totalTrades: 156,
-  },
-  {
-    rank: 2,
-    address: "0x9a2b...4e1f",
-    displayName: "SuiTrader",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=100&h=100&fit=crop",
-    portfolioValue: 98700,
-    weeklyGrowth: 28.3,
-    totalTrades: 142,
-  },
-  {
-    rank: 3,
-    address: "0x3c4d...7a8b",
-    displayName: "FootballMogul",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-    portfolioValue: 87200,
-    weeklyGrowth: 22.1,
-    totalTrades: 98,
-  },
-  {
-    rank: 4,
-    address: "0x5e6f...2c3d",
-    displayName: "DiamondHands",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-    portfolioValue: 76500,
-    weeklyGrowth: 19.8,
-    totalTrades: 87,
-  },
-  {
-    rank: 5,
-    address: "0x8g9h...1i2j",
-    displayName: "BlockchainBaller",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-    portfolioValue: 65300,
-    weeklyGrowth: 15.2,
-    totalTrades: 76,
-  },
-  {
-    rank: 6,
-    address: "0x4k5l...6m7n",
-    displayName: "TokenKing",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop",
-    portfolioValue: 54200,
-    weeklyGrowth: 12.4,
-    totalTrades: 65,
-  },
-  {
-    rank: 7,
-    address: "0x9o0p...1q2r",
-    displayName: "NFTCollector",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop",
-    portfolioValue: 48900,
-    weeklyGrowth: 10.1,
-    totalTrades: 54,
-  },
-  {
-    rank: 8,
-    address: "0x3s4t...5u6v",
-    displayName: "Web3Wizard",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=100&h=100&fit=crop",
-    portfolioValue: 42100,
-    weeklyGrowth: 8.7,
-    totalTrades: 43,
   },
 ];
 

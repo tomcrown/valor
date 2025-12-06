@@ -17,7 +17,8 @@ const Footer = () => {
               </span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Trade football players like stocks on the Sui blockchain. AI-powered scoring with verifiable on-chain data.
+              Trade football players like stocks on the Sui blockchain.
+              AI-powered scoring with verifiable on-chain data.
             </p>
           </div>
 
@@ -26,18 +27,19 @@ const Footer = () => {
             <h4 className="  font-semibold mb-4">Platform</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/players" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Link
+                  to="/players"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Players
                 </Link>
               </li>
               <li>
-                <Link to="/portfolio" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Link
+                  to="/portfolio"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Portfolio
-                </Link>
-              </li>
-              <li>
-                <Link to="/leaderboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Leaderboard
                 </Link>
               </li>
             </ul>
@@ -48,17 +50,26 @@ const Footer = () => {
             <h4 className="  font-semibold mb-4">Resources</h4>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Documentation
                 </a>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   API Reference
                 </a>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Whitepaper
                 </a>
               </li>
@@ -96,10 +107,16 @@ const Footer = () => {
             © 2025 Valor. Built on Sui.
           </p>
           <div className="flex gap-6">
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="#"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
               Terms
             </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="#"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
               Privacy
             </a>
           </div>

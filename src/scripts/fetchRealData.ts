@@ -167,15 +167,7 @@ export interface PortfolioPosition {
   imageUrl: string;
 }
 
-export interface LeaderboardEntry {
-  rank: number;
-  address: string;
-  displayName: string;
-  avatarUrl: string;
-  portfolioValue: number;
-  weeklyGrowth: number;
-  totalTrades: number;
-}
+
 
 export interface TradeHistoryEntry {
   id: string;
@@ -235,11 +227,8 @@ export const DUMMY_PORTFOLIO: PortfolioPosition[] = [
   },
 ];
 
-// ==========================================
-// LEADERBOARD DATA
-// ==========================================
 
-export const DUMMY_LEADERBOARD: LeaderboardEntry[] = [
+export const DUMMY_: Entry[] = [
   {
     rank: 1,
     address: "0x7f3a...8c2d",

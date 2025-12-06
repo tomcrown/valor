@@ -7,7 +7,6 @@ import LandingPage from "./pages/LandingPage";
 import PlayersPage from "./pages/PlayersPage";
 import PlayerDetailPage from "./pages/PlayerDetailPage";
 import PortfolioPage from "./pages/PortfolioPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
 import NotFound from "./pages/NotFound";
 import SpaceNetworkBackground from "./components/ThreeBg";
 
@@ -25,7 +24,6 @@ const App = () => (
           <Route path="/players" element={<PlayersPage />} />
           <Route path="/players/:id" element={<PlayerDetailPage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -1,4 +1,8 @@
 import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
+import { AIAnalysisButton } from "@/components/AiAnalysisButton";
+import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
+import type { AIAnalysis } from "@/lib/openai";
 import {
   ArrowLeft,
   Zap,
@@ -19,6 +23,7 @@ import { cn } from "@/lib/utils";
 const PlayerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const player = getPlayerById(id || "");
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
 
   if (!player) {
     return (
@@ -158,51 +163,24 @@ const PlayerDetailPage = () => {
               </div>
             </div>
 
-            {/* AI Performance Analysis */}
             <div className="glass-card p-6">
-              <h2 className="text-xl   font-bold mb-4">
-                AI Performance Analysis
-              </h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-                  <span className="text-muted-foreground">Overall Rating</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-primary to-secondary"
-                        style={{ width: `${player.aiScore}%` }}
-                      />
-                    </div>
-                    <span className="font-semibold">{player.aiScore}/100</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-                  <span className="text-muted-foreground">Form Index</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-success to-accent"
-                        style={{ width: "88%" }}
-                      />
-                    </div>
-                    <span className="font-semibold">88/100</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-                  <span className="text-muted-foreground">
-                    Consistency Score
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-secondary to-primary"
-                        style={{ width: "82%" }}
-                      />
-                    </div>
-                    <span className="font-semibold">82/100</span>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">AI-Powered Insights</h2>
+                <AIAnalysisButton
+                  player={player}
+                  onAnalysisComplete={setAiAnalysis}
+                />
               </div>
+              {aiAnalysis ? (
+                <AIAnalysisPanel
+                  analysis={aiAnalysis}
+                  playerName={player.name}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Click "AI Analysis" for GPT-4 powered insights
+                </div>
+              )}
             </div>
 
             {/* Walrus Verification */}
