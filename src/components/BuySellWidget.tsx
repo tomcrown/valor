@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SwapModal } from "@/components/SwapModal";
 import { Minus, Plus, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,7 +11,12 @@ interface BuySellWidgetProps {
   onSell?: (quantity: number) => void;
 }
 
-const BuySellWidget = ({ playerName, currentPrice, onBuy, onSell }: BuySellWidgetProps) => {
+const BuySellWidget = ({
+  playerName,
+  currentPrice,
+  onBuy,
+  onSell,
+}: BuySellWidgetProps) => {
   const [mode, setMode] = useState<"buy" | "sell">("buy");
   const [quantity, setQuantity] = useState(1);
 
@@ -23,10 +29,14 @@ const BuySellWidget = ({ playerName, currentPrice, onBuy, onSell }: BuySellWidge
   const handleSubmit = () => {
     if (mode === "buy") {
       onBuy?.(quantity);
-      console.log(`Buy ${quantity} shares of ${playerName} at $${currentPrice} each`);
+      console.log(
+        `Buy ${quantity} shares of ${playerName} at $${currentPrice} each`
+      );
     } else {
       onSell?.(quantity);
-      console.log(`Sell ${quantity} shares of ${playerName} at $${currentPrice} each`);
+      console.log(
+        `Sell ${quantity} shares of ${playerName} at $${currentPrice} each`
+      );
     }
   };
 
@@ -94,7 +104,9 @@ const BuySellWidget = ({ playerName, currentPrice, onBuy, onSell }: BuySellWidge
       <div className="bg-muted/50 rounded-xl p-4 mb-6">
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Total Value</span>
-          <span className="text-xl   font-bold">${totalValue.toLocaleString()}</span>
+          <span className="text-xl   font-bold">
+            ${totalValue.toLocaleString()}
+          </span>
         </div>
         <div className="flex justify-between items-center mt-2 text-sm">
           <span className="text-muted-foreground">Network Fee</span>
@@ -112,7 +124,8 @@ const BuySellWidget = ({ playerName, currentPrice, onBuy, onSell }: BuySellWidge
             : "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
         )}
       >
-        {mode === "buy" ? "Buy" : "Sell"} {quantity} Share{quantity > 1 ? "s" : ""}
+        {mode === "buy" ? "Buy" : "Sell"} {quantity} Share
+        {quantity > 1 ? "s" : ""}
       </Button>
 
       {/* Disclaimer */}

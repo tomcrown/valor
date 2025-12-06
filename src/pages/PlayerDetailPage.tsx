@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { SwapModal } from "@/components/SwapModal";
 import { useState, useEffect } from "react";
 import { AIAnalysisButton } from "@/components/AiAnalysisButton";
 import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
@@ -21,6 +22,7 @@ import { getPlayerById } from "@/data/dummyData";
 import { cn } from "@/lib/utils";
 
 const PlayerDetailPage = () => {
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
   const player = getPlayerById(id || "");
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
@@ -251,10 +253,22 @@ const PlayerDetailPage = () => {
                   console.log(`Sell ${qty} shares of ${player.name}`)
                 }
               />
+              <div className="mt-4">
+                <button
+                  onClick={() => setIsSwapModalOpen(true)}
+                  className="w-full text-sm text-muted-foreground hover:text-accent transition-colors flex items-center justify-center gap-2 py-2"
+                >
+                  Not enough SUI?{" "}
+                  <span className="font-semibold text-accent underline">
+                    Swap now
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      <SwapModal open={isSwapModalOpen} onOpenChange={setIsSwapModalOpen} />
     </Layout>
   );
 };

@@ -14,13 +14,12 @@ import "@mysten/dapp-kit/dist/index.css";
 const queryClient = new QueryClient();
 
 const networks = {
-  testnet: { url: getFullnodeUrl("testnet") },
   mainnet: { url: getFullnodeUrl("mainnet") },
 };
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
-    <SuiClientProvider networks={networks} defaultNetwork="testnet">
+    <SuiClientProvider networks={networks} defaultNetwork="mainnet">
       <WalletProvider autoConnect>
         <GoogleOAuthProvider
           clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}
