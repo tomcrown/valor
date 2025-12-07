@@ -225,9 +225,9 @@ export function ValorAIAssistant() {
           side="top"
         >
           {/* Header */}
-          <div className="p-4 border-b border-border bg-gradient-to-r from-primary/10 to-accent/10">
+          <div className="p-4 border-b border-border bg-primary/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -246,7 +246,7 @@ export function ValorAIAssistant() {
             {currentAnswer ? (
               // Show Answer
               <div className="p-6">
-                <Button variant="ghost" onClick={handleBack} className="mb-4">
+                <Button onClick={handleBack} className="mb-4">
                   ← Back to Questions
                 </Button>
                 <div className="glass-card p-6 whitespace-pre-line text-sm leading-relaxed">
@@ -267,7 +267,7 @@ export function ValorAIAssistant() {
 
                 {/* Essential Questions */}
                 <div className="mb-4">
-                  <p className="text-xs font-semibold text-accent mb-3 uppercase tracking-wide">
+                  <p className="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">
                     Essential Questions
                   </p>
                   <div className="space-y-2">
@@ -275,11 +275,9 @@ export function ValorAIAssistant() {
                       <button
                         key={q.id}
                         onClick={() => handleQuestionClick(q)}
-                        className="w-full text-left text-sm p-3 rounded-lg bg-card hover:bg-accent/10 hover:border-accent transition-all border border-border/50 group"
+                        className="w-full text-left text-sm p-3 rounded-lg bg-card hover:bg-primary/20 hover:border-primary/80 transition-all border border-border/50 group"
                       >
-                        <span className="group-hover:text-accent transition-colors">
-                          {q.question}
-                        </span>
+                        <span className="transition-colors">{q.question}</span>
                       </button>
                     ))}
                   </div>
@@ -296,9 +294,9 @@ export function ValorAIAssistant() {
                         <button
                           key={q.id}
                           onClick={() => handleQuestionClick(q)}
-                          className="w-full text-left text-sm p-3 rounded-lg bg-card hover:bg-accent/10 hover:border-accent transition-all border border-border/50 group"
+                          className="w-full text-left text-sm p-3 rounded-lg bg-card hover:bg-primary/20 hover:border-primary/80 transition-all border border-border/50 group"
                         >
-                          <span className="group-hover:text-accent transition-colors">
+                          <span className=" transition-colors">
                             {q.question}
                           </span>
                         </button>
@@ -310,7 +308,7 @@ export function ValorAIAssistant() {
                 {/* Show More Toggle */}
                 <button
                   onClick={() => setShowMoreQuestions(!showMoreQuestions)}
-                  className="w-full text-sm p-3 rounded-lg bg-gradient-to-r from-accent/10 to-primary/10 hover:from-accent/20 hover:to-primary/20 transition-all font-semibold text-accent flex items-center justify-center gap-2 border border-accent/20"
+                  className="w-full text-sm p-3 rounded-lg bg-primary/10 hover:bg-primary/20 transition-all font-semibold text-primary flex items-center justify-center gap-2 border border-primary/80"
                 >
                   {showMoreQuestions ? (
                     <>

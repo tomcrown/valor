@@ -1,7 +1,4 @@
-// ============================================================================
-// FILE 4: src/components/Navbar.tsx (UPDATED)
-// ============================================================================
-
+// src/components/Navbar.tsx
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -12,6 +9,7 @@ import {
   User,
   Wallet,
   ChevronDown,
+  Chrome,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -34,38 +32,68 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [zkLoginAddress, setZkLoginAddress] = useState<string | null>(null);
   const location = useLocation();
 
   const currentAccount = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
 
   const authMethod = localStorage.getItem("auth_method");
-  const isAuthenticated = currentAccount || authMethod === "google";
+  const isAuthenticated = currentAccount || authMethod === "zklogin";
 
-  // Save session when account changes
+  // Load zkLogin address on mount
   useEffect(() => {
-    if (currentAccount) {
+    if (authMethod === "zklogin") {
+      const address = localStorage.getItem("zklogin_address");
+      setZkLoginAddress(address);
+    }
+  }, [authMethod]);
+
+  // Save wallet session when account changes
+  useEffect(() => {
+    if (currentAccount && authMethod === "wallet") {
       localStorage.setItem(
         "sui_session",
         JSON.stringify({
           address: currentAccount.address,
+          method: "wallet",
         })
       );
     }
-  }, [currentAccount]);
+  }, [currentAccount, authMethod]);
 
   const handleLogout = () => {
     if (authMethod === "wallet") {
       disconnect();
     }
+
+    // Clear all auth-related storage
     localStorage.removeItem("auth_method");
-    localStorage.removeItem("google_credential");
+    localStorage.removeItem("zklogin_address");
     localStorage.removeItem("sui_session");
+    sessionStorage.removeItem("zkLoginState");
+
+    setZkLoginAddress(null);
+
+    // Reload page to reset state
+    window.location.href = "/";
   };
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
+
+  const getDisplayAddress = () => {
+    if (authMethod === "wallet" && currentAccount) {
+      return currentAccount.address;
+    }
+    if (authMethod === "zklogin" && zkLoginAddress) {
+      return zkLoginAddress;
+    }
+    return null;
+  };
+
+  const displayAddress = getDisplayAddress();
 
   return (
     <>
@@ -124,15 +152,19 @@ const Navbar = () => {
                           <>
                             <Wallet className="w-4 h-4" />
                             <span className="font-mono text-sm">
-                              {currentAccount
-                                ? formatAddress(currentAccount.address)
+                              {displayAddress
+                                ? formatAddress(displayAddress)
                                 : "Wallet"}
                             </span>
                           </>
                         ) : (
                           <>
-                            <User className="w-4 h-4" />
-                            <span>Account</span>
+                            <Chrome className="w-4 h-4 text-blue-500" />
+                            <span className="font-mono text-sm">
+                              {displayAddress
+                                ? formatAddress(displayAddress)
+                                : "zkLogin"}
+                            </span>
                           </>
                         )}
                       </div>
@@ -142,12 +174,14 @@ const Navbar = () => {
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="px-2 py-1.5">
                       <p className="text-sm font-medium">
-                        {authMethod === "wallet" ? "Connected" : "Signed In"}
+                        {authMethod === "wallet"
+                          ? "Connected Wallet"
+                          : "zkLogin Account"}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {authMethod === "wallet" && currentAccount
-                          ? formatAddress(currentAccount.address)
-                          : "via Google"}
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {displayAddress
+                          ? formatAddress(displayAddress)
+                          : "Loading..."}
                       </p>
                     </div>
                     <DropdownMenuSeparator />
@@ -217,10 +251,13 @@ const Navbar = () => {
                 ) : (
                   <div className="space-y-2 mt-2">
                     <div className="px-4 py-2 bg-muted rounded-lg">
-                      <p className="text-xs text-muted-foreground">
-                        {authMethod === "wallet" && currentAccount
-                          ? formatAddress(currentAccount.address)
-                          : "Google Account"}
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {authMethod === "wallet" ? "Wallet" : "zkLogin"} Account
+                      </p>
+                      <p className="text-xs font-mono">
+                        {displayAddress
+                          ? formatAddress(displayAddress)
+                          : "Loading..."}
                       </p>
                     </div>
                     <Button

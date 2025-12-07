@@ -9,6 +9,7 @@ import PlayerDetailPage from "./pages/PlayerDetailPage";
 import PortfolioPage from "./pages/PortfolioPage";
 import NotFound from "./pages/NotFound";
 import SpaceNetworkBackground from "./components/ThreeBg";
+import AuthCallback from "@/pages/AuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/players/:id" element={<PlayerDetailPage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

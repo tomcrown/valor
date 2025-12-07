@@ -51,7 +51,7 @@ const LandingPage = () => {
             >
               <Link to="/players">
                 <Button className=" text-primary-foreground font-semibold px-8 py-6 text-lg">
-                  Launch App
+                  Start Trading
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
@@ -137,7 +137,7 @@ const LandingPage = () => {
                 viewport={{ amount: 0.2 }}
               >
                 <div className="glass-card p-8 h-full hover-lift">
-                  <div className="text-6xl font-bold text-primary/10 absolute top-4 left-4">
+                  <div className="text-6xl font-bold text-primary/50 absolute top-4 left-4">
                     {item.step}
                   </div>
                   <h3 className=" font-bold mt-16 text-xl mb-3">
@@ -322,7 +322,7 @@ const LandingPage = () => {
               </p>
               <Link to="/players">
                 <Button className=" text-primary-foreground font-semibold px-10 py-6 text-lg">
-                  Launch App
+                  Start Trading
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
