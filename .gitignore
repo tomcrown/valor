@@ -1,3 +1,5 @@
 build/*
 .trace
 .coverage*
+.vite/deps_temp_cbe5e2fc
+node_modules/
