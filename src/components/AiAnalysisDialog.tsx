@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sparkles, Loader2, X } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,86 +9,47 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
-import type { Player } from "@/data/dummyData";
-import type { AIAnalysis } from "@/lib/openai";
-import { analyzePlayer } from "@/lib/openai";
-import { cn } from "@/lib/utils";
+import { useAutoAIAnalysis } from "@/hooks/useAutoAIAnalysis";
+import type { Player, SeasonPeriod } from "@/data/dummyData";
 
 interface AIAnalysisDialogProps {
   player: Player;
+  selectedSeason: SeasonPeriod;
   trigger?: React.ReactNode;
-  onAnalysisComplete?: (analysis: AIAnalysis) => void;
 }
+
+const SEASON_LABELS = {
+  early: "Early Season (Matches 1-3)",
+  mid: "Mid Season (Matches 4-9)",
+  current: "Current Season (All Matches)",
+};
 
 export function AIAnalysisDialog({
   player,
+  selectedSeason,
   trigger,
-  onAnalysisComplete,
 }: AIAnalysisDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleAnalyze = async () => {
-    setIsAnalyzing(true);
-    setError(null);
+  // Use the hook to get/run analysis
+  const { analysis, isAnalyzing, runAnalysis } = useAutoAIAnalysis({
+    player,
+    selectedSeason,
+    autoRun: false, // Don't auto-run in dialog, we'll trigger manually
+  });
 
-    try {
-      const result = await analyzePlayer({
-        name: player.name,
-        position: player.position,
-        team: player.club,
-        goals: player.stats.goals,
-        assists: player.stats.assists,
-        minutesPlayed: player.stats.minutesPlayed,
-        matchesPlayed: player.stats.matchesPlayed,
-        currentValue: player.currentValue,
-        weeklyChange: player.weeklyChange,
-      });
+  // Get stats for selected season
+  const seasonStats = player.seasonalStats[selectedSeason];
 
-      setAnalysis(result);
-      onAnalysisComplete?.(result);
-
-      // Save to localStorage
-      localStorage.setItem(`ai-analysis-${player.id}`, JSON.stringify(result));
-    } catch (err) {
-      console.error("Analysis failed:", err);
-      setError("AI analysis failed. Please try again.");
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  // Auto-analyze when dialog opens
+  // Run analysis when dialog opens if no cached data
   useEffect(() => {
     if (isOpen && !analysis && !isAnalyzing) {
-      // Check for cached analysis first
-      const cached = localStorage.getItem(`ai-analysis-${player.id}`);
-      if (cached) {
-        try {
-          const parsedAnalysis = JSON.parse(cached);
-          setAnalysis(parsedAnalysis);
-          onAnalysisComplete?.(parsedAnalysis);
-        } catch {
-          // If cache is corrupted, analyze fresh
-          handleAnalyze();
-        }
-      } else {
-        // No cache, analyze
-        handleAnalyze();
-      }
+      runAnalysis();
     }
   }, [isOpen]);
 
-  // Reset state when dialog closes
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
-    if (!open) {
-      // Optional: clear state on close
-      // setAnalysis(null);
-      // setError(null);
-    }
   };
 
   return (
@@ -117,7 +78,7 @@ export function AIAnalysisDialog({
                 AI Performance Analysis
               </DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                {player.name} • {player.club}
+                {player.name} • {player.club} • {SEASON_LABELS[selectedSeason]}
               </p>
             </div>
           </div>
@@ -126,51 +87,41 @@ export function AIAnalysisDialog({
         {/* Scrollable Content */}
         <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6">
           <div className="space-y-6">
-            {/* Player Quick Stats */}
+            {/* Season Stats */}
             <div className="glass-card p-6">
               <h3 className="text-sm font-semibold text-muted-foreground mb-4">
-                Season Performance
+                {SEASON_LABELS[selectedSeason]} Performance
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <p className="text-3xl font-bold gradient-text">
-                    {player.stats.goals}
+                    {seasonStats.goals}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Goals</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold gradient-text">
-                    {player.stats.assists}
+                    {seasonStats.assists}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Assists</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold gradient-text">
-                    {player.stats.matchesPlayed}
+                    {seasonStats.matchesPlayed}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Matches</p>
                 </div>
                 <div className="text-center">
-                  <p
-                    className={cn(
-                      "text-3xl font-bold",
-                      player.weeklyChange >= 0
-                        ? "text-success"
-                        : "text-destructive"
-                    )}
-                  >
-                    {player.weeklyChange >= 0 ? "+" : ""}
-                    {player.weeklyChange.toFixed(1)}%
+                  <p className="text-3xl font-bold gradient-text">
+                    {seasonStats.minutesPlayed}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Weekly Change
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">Minutes</p>
                 </div>
               </div>
             </div>
 
             {/* Loading State */}
-            {isAnalyzing && (
+            {isAnalyzing && !analysis && (
               <div className="flex flex-col items-center justify-center py-20 space-y-4">
                 <div className="relative">
                   <Loader2 className="w-16 h-16 animate-spin text-accent" />
@@ -178,39 +129,25 @@ export function AIAnalysisDialog({
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-semibold mb-2">
-                    Analyzing {player.name}...
+                    Analyzing {SEASON_LABELS[selectedSeason]}...
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    GPT-4 is evaluating performance metrics and market trends
+                    GPT-4 is evaluating {player.name}'s performance for this
+                    period
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Error State */}
-            {error && !isAnalyzing && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6 text-center">
-                <p className="text-destructive font-semibold mb-3">{error}</p>
-                <Button
-                  onClick={handleAnalyze}
-                  variant="outline"
-                  className="border-destructive/30 hover:bg-destructive/10"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Try Again
-                </Button>
-              </div>
-            )}
-
             {/* Analysis Result */}
-            {analysis && !isAnalyzing && (
+            {analysis && (
               <div className="space-y-6">
                 <AIAnalysisPanel analysis={analysis} playerName={player.name} />
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 justify-center pt-4">
                   <Button
-                    onClick={handleAnalyze}
+                    onClick={runAnalysis}
                     variant="outline"
                     disabled={isAnalyzing}
                     className="border-accent/30 hover:bg-accent/10"
@@ -225,6 +162,19 @@ export function AIAnalysisDialog({
                     Close
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {/* No Analysis Yet */}
+            {!analysis && !isAnalyzing && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  Click below to start AI analysis
+                </p>
+                <Button onClick={runAnalysis} className="btn-gradient">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Analyze Now
+                </Button>
               </div>
             )}
           </div>

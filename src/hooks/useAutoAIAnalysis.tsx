@@ -1,25 +1,52 @@
-import { useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useRef } from "react";
+import { analyzePlayer } from "@/lib/openai";
 import type { Player, SeasonPeriod } from "@/data/dummyData";
 import type { AIAnalysis } from "@/lib/openai";
-import { analyzePlayer } from "@/lib/openai";
 
-interface AIAnalysisButtonProps {
+interface UseAutoAIAnalysisOptions {
   player: Player;
   selectedSeason: SeasonPeriod;
+  autoRun?: boolean; // Whether to auto-run analysis on mount
   onAnalysisComplete?: (analysis: AIAnalysis) => void;
 }
 
-export function AIAnalysisButton({
+export function useAutoAIAnalysis({
   player,
   selectedSeason,
+  autoRun = true,
   onAnalysisComplete,
-}: AIAnalysisButtonProps) {
+}: UseAutoAIAnalysisOptions) {
+  const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasRunRef = useRef(false);
 
-  const handleAnalyze = async () => {
+  useEffect(() => {
+    // Reset on season change
+    hasRunRef.current = false;
+
+    const cacheKey = `ai-analysis-${player.id}-${selectedSeason}`;
+    const cached = localStorage.getItem(cacheKey);
+
+    if (cached) {
+      try {
+        const parsedAnalysis = JSON.parse(cached);
+        setAnalysis(parsedAnalysis);
+        onAnalysisComplete?.(parsedAnalysis);
+        return;
+      } catch (e) {
+        console.error("Failed to parse cached analysis");
+      }
+    }
+
+    // Auto-run analysis if enabled and not already running
+    if (autoRun && !hasRunRef.current && !isAnalyzing) {
+      hasRunRef.current = true;
+      runAnalysis();
+    }
+  }, [player.id, selectedSeason]);
+
+  const runAnalysis = async () => {
     setIsAnalyzing(true);
     setError(null);
 
@@ -39,9 +66,10 @@ export function AIAnalysisButton({
         season: selectedSeason,
       });
 
+      setAnalysis(result);
       onAnalysisComplete?.(result);
 
-      // Save to localStorage with season key
+      // Cache the result
       localStorage.setItem(
         `ai-analysis-${player.id}-${selectedSeason}`,
         JSON.stringify(result)
@@ -54,26 +82,10 @@ export function AIAnalysisButton({
     }
   };
 
-  return (
-    <div className="space-y-2">
-      <Button
-        onClick={handleAnalyze}
-        disabled={isAnalyzing}
-        className="btn-gradient"
-      >
-        {isAnalyzing ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Analyzing...
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-4 h-4 mr-2" />
-            Run AI Analysis
-          </>
-        )}
-      </Button>
-      {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
-  );
+  return {
+    analysis,
+    isAnalyzing,
+    error,
+    runAnalysis,
+  };
 }

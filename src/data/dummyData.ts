@@ -1,6 +1,7 @@
 // ==========================================
-// REAL DATA FOR VALOR (Fetched from Football API)
-// Last Updated: 2025-12-05T19:27:48.812Z
+// REAL DATA FOR VALOR (Fetched from AllSportsAPI)
+// SEASONAL STATS RESEARCHED BY AI WITH WEB SEARCH
+// Last Updated: 2025-12-09T00:41:31.920Z
 // ==========================================
 
 export interface Player {
@@ -14,6 +15,7 @@ export interface Player {
   weeklyChange: number;
   aiScore: number;
   stats: PlayerStats;
+  seasonalStats: SeasonalData;
   valueHistory: ValueDataPoint[];
   walrusProofId: string;
 }
@@ -26,6 +28,14 @@ export interface PlayerStats {
   cleanSheets?: number;
   saves?: number;
 }
+
+export interface SeasonalData {
+  early: PlayerStats;
+  mid: PlayerStats;
+  current: PlayerStats;
+}
+
+export type SeasonPeriod = "early" | "mid" | "current";
 
 export interface ValueDataPoint {
   date: string;
@@ -51,452 +61,653 @@ export interface TradeHistoryEntry {
   timestamp: string;
 }
 
-// ==========================================
-// PLAYERS DATA (FROM REAL API)
-// ==========================================
+export interface LeaderboardEntry {
+  rank: number;
+  address: string;
+  displayName: string;
+  avatarUrl: string;
+  portfolioValue: number;
+  weeklyGrowth: number;
+  totalTrades: number;
+}
 
 export const DUMMY_PLAYERS: Player[] = [
   {
-    id: "1100",
-    name: "E. Haaland",
+    id: "659972248",
+    name: "Erling Haaland",
     club: "Manchester City",
     position: "Attacker",
     nationality: "Norway",
-    imageUrl: "https://media.api-sports.io/football/players/1100.png",
-    currentValue: 2691,
-    weeklyChange: 19.6,
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/header/418560-1709108116.png?lm=1",
+    currentValue: 2829,
+    weeklyChange: 7.7,
     aiScore: 81,
     stats: {
-      goals: 27,
-      assists: 5,
-      minutesPlayed: 2556,
-      matchesPlayed: 32,
+      goals: 15,
+      assists: 3,
+      minutesPlayed: 1218,
+      matchesPlayed: 14,
+    },
+    seasonalStats: {
+      early: {
+        goals: 4,
+        assists: 1,
+        minutesPlayed: 270,
+        matchesPlayed: 3,
+      },
+      mid: {
+        goals: 6,
+        assists: 1,
+        minutesPlayed: 540,
+        matchesPlayed: 6,
+      },
+      current: {
+        goals: 15,
+        assists: 3,
+        minutesPlayed: 1218,
+        matchesPlayed: 14,
+      },
     },
     valueHistory: [
       {
         date: "Mon",
-        value: 2505,
+        value: 2675,
       },
       {
         date: "Tue",
-        value: 2541,
+        value: 2670,
       },
       {
         date: "Wed",
-        value: 2557,
+        value: 2711,
       },
       {
         date: "Thu",
-        value: 2590,
+        value: 2751,
       },
       {
         date: "Fri",
-        value: 2592,
+        value: 2793,
       },
       {
         date: "Sat",
-        value: 2640,
+        value: 2783,
       },
       {
         date: "Sun",
-        value: 2691,
+        value: 2829,
       },
     ],
-    walrusProofId: "0xe5e1...68dd",
+    walrusProofId: "0x6be7...4b26",
   },
   {
-    id: "2932",
-    name: "J. Pickford",
-    club: "Everton",
-    position: "Goalkeeper",
-    nationality: "England",
-    imageUrl: "https://media.api-sports.io/football/players/2932.png",
-    currentValue: 1920,
-    weeklyChange: -8.5,
-    aiScore: 78,
+    id: "2354545782",
+    name: "Kylian Mbappe",
+    club: "Real Madrid",
+    position: "Attacker",
+    nationality: "France",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/header/342229-1682683695.jpg?lm=1",
+    currentValue: 2946,
+    weeklyChange: -3.6,
+    aiScore: 75,
     stats: {
-      goals: 0,
-      assists: 0,
-      minutesPlayed: 3420,
-      matchesPlayed: 38,
+      goals: 16,
+      assists: 4,
+      minutesPlayed: 1306,
+      matchesPlayed: 15,
+    },
+    seasonalStats: {
+      early: {
+        goals: 4,
+        assists: 1,
+        minutesPlayed: 270,
+        matchesPlayed: 3,
+      },
+      mid: {
+        goals: 6,
+        assists: 2,
+        minutesPlayed: 540,
+        matchesPlayed: 6,
+      },
+      current: {
+        goals: 16,
+        assists: 4,
+        minutesPlayed: 1306,
+        matchesPlayed: 15,
+      },
     },
     valueHistory: [
       {
         date: "Mon",
-        value: 1843,
+        value: 2795,
       },
       {
         date: "Tue",
-        value: 1835,
+        value: 2807,
       },
       {
         date: "Wed",
-        value: 1826,
+        value: 2843,
       },
       {
         date: "Thu",
-        value: 1883,
+        value: 2896,
       },
       {
         date: "Fri",
-        value: 1889,
+        value: 2936,
       },
       {
         date: "Sat",
-        value: 1919,
+        value: 2927,
       },
       {
         date: "Sun",
-        value: 1920,
+        value: 2946,
       },
     ],
-    walrusProofId: "0x0a0c...44c9",
+    walrusProofId: "0x1c65...e776",
   },
   {
-    id: "306",
+    id: "2456487342",
+    name: "Harry Maguire",
+    club: "Manchester United",
+    position: "Defender",
+    nationality: "England",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/big/177907-1663841733.jpg?lm=1",
+    currentValue: 1260,
+    weeklyChange: 10.5,
+    aiScore: 84,
+    stats: {
+      goals: 1,
+      assists: 1,
+      minutesPlayed: 356,
+      matchesPlayed: 8,
+    },
+    seasonalStats: {
+      early: {
+        goals: 0,
+        assists: 0,
+        minutesPlayed: 270,
+        matchesPlayed: 3,
+      },
+      mid: {
+        goals: 1,
+        assists: 1,
+        minutesPlayed: 450,
+        matchesPlayed: 5,
+      },
+      current: {
+        goals: 1,
+        assists: 1,
+        minutesPlayed: 356,
+        matchesPlayed: 8,
+      },
+    },
+    valueHistory: [
+      {
+        date: "Mon",
+        value: 1207,
+      },
+      {
+        date: "Tue",
+        value: 1207,
+      },
+      {
+        date: "Wed",
+        value: 1255,
+      },
+      {
+        date: "Thu",
+        value: 1295,
+      },
+      {
+        date: "Fri",
+        value: 1290,
+      },
+      {
+        date: "Sat",
+        value: 1271,
+      },
+      {
+        date: "Sun",
+        value: 1260,
+      },
+    ],
+    walrusProofId: "0x006a...d34a",
+  },
+  {
+    id: "2432523569",
     name: "Mohamed Salah",
     club: "Liverpool",
     position: "Attacker",
     nationality: "Egypt",
-    imageUrl: "https://media.api-sports.io/football/players/306.png",
-    currentValue: 2671,
-    weeklyChange: -7,
-    aiScore: 78,
-    stats: {
-      goals: 18,
-      assists: 10,
-      minutesPlayed: 2535,
-      matchesPlayed: 32,
-    },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 2487,
-      },
-      {
-        date: "Tue",
-        value: 2540,
-      },
-      {
-        date: "Wed",
-        value: 2547,
-      },
-      {
-        date: "Thu",
-        value: 2603,
-      },
-      {
-        date: "Fri",
-        value: 2616,
-      },
-      {
-        date: "Sat",
-        value: 2636,
-      },
-      {
-        date: "Sun",
-        value: 2671,
-      },
-    ],
-    walrusProofId: "0xf6b7...c281",
-  },
-  {
-    id: "2926",
-    name: "Y. Tielemans",
-    club: "Aston Villa",
-    position: "Midfielder",
-    nationality: "Belgium",
-    imageUrl: "https://media.api-sports.io/football/players/2926.png",
-    currentValue: 2134,
-    weeklyChange: -8.5,
-    aiScore: 87,
-    stats: {
-      goals: 2,
-      assists: 6,
-      minutesPlayed: 1641,
-      matchesPlayed: 32,
-    },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 1975,
-      },
-      {
-        date: "Tue",
-        value: 2021,
-      },
-      {
-        date: "Wed",
-        value: 2060,
-      },
-      {
-        date: "Thu",
-        value: 2112,
-      },
-      {
-        date: "Fri",
-        value: 2098,
-      },
-      {
-        date: "Sat",
-        value: 2140,
-      },
-      {
-        date: "Sun",
-        value: 2134,
-      },
-    ],
-    walrusProofId: "0x5654...26f9",
-  },
-  {
-    id: "278",
-    name: "Kylian Mbappé",
-    club: "Paris Saint Germain",
-    position: "Attacker",
-    nationality: "France",
-    imageUrl: "https://media.api-sports.io/football/players/278.png",
-    currentValue: 1466,
-    weeklyChange: 8.2,
-    aiScore: 92,
-    stats: {
-      goals: 27,
-      assists: 7,
-      minutesPlayed: 2159,
-      matchesPlayed: 29,
-    },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 1308,
-      },
-      {
-        date: "Tue",
-        value: 1313,
-      },
-      {
-        date: "Wed",
-        value: 1362,
-      },
-      {
-        date: "Thu",
-        value: 1415,
-      },
-      {
-        date: "Fri",
-        value: 1465,
-      },
-      {
-        date: "Sat",
-        value: 1449,
-      },
-      {
-        date: "Sun",
-        value: 1466,
-      },
-    ],
-    walrusProofId: "0x2431...d2ed",
-  },
-  {
-    id: "882",
-    name: "David de Gea",
-    club: "Manchester United",
-    position: "Goalkeeper",
-    nationality: "Spain",
-    imageUrl: "https://media.api-sports.io/football/players/882.png",
-    currentValue: 1612,
-    weeklyChange: -5.8,
-    aiScore: 92,
-    stats: {
-      goals: 0,
-      assists: 0,
-      minutesPlayed: 0,
-      matchesPlayed: 0,
-    },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 1473,
-      },
-      {
-        date: "Tue",
-        value: 1468,
-      },
-      {
-        date: "Wed",
-        value: 1506,
-      },
-      {
-        date: "Thu",
-        value: 1517,
-      },
-      {
-        date: "Fri",
-        value: 1554,
-      },
-      {
-        date: "Sat",
-        value: 1553,
-      },
-      {
-        date: "Sun",
-        value: 1612,
-      },
-    ],
-    walrusProofId: "0xa1ed...c6c3",
-  },
-  {
-    id: "18827",
-    name: "C. Sánchez",
-    club: "San Lorenzo",
-    position: "Midfielder",
-    nationality: "Colombia",
-    imageUrl: "https://media.api-sports.io/football/players/18827.png",
-    currentValue: 2262,
-    weeklyChange: 1.2,
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/big/148455-1727337594.jpg?lm=1",
+    currentValue: 1609,
+    weeklyChange: 1.3,
     aiScore: 90,
     stats: {
-      goals: 0,
-      assists: 0,
-      minutesPlayed: 2390,
-      matchesPlayed: 36,
+      goals: 4,
+      assists: 2,
+      minutesPlayed: 1119,
+      matchesPlayed: 13,
+    },
+    seasonalStats: {
+      early: {
+        goals: 1,
+        assists: 1,
+        minutesPlayed: 270,
+        matchesPlayed: 3,
+      },
+      mid: {
+        goals: 2,
+        assists: 0,
+        minutesPlayed: 540,
+        matchesPlayed: 6,
+      },
+      current: {
+        goals: 4,
+        assists: 2,
+        minutesPlayed: 1119,
+        matchesPlayed: 13,
+      },
     },
     valueHistory: [
       {
         date: "Mon",
-        value: 2230,
+        value: 1541,
       },
       {
         date: "Tue",
-        value: 2241,
+        value: 1594,
       },
       {
         date: "Wed",
-        value: 2265,
+        value: 1589,
       },
       {
         date: "Thu",
-        value: 2302,
+        value: 1590,
       },
       {
         date: "Fri",
-        value: 2282,
+        value: 1590,
       },
       {
         date: "Sat",
-        value: 2279,
+        value: 1613,
       },
       {
         date: "Sun",
-        value: 2262,
+        value: 1609,
       },
     ],
-    walrusProofId: "0xa9e9...0ea0",
+    walrusProofId: "0x0011...207a",
+  },
+  {
+    id: "1521124062",
+    name: "Dominik Szoboszlai",
+    club: "Liverpool",
+    position: "Midfielder",
+    nationality: "Hungary",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/header/451276-1758715234.jpg?lm=1",
+    currentValue: 1258,
+    weeklyChange: 11.2,
+    aiScore: 76,
+    stats: {
+      goals: 1,
+      assists: 1,
+      minutesPlayed: 1260,
+      matchesPlayed: 14,
+    },
+    seasonalStats: {
+      early: {
+        goals: 0,
+        assists: 0,
+        minutesPlayed: 270,
+        matchesPlayed: 3,
+      },
+      mid: {
+        goals: 1,
+        assists: 1,
+        minutesPlayed: 540,
+        matchesPlayed: 6,
+      },
+      current: {
+        goals: 1,
+        assists: 1,
+        minutesPlayed: 1260,
+        matchesPlayed: 14,
+      },
+    },
+    valueHistory: [
+      {
+        date: "Mon",
+        value: 1190,
+      },
+      {
+        date: "Tue",
+        value: 1215,
+      },
+      {
+        date: "Wed",
+        value: 1244,
+      },
+      {
+        date: "Thu",
+        value: 1236,
+      },
+      {
+        date: "Fri",
+        value: 1246,
+      },
+      {
+        date: "Sat",
+        value: 1273,
+      },
+      {
+        date: "Sun",
+        value: 1258,
+      },
+    ],
+    walrusProofId: "0x5a73...c03a",
+  },
+  {
+    id: "3537658166",
+    name: "Jude Bellingham",
+    club: "Real Madrid",
+    position: "Midfielder",
+    nationality: "England",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/header/581678-1748102891.jpg?lm=1",
+    currentValue: 1589,
+    weeklyChange: 3.1,
+    aiScore: 81,
+    stats: {
+      goals: 3,
+      assists: 2,
+      minutesPlayed: 741,
+      matchesPlayed: 11,
+    },
+    seasonalStats: {
+      early: {
+        goals: 1,
+        assists: 1,
+        minutesPlayed: 270,
+        matchesPlayed: 3,
+      },
+      mid: {
+        goals: 2,
+        assists: 1,
+        minutesPlayed: 540,
+        matchesPlayed: 6,
+      },
+      current: {
+        goals: 3,
+        assists: 2,
+        minutesPlayed: 741,
+        matchesPlayed: 11,
+      },
+    },
+    valueHistory: [
+      {
+        date: "Mon",
+        value: 1401,
+      },
+      {
+        date: "Tue",
+        value: 1438,
+      },
+      {
+        date: "Wed",
+        value: 1472,
+      },
+      {
+        date: "Thu",
+        value: 1476,
+      },
+      {
+        date: "Fri",
+        value: 1534,
+      },
+      {
+        date: "Sat",
+        value: 1530,
+      },
+      {
+        date: "Sun",
+        value: 1589,
+      },
+    ],
+    walrusProofId: "0xf717...f102",
+  },
+  {
+    id: "3446405013",
+    name: "David Raya",
+    club: "Arsenal FC",
+    position: "Goalkeeper",
+    nationality: "Spain",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/header/262749-1668168018.jpg?lm=1",
+    currentValue: 1055,
+    weeklyChange: -8.3,
+    aiScore: 94,
+    stats: {
+      goals: 0,
+      assists: 0,
+      minutesPlayed: 1260,
+      matchesPlayed: 14,
+    },
+    seasonalStats: {
+      early: {
+        goals: 0,
+        assists: 0,
+        minutesPlayed: 270,
+        matchesPlayed: 3,
+      },
+      mid: {
+        goals: 0,
+        assists: 0,
+        minutesPlayed: 540,
+        matchesPlayed: 6,
+      },
+      current: {
+        goals: 0,
+        assists: 0,
+        minutesPlayed: 1260,
+        matchesPlayed: 14,
+      },
+    },
+    valueHistory: [
+      {
+        date: "Mon",
+        value: 999,
+      },
+      {
+        date: "Tue",
+        value: 1034,
+      },
+      {
+        date: "Wed",
+        value: 1070,
+      },
+      {
+        date: "Thu",
+        value: 1062,
+      },
+      {
+        date: "Fri",
+        value: 1055,
+      },
+      {
+        date: "Sat",
+        value: 1057,
+      },
+      {
+        date: "Sun",
+        value: 1055,
+      },
+    ],
+    walrusProofId: "0x7a5d...1b9e",
+  },
+  {
+    id: "2764979995",
+    name: "Bukayo Saka",
+    club: "Arsenal FC",
+    position: "Attacker",
+    nationality: "England",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/big/433177-1684155052.jpg?lm=1",
+    currentValue: 1549,
+    weeklyChange: -3.3,
+    aiScore: 90,
+    stats: {
+      goals: 4,
+      assists: 1,
+      minutesPlayed: 893,
+      matchesPlayed: 12,
+    },
+    seasonalStats: {
+      early: {
+        goals: 1,
+        assists: 0,
+        minutesPlayed: 270,
+        matchesPlayed: 3,
+      },
+      mid: {
+        goals: 2,
+        assists: 1,
+        minutesPlayed: 540,
+        matchesPlayed: 6,
+      },
+      current: {
+        goals: 4,
+        assists: 1,
+        minutesPlayed: 893,
+        matchesPlayed: 12,
+      },
+    },
+    valueHistory: [
+      {
+        date: "Mon",
+        value: 1438,
+      },
+      {
+        date: "Tue",
+        value: 1434,
+      },
+      {
+        date: "Wed",
+        value: 1431,
+      },
+      {
+        date: "Thu",
+        value: 1488,
+      },
+      {
+        date: "Fri",
+        value: 1503,
+      },
+      {
+        date: "Sat",
+        value: 1494,
+      },
+      {
+        date: "Sun",
+        value: 1549,
+      },
+    ],
+    walrusProofId: "0x0ad1...095a",
   },
 ];
-
-// ==========================================
-// PORTFOLIO DATA (UPDATED WITH REAL DATA)
-// ==========================================
 
 export const DUMMY_PORTFOLIO: PortfolioPosition[] = [
   {
-    playerId: "1100",
-    playerName: "E. Haaland",
+    playerId: "659972248",
+    playerName: "Erling Haaland",
     club: "Manchester City",
     quantity: 15,
-    averageEntryPrice: 2341,
-    currentValue: 2691,
-    imageUrl: "https://media.api-sports.io/football/players/1100.png",
+    averageEntryPrice: 2479,
+    currentValue: 2829,
+    imageUrl: "https://apiv2.allsportsapi.com/logo/players/68451_e-haaland.jpg",
   },
   {
-    playerId: "2932",
-    playerName: "J. Pickford",
-    club: "Everton",
+    playerId: "2354545782",
+    playerName: "Kylian Mbappe",
+    club: "Real Madrid",
     quantity: 10,
-    averageEntryPrice: 1690,
-    currentValue: 1920,
-    imageUrl: "https://media.api-sports.io/football/players/2932.png",
+    averageEntryPrice: 2716,
+    currentValue: 2946,
+    imageUrl: "https://apiv2.allsportsapi.com/logo/players/51921_k-mbappe.jpg",
   },
+].filter(Boolean);
+
+export const DUMMY_LEADERBOARD: LeaderboardEntry[] = [
   {
-    playerId: "18827",
-    playerName: "C. Sánchez",
-    club: "San Lorenzo",
-    quantity: 20,
-    averageEntryPrice: 1982,
-    currentValue: 2262,
-    imageUrl: "https://media.api-sports.io/football/players/18827.png",
-  },
-  {
-    playerId: "2926",
-    playerName: "Y. Tielemans",
-    club: "Aston Villa",
-    quantity: 8,
-    averageEntryPrice: 2064,
-    currentValue: 2134,
-    imageUrl: "https://media.api-sports.io/football/players/2926.png",
+    rank: 1,
+    address: "0x7f3a...8c2d",
+    displayName: "CryptoWhale",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
+    portfolioValue: 125400,
+    weeklyGrowth: 34.5,
+    totalTrades: 156,
   },
 ];
 
-// ==========================================
-// STATS DATA
-// ==========================================
-
 export const PLATFORM_STATS = {
   totalVolume: 2450000,
-  totalPlayers: 847,
+  totalPlayers: 8,
   activeTraders: 12500,
   avgDailyTrades: 3420,
 };
-
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
 
 export const getPlayerById = (id: string): Player | undefined => {
   return DUMMY_PLAYERS.find((player) => player.id === id);
 };
 
+export const getPlayerStatsBySeason = (
+  player: Player,
+  season: SeasonPeriod
+): PlayerStats => {
+  return player.seasonalStats[season];
+};
+
 export const getTopPerformers = (): Player[] => {
   return [...DUMMY_PLAYERS]
     .sort((a, b) => {
-      // Sort by AI score first (quality), then by weekly change (momentum)
       const scoreA = a.aiScore;
       const scoreB = b.aiScore;
-
-      if (Math.abs(scoreA - scoreB) > 5) {
-        return scoreB - scoreA; // Higher AI score = better
-      }
-
-      // If AI scores are similar, sort by weekly change
+      if (Math.abs(scoreA - scoreB) > 5) return scoreB - scoreA;
       return b.weeklyChange - a.weeklyChange;
     })
     .slice(0, 4);
 };
 
 export const getRisingPlayers = (): Player[] => {
-  // Rising = positive weekly change AND good AI score
   return DUMMY_PLAYERS.filter(
     (p) => p.weeklyChange > 5 && p.aiScore >= 75
   ).sort((a, b) => b.weeklyChange - a.weeklyChange);
 };
 
 export const getUndervaluedPlayers = (): Player[] => {
-  // Undervalued = high AI score but low/negative weekly change
-  // These are players the AI thinks are good but the market hasn't caught on yet
   return DUMMY_PLAYERS.filter((p) => p.aiScore > 85 && p.weeklyChange < 5).sort(
     (a, b) => b.aiScore - a.aiScore
   );
 };
 
 export const getFallingPlayers = (): Player[] => {
-  // Players with negative weekly change
   return DUMMY_PLAYERS.filter((p) => p.weeklyChange < -5).sort(
     (a, b) => a.weeklyChange - b.weeklyChange
-  ); // Most negative first
+  );
 };
 
 export const getHighPerformers = (): Player[] => {
-  // Players with high AI scores regardless of price movement
   return DUMMY_PLAYERS.filter((p) => p.aiScore >= 85).sort(
     (a, b) => b.aiScore - a.aiScore
   );

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useParams } from "react-router-dom";
 
 const GAS_BUDGET = 50_000_000;
 
@@ -107,110 +108,6 @@ function TokenSelect({ value, onChange, disabled }) {
   );
 }
 
-function TxOverlay({ outcome, onClose }) {
-  if (!outcome) return null;
-
-  const isSuccess = outcome.status === "success";
-  const digest = outcome.digest;
-  const explorerUrl = digest
-    ? `https://suiscan.xyz/mainnet/tx/${digest}`
-    : null;
-
-  useEffect(() => {
-    if (isSuccess) {
-      const duration = 2 * 1000;
-      const animationEnd = Date.now() + duration;
-
-      const defaults = {
-        startVelocity: 30,
-        spread: 360,
-        ticks: 60,
-        zIndex: 9999,
-      };
-
-      const randomInRange = (min, max) => Math.random() * (max - min) + min;
-
-      const interval = setInterval(() => {
-        const timeLeft = animationEnd - Date.now();
-
-        if (timeLeft <= 0) {
-          return clearInterval(interval);
-        }
-
-        const particleCount = 50 * (timeLeft / duration);
-
-        confetti({
-          ...defaults,
-          particleCount,
-          origin: {
-            x: randomInRange(0.1, 0.9),
-            y: Math.random() - 0.2,
-          },
-        });
-      }, 250);
-
-      return () => clearInterval(interval);
-    }
-  }, [isSuccess]);
-
-  return (
-    <div className="z-[60] fixed inset-0 flex justify-center items-center bg-black/80 p-4">
-      <div className="glass-card p-6 rounded-xl w-full max-w-md border border-border/50">
-        <div className="flex items-center justify-between mb-4">
-          <h3
-            className={cn(
-              "text-xl font-bold",
-              isSuccess ? "text-success" : "text-destructive"
-            )}
-          >
-            {isSuccess ? "Swap Successful! 🎉" : "Swap Failed"}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="mb-6">
-          {isSuccess ? (
-            <div className="bg-success/10 border border-success/20 rounded-xl p-4">
-              <p className="text-sm text-muted-foreground mb-2">
-                Transaction Hash:
-              </p>
-              <p className="font-mono text-xs break-all">{digest}</p>
-            </div>
-          ) : (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
-              <p className="text-sm text-destructive">{outcome.message}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3">
-          {isSuccess && explorerUrl && (
-            <Button
-              onClick={() => window.open(explorerUrl, "_blank")}
-              className="flex-1 btn-gradient"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              View on Explorer
-            </Button>
-          )}
-          <Button
-            onClick={onClose}
-            variant="outline"
-            className={cn(!isSuccess && "flex-1")}
-          >
-            Close
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function SwapModal({ open, onOpenChange }) {
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
@@ -223,6 +120,7 @@ export function SwapModal({ open, onOpenChange }) {
   const [actualBalances, setActualBalances] = useState({});
   const [slippage] = useState(0.5);
   const [txOutcome, setTxOutcome] = useState(null);
+  const { id: playerId } = useParams();
 
   const currentAccount = useCurrentAccount();
   const { mutateAsync: signAndExecuteTransaction } =
@@ -484,16 +382,16 @@ export function SwapModal({ open, onOpenChange }) {
         transaction: txb,
       });
 
-      setTxOutcome({ status: "success", digest: result.digest });
-      setFromAmount("");
-      setToAmount("");
-      await fetchBalances();
+      // Redirect to standalone success page
+      window.location.href = `/swap/success?digest=${result.digest}&playerId=${playerId}`;
+
+      return;
     } catch (error) {
       console.error("Swap failed:", error);
-      setTxOutcome({
-        status: "failure",
-        message: error.message || "Swap failed. Please try again.",
-      });
+
+      const reason = encodeURIComponent(error.message || "Swap failed");
+      window.location.href = `/swap/fail?reason=${reason}&playerId=${playerId}`;
+      return;
     } finally {
       setIsSwapping(false);
     }
@@ -531,7 +429,7 @@ export function SwapModal({ open, onOpenChange }) {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="z-50 max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold gradient-text">
               Swap Tokens
@@ -662,7 +560,7 @@ export function SwapModal({ open, onOpenChange }) {
         </DialogContent>
       </Dialog>
 
-      <TxOverlay outcome={txOutcome} onClose={handleCloseTxOverlay} />
+      {/* <TxOverlay outcome={txOutcome} onClose={handleCloseTxOverlay} /> */}
     </>
   );
 }

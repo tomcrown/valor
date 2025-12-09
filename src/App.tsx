@@ -10,6 +10,8 @@ import PortfolioPage from "./pages/PortfolioPage";
 import NotFound from "./pages/NotFound";
 import SpaceNetworkBackground from "./components/ThreeBg";
 import AuthCallback from "@/pages/AuthCallback";
+import SwapSuccessPage from "./pages/swap/success/page";
+import SwapFailedPage from "./pages/swap/fail/page";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +29,8 @@ const App = () => (
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="*" element={<NotFound />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/swap/success" element={<SwapSuccessPage />} />
+          <Route path="/swap/fail" element={<SwapFailedPage />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

@@ -1,9 +1,10 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { SwapModal } from "@/components/SwapModal";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AIAnalysisButton } from "@/components/AiAnalysisButton";
 import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
-import type { AIAnalysis } from "@/lib/openai";
+import { useAutoAIAnalysis } from "@/hooks/useAutoAIAnalysis";
+import type { SeasonPeriod } from "@/data/dummyData";
 import {
   ArrowLeft,
   Zap,
@@ -13,6 +14,8 @@ import {
   Clock,
   Target,
   Activity,
+  Calendar,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
@@ -21,41 +24,50 @@ import BuySellWidget from "@/components/BuySellWidget";
 import { getPlayerById } from "@/data/dummyData";
 import { cn } from "@/lib/utils";
 
+const SEASON_LABELS = {
+  early: "Early Season",
+  mid: "Mid Season",
+  current: "Current Season",
+};
+
+const SEASON_DESCRIPTIONS = {
+  early: "Matches 1-3",
+  mid: "Matches 4-9",
+  current: "All Matches",
+};
+
 const PlayerDetailPage = () => {
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const player = getPlayerById(id || "");
-  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
-  const displayAiScore = aiAnalysis?.performance_score ?? player.aiScore;
-  const displayTrend =
-    aiAnalysis?.trend ??
-    (player.weeklyChange > 5
-      ? "up"
-      : player.weeklyChange < -5
-      ? "down"
-      : "stable");
 
-  useEffect(() => {
-    const cached = localStorage.getItem(`ai-analysis-${player.id}`);
-    if (cached) {
-      try {
-        setAiAnalysis(JSON.parse(cached));
-      } catch (e) {
-        console.error("Failed to parse cached analysis");
-      }
-    }
-  }, [player.id]);
+  // Get season from navigation state or default to current
+  const [selectedSeason, setSelectedSeason] = useState<SeasonPeriod>(
+    (location.state?.selectedSeason as SeasonPeriod) || "current"
+  );
 
-  const handleAnalysisComplete = (analysis: AIAnalysis) => {
-    setAiAnalysis(analysis);
-    localStorage.setItem(`ai-analysis-${player.id}`, JSON.stringify(analysis));
-  };
+  // Auto-run AI analysis
+  const {
+    analysis: aiAnalysis,
+    isAnalyzing,
+    runAnalysis,
+  } = useAutoAIAnalysis({
+    player: player!,
+    selectedSeason,
+    autoRun: true,
+  });
 
-  if (!player) {
+  // Get stats for selected season
+  const seasonStats = player?.seasonalStats[selectedSeason];
+
+  const displayAiScore = aiAnalysis?.performance_score ?? player?.aiScore ?? 0;
+
+  if (!player || !seasonStats) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12 text-center">
-          <h1 className="text-2xl   font-bold mb-4">Player Not Found</h1>
+          <h1 className="text-2xl font-bold mb-4">Player Not Found</h1>
           <Link to="/players">
             <Button variant="outline">Back to Players</Button>
           </Link>
@@ -78,12 +90,41 @@ const PlayerDetailPage = () => {
           Back to Players
         </Link>
 
+        {/* Season Selector */}
+        <div className="glass-card p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="w-5 h-5 text-accent" />
+            <h3 className="font-semibold">Select Season Period</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {(["early", "mid", "current"] as SeasonPeriod[]).map((season) => (
+              <button
+                key={season}
+                onClick={() => setSelectedSeason(season)}
+                className={cn(
+                  "p-4 rounded-xl border-2 transition-all text-left",
+                  selectedSeason === season
+                    ? "border-accent bg-accent/10 shadow-lg shadow-accent/20"
+                    : "border-border/50 hover:border-border bg-card/50"
+                )}
+              >
+                <div className="font-semibold mb-1">
+                  {SEASON_LABELS[season]}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {SEASON_DESCRIPTIONS[season]}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Player Header */}
-            <div className="glass-card overflow-hidden w-1/2">
-              <div className="relative h-64 md:h-80   ">
+            <div className="glass-card overflow-hidden">
+              <div className="relative h-64 md:h-80">
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent z-10" />
                 <img
                   src={player.imageUrl}
@@ -101,7 +142,7 @@ const PlayerDetailPage = () => {
                           {player.nationality}
                         </span>
                       </div>
-                      <h1 className="text-3xl md:text-4xl   font-bold mb-1">
+                      <h1 className="text-3xl md:text-4xl font-bold mb-1">
                         {player.name}
                       </h1>
                       <p className="text-lg text-muted-foreground">
@@ -109,7 +150,11 @@ const PlayerDetailPage = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50">
-                      <Zap className="w-4 h-4 text-warning" />
+                      {isAnalyzing ? (
+                        <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                      ) : (
+                        <Zap className="w-4 h-4 text-warning" />
+                      )}
                       <span
                         className={cn(
                           "font-semibold",
@@ -134,7 +179,7 @@ const PlayerDetailPage = () => {
                     <p className="text-sm text-muted-foreground mb-1">
                       Current Value
                     </p>
-                    <p className="text-3xl   font-bold gradient-text">
+                    <p className="text-3xl font-bold gradient-text">
                       ${player.currentValue.toLocaleString()}
                     </p>
                   </div>
@@ -162,59 +207,105 @@ const PlayerDetailPage = () => {
 
             {/* Value Chart */}
             <div className="glass-card p-6">
-              <h2 className="text-xl   font-bold mb-6">7-Day Value Trend</h2>
+              <h2 className="text-xl font-bold mb-6">7-Day Value Trend</h2>
               <div className="pl-12">
                 <Chart data={player.valueHistory} height={250} />
               </div>
             </div>
 
-            {/* Stats Grid */}
+            {/* Stats Grid - Seasonal */}
             <div className="glass-card p-6">
-              <h2 className="text-xl   font-bold mb-6">Season Statistics</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold">
+                  {SEASON_LABELS[selectedSeason]} Statistics
+                </h2>
+                <span className="text-sm text-muted-foreground">
+                  {SEASON_DESCRIPTIONS[selectedSeason]}
+                </span>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-muted/50 rounded-xl p-4 text-center">
                   <Target className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <p className="text-2xl   font-bold">{player.stats.goals}</p>
+                  <p className="text-2xl font-bold">{seasonStats.goals}</p>
                   <p className="text-sm text-muted-foreground">Goals</p>
                 </div>
                 <div className="bg-muted/50 rounded-xl p-4 text-center">
                   <Activity className="w-6 h-6 text-secondary mx-auto mb-2" />
-                  <p className="text-2xl   font-bold">{player.stats.assists}</p>
+                  <p className="text-2xl font-bold">{seasonStats.assists}</p>
                   <p className="text-sm text-muted-foreground">Assists</p>
                 </div>
                 <div className="bg-muted/50 rounded-xl p-4 text-center">
                   <Clock className="w-6 h-6 text-accent mx-auto mb-2" />
-                  <p className="text-2xl   font-bold">
-                    {player.stats.minutesPlayed}
+                  <p className="text-2xl font-bold">
+                    {seasonStats.minutesPlayed}
                   </p>
                   <p className="text-sm text-muted-foreground">Minutes</p>
                 </div>
                 <div className="bg-muted/50 rounded-xl p-4 text-center">
                   <Shield className="w-6 h-6 text-warning mx-auto mb-2" />
-                  <p className="text-2xl   font-bold">
-                    {player.stats.matchesPlayed}
+                  <p className="text-2xl font-bold">
+                    {seasonStats.matchesPlayed}
                   </p>
                   <p className="text-sm text-muted-foreground">Matches</p>
                 </div>
               </div>
+
+              {/* Performance Metrics */}
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Goals per Match
+                    </p>
+                    <p className="text-xl font-bold">
+                      {(
+                        seasonStats.goals /
+                        Math.max(1, seasonStats.matchesPlayed)
+                      ).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Minutes per Goal
+                    </p>
+                    <p className="text-xl font-bold">
+                      {seasonStats.goals > 0
+                        ? Math.round(
+                            seasonStats.minutesPlayed / seasonStats.goals
+                          )
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
+            {/* AI Analysis */}
             <div className="glass-card p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">AI-Powered Insights</h2>
                 <AIAnalysisButton
                   player={player}
-                  onAnalysisComplete={handleAnalysisComplete}
+                  selectedSeason={selectedSeason}
+                  onAnalysisComplete={runAnalysis}
                 />
               </div>
-              {aiAnalysis ? (
+
+              {isAnalyzing && !aiAnalysis ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <Loader2 className="w-12 h-12 animate-spin text-accent" />
+                  <p className="text-sm text-muted-foreground">
+                    Analyzing {player.name}'s performance with GPT-4...
+                  </p>
+                </div>
+              ) : aiAnalysis ? (
                 <AIAnalysisPanel
                   analysis={aiAnalysis}
                   playerName={player.name}
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  Click "AI Analysis" for GPT-4 powered insights
+                  Loading AI insights for {SEASON_LABELS[selectedSeason]}...
                 </div>
               )}
             </div>
@@ -226,7 +317,7 @@ const PlayerDetailPage = () => {
                   <Shield className="w-6 h-6 text-accent" />
                 </div>
                 <div>
-                  <h3 className="  font-bold mb-1">Walrus Verified Data</h3>
+                  <h3 className="font-bold mb-1">Walrus Verified Data</h3>
                   <p className="text-sm text-muted-foreground mb-3">
                     All performance data for this player is cryptographically
                     verified and stored on Walrus decentralized storage.
