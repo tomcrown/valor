@@ -1,0 +1,1 @@
+Valor: Football Player Shares Trading PlatformThis is a decentralized football player shares trading platform built on the Sui blockchain. Think of it as a stock market for football players, where fans can buy and sell shares based on player performance.
