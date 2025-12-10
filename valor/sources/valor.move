@@ -1,46 +1,39 @@
 #[allow(lint(public_entry), unused_const)]
 module valor::valor {
+
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::balance::{Self, Balance};
     use sui::table::{Self, Table};
-    use sui::vec_set::{Self, VecSet};
     use sui::event;
     use std::string::{Self, String};
     use sui::clock::{Self, Clock};
-    use sui::hash;
-    use sui::bcs;
 
-    ///Error Codes
     const EInvalidPrice: u64 = 1;
     const EInsufficientShares: u64 = 2;
     const EUnauthorized: u64 = 3;
     const EPlayerNotFound: u64 = 4;
     const EInvalidPerformanceScore: u64 = 5;
     const EInvalidShareAmount: u64 = 6;
-    const ETooSoon: u64 = 7;
     const EInvalidBlobId: u64 = 8;
     const EInsufficientPayment: u64 = 9;
     const EInsufficientLiquidity: u64 = 10;
     const EPriceSlippage: u64 = 12;
     const EInvalidCurveParameter: u64 = 13;
     const ECircuitBreakerTriggered: u64 = 14;
-    const ETooManyHistoryRecords: u64 = 20;
     const EMaxPurchaseExceeded: u64 = 22;
-    const EBlobAlreadyUsed: u64 = 24;
-    const EInvalidDataHash: u64 = 25;
-    const EPlayerAlreadyExists: u64 = 26;const MIN_UPDATE_INTERVAL_MS: u64 = 604800000; // 7 days (weekly updates)
-    const MAX_PERFORMANCE_SCORE: u64 = 1000; // 0-1000 scale for AI scoring
-    const CURVE_STEEPNESS: u64 = 1000; // 10% premium at 100% utilization
-    const MAX_CURVE_STEEPNESS: u64 = 5000; // Max 50% premium
-    const BASIS_POINTS: u64 = 10000; // For percentage calculations
-    const MAX_SLIPPAGE_BPS: u64 = 1000; // 10% max slippage
-    const MIN_BASE_VALUE: u64 = 1000000; // 0.001 SUI minimum
-    const MAX_BASE_VALUE: u64 = 1000000000000; // 1M SUI maximum
-    const MAX_HISTORY_RECORDS: u64 = 104; // 2 years of weekly data
-    const CIRCUIT_BREAKER_THRESHOLD_BPS: u64 = 5000; // 50% change triggers halt
-    const CIRCUIT_BREAKER_COOLDOWN_MS: u64 = 3600000; // 1 hour cooldown
-    const MAX_PURCHASE_PERCENT: u64 = 2000; // Max 20% of total supply per tx
+    const EPlayerAlreadyExists: u64 = 26;
+    
+    const MAX_PERFORMANCE_SCORE: u64 = 1000;
+    const CURVE_STEEPNESS: u64 = 1000;
+    const MAX_CURVE_STEEPNESS: u64 = 5000;
+    const BASIS_POINTS: u64 = 10000;
+    const MIN_BASE_VALUE: u64 = 1000000;
+    const MAX_BASE_VALUE: u64 = 1000000000000;
+    const MAX_HISTORY_RECORDS: u64 = 24; // 6 months of weekly updates
+    const CIRCUIT_BREAKER_THRESHOLD_BPS: u64 = 10000; // 100% for testing
+    const CIRCUIT_BREAKER_COOLDOWN_MS: u64 = 900000; // 15 minutes
+    const MAX_PURCHASE_PERCENT: u64 = 3000; // 30%
     
     public struct AdminCap has key, store {
         id: UID,
@@ -58,7 +51,6 @@ module valor::valor {
         paused: bool,
         circuit_breaker_active: bool,
         circuit_breaker_until: u64,
-        used_blob_ids: VecSet<String>, 
         version: u64, 
     }
     
@@ -67,11 +59,11 @@ module valor::valor {
         name: String,
         team: String,
         position: String,
+        image_url: String,
         base_value: u64, 
         total_shares: u64,      
         circulating_shares: u64,
         performance_history: vector<PerformanceRecord>,
-        last_update_timestamp: u64,
         walrus_blob_id: String,
         active: bool,
         lifetime_volume: u64,
@@ -79,7 +71,6 @@ module valor::valor {
         all_time_low: u64,
     }
 
-    
     public struct PerformanceRecord has store, copy, drop {
         timestamp: u64,
         score: u64,
@@ -89,31 +80,25 @@ module valor::valor {
         minutes_played: u64,  
         clean_sheets: u64,    
         walrus_blob_id: String,
-        data_hash: vector<u8>,
+        base_value: u64,
     }
 
-    
     public struct PlayerShares has key, store {
         id: UID,
         player_id: ID,
         player_name: String,
+        image_url: String,
         shares: u64,
         purchase_price: u64,  
         purchase_timestamp: u64,
     }
-    
-    public struct UpdateCapability has key, store {
-        id: UID,
-        player_id: ID,
-        player_name: String,
-    }
 
-    //EVents
     public struct PlayerRegistered has copy, drop {
         player_id: ID,
         name: String,
         team: String,
         position: String,
+        image_url: String,
         base_value: u64,
         total_shares: u64,
         timestamp: u64,
@@ -157,7 +142,6 @@ module valor::valor {
         assists: u64,
         rating: u64,
         walrus_blob_id: String,
-        data_hash: vector<u8>,
         timestamp: u64,
     }
 
@@ -199,15 +183,6 @@ module valor::valor {
         timestamp: u64,
     }
 
-    public struct WalrusBlobVerified has copy, drop {
-        blob_id: String,
-        player_id: ID,
-        data_hash: vector<u8>,
-        verified: bool,
-        timestamp: u64,
-    }
-
-
     fun init(ctx: &mut TxContext) {
         let admin_address = tx_context::sender(ctx);
         
@@ -227,7 +202,6 @@ module valor::valor {
             paused: false,
             circuit_breaker_active: false,
             circuit_breaker_until: 0,
-            used_blob_ids: vec_set::empty(),
             version: 1,
         };
 
@@ -235,8 +209,6 @@ module valor::valor {
         transfer::share_object(platform);
     }
     
-    
-    //bond curve
     public fun calculate_market_price(
         base_value: u64,
         total_shares: u64,
@@ -298,27 +270,6 @@ module valor::valor {
         
         let avg_price = (current_price + future_price) / 2;
         avg_price * shares_to_sell
-    }
-    
-    
-    //walrus verification
-    public fun create_data_hash(
-        player_id: ID,
-        performance_score: u64,
-        goals: u64,
-        assists: u64,
-        rating: u64,
-        timestamp: u64
-    ): vector<u8> {
-        let mut data = vector::empty<u8>();
-        vector::append(&mut data, bcs::to_bytes(&player_id));
-        vector::append(&mut data, bcs::to_bytes(&performance_score));
-        vector::append(&mut data, bcs::to_bytes(&goals));
-        vector::append(&mut data, bcs::to_bytes(&assists));
-        vector::append(&mut data, bcs::to_bytes(&rating));
-        vector::append(&mut data, bcs::to_bytes(&timestamp));
-        
-        hash::keccak256(&data)
     }
 
     public entry fun add_liquidity(
@@ -397,15 +348,15 @@ module valor::valor {
         player.active = true;
     }
 
-
     public entry fun register_player(
         _: &AdminCap,
         platform: &mut Platform,
         name: vector<u8>,
         team: vector<u8>,
         position: vector<u8>,
-        base_value: u64,         
-        total_shares: u64,       
+        image_url: vector<u8>,
+        base_value: u64,
+        total_shares: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -426,11 +377,11 @@ module valor::valor {
             name: player_name,
             team: string::utf8(team),
             position: string::utf8(position),
+            image_url: string::utf8(image_url),
             base_value,
             total_shares,
-            circulating_shares: 0, 
+            circulating_shares: 0,
             performance_history: vector::empty(),
-            last_update_timestamp: 0,
             walrus_blob_id: string::utf8(b""),
             active: true,
             lifetime_volume: 0,
@@ -442,38 +393,31 @@ module valor::valor {
         table::add(&mut platform.player_names, player_name, player_id);
         platform.player_count = platform.player_count + 1;
 
-        let update_cap = UpdateCapability {
-            id: object::new(ctx),
-            player_id,
-            player_name,
-        };
-
         event::emit(PlayerRegistered {
             player_id,
             name: player_name,
             team: string::utf8(team),
             position: string::utf8(position),
+            image_url: string::utf8(image_url),
             base_value,
             total_shares,
             timestamp: clock::timestamp_ms(clock),
         });
-
-        transfer::transfer(update_cap, tx_context::sender(ctx));
     }
 
-    //performance update
+    // SIMPLIFIED: No cooldown, no hash validation, no blob ID tracking
     public entry fun update_base_value(
+        _: &AdminCap,
         platform: &mut Platform,
-        update_cap: &UpdateCapability,
-        new_base_value: u64,      // AI's new valuation
-        performance_score: u64,    
+        player_id: ID,
+        new_base_value: u64,
+        performance_score: u64,
         goals: u64,
         assists: u64,
         rating: u64,
         minutes_played: u64,
         clean_sheets: u64,
-        walrus_blob_id: vector<u8>,  
-        data_hash: vector<u8>,        
+        walrus_blob_id: vector<u8>,
         clock: &Clock,
         _ctx: &mut TxContext
     ) {
@@ -488,35 +432,13 @@ module valor::valor {
         assert!(new_base_value <= MAX_BASE_VALUE, EInvalidPrice);
         assert!(performance_score <= MAX_PERFORMANCE_SCORE, EInvalidPerformanceScore);
         assert!(vector::length(&walrus_blob_id) > 0, EInvalidBlobId);
-        assert!(vector::length(&data_hash) == 32, EInvalidDataHash);
-
-        let player_id = update_cap.player_id;
         assert!(table::contains(&platform.players, player_id), EPlayerNotFound);
 
         let blob_id_string = string::utf8(walrus_blob_id);
-        
-        
-        assert!(!vec_set::contains(&platform.used_blob_ids, &blob_id_string), EBlobAlreadyUsed);
-
         let player = table::borrow_mut(&mut platform.players, player_id);
         assert!(player.active, EUnauthorized);
 
         let current_time = clock::timestamp_ms(clock);
-        assert!(
-            current_time >= player.last_update_timestamp + MIN_UPDATE_INTERVAL_MS,
-            ETooSoon
-        );
-
-        let expected_hash = create_data_hash(
-            player_id,
-            performance_score,
-            goals,
-            assists,
-            rating,
-            current_time
-        );
-        assert!(data_hash == expected_hash, EInvalidDataHash);
-
         let old_base_value = player.base_value;
         let old_market_price = calculate_market_price(
             old_base_value,
@@ -535,6 +457,7 @@ module valor::valor {
             0
         };
 
+        // Circuit breaker: 100% change required to trigger (for testing)
         if (change_percent > CIRCUIT_BREAKER_THRESHOLD_BPS) {
             platform.circuit_breaker_active = true;
             platform.circuit_breaker_until = current_time + CIRCUIT_BREAKER_COOLDOWN_MS;
@@ -549,11 +472,10 @@ module valor::valor {
                 timestamp: current_time,
             });
             
-            return // Don't apply update, just trigger circuit breaker
+            return
         };
 
         player.base_value = new_base_value;
-        player.last_update_timestamp = current_time;
         player.walrus_blob_id = blob_id_string;
 
         if (new_base_value > player.all_time_high) {
@@ -579,23 +501,13 @@ module valor::valor {
             minutes_played,
             clean_sheets,
             walrus_blob_id: blob_id_string,
-            data_hash,
+            base_value: new_base_value,
         };
 
         if (vector::length(&player.performance_history) >= MAX_HISTORY_RECORDS) {
             vector::remove(&mut player.performance_history, 0);
         };
         vector::push_back(&mut player.performance_history, record);
-
-        vec_set::insert(&mut platform.used_blob_ids, blob_id_string);
-
-        event::emit(WalrusBlobVerified {
-            blob_id: blob_id_string,
-            player_id,
-            data_hash,
-            verified: true,
-            timestamp: current_time,
-        });
 
         event::emit(BaseValueUpdated {
             player_id,
@@ -610,17 +522,15 @@ module valor::valor {
             assists,
             rating,
             walrus_blob_id: blob_id_string,
-            data_hash,
             timestamp: current_time,
         });
     }
 
-    //Market
     public entry fun buy_shares(
         platform: &mut Platform,
         player_id: ID,
         shares: u64,
-        max_price_per_share: u64,  // Slippage protection
+        max_price_per_share: u64,
         payment: Coin<SUI>,
         clock: &Clock,
         ctx: &mut TxContext
@@ -657,11 +567,14 @@ module valor::valor {
             player.circulating_shares,
             platform.curve_steepness
         );
+        
         player.circulating_shares = player.circulating_shares + shares;
         player.lifetime_volume = player.lifetime_volume + total_cost;
+        
         let mut payment_balance = coin::into_balance(payment);
         let cost_balance = balance::split(&mut payment_balance, total_cost);
         balance::join(&mut platform.liquidity_pool, cost_balance);
+        
         if (balance::value(&payment_balance) > 0) {
             let return_coin = coin::from_balance(payment_balance, ctx);
             transfer::public_transfer(return_coin, tx_context::sender(ctx));
@@ -673,6 +586,7 @@ module valor::valor {
             id: object::new(ctx),
             player_id,
             player_name: player.name,
+            image_url: player.image_url,
             shares,
             purchase_price: avg_price,
             purchase_timestamp: clock::timestamp_ms(clock),
@@ -695,12 +609,11 @@ module valor::valor {
         transfer::transfer(player_shares, tx_context::sender(ctx));
     }
 
-
     public entry fun sell_shares(
         platform: &mut Platform,
         shares_obj: PlayerShares,
         shares_to_sell: u64,
-        min_price_per_share: u64,  // Slippage protection
+        min_price_per_share: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -714,7 +627,8 @@ module valor::valor {
         let PlayerShares { 
             id, 
             player_id, 
-            player_name, 
+            player_name,
+            image_url,
             shares, 
             purchase_price,
             purchase_timestamp: _
@@ -777,6 +691,7 @@ module valor::valor {
                 id: new_id,
                 player_id,
                 player_name,
+                image_url,
                 shares: remaining,
                 purchase_price,
                 purchase_timestamp: clock::timestamp_ms(clock),
@@ -812,7 +727,8 @@ module valor::valor {
         let PlayerShares { 
             id, 
             player_id, 
-            player_name: _, 
+            player_name: _,
+            image_url: _,
             shares, 
             purchase_price,
             purchase_timestamp: _
@@ -842,6 +758,7 @@ module valor::valor {
             id: object::new(ctx),
             player_id: shares_obj.player_id,
             player_name: shares_obj.player_name,
+            image_url: shares_obj.image_url,
             shares: split_amount,
             purchase_price: shares_obj.purchase_price,
             purchase_timestamp: shares_obj.purchase_timestamp,
@@ -850,8 +767,7 @@ module valor::valor {
         transfer::transfer(new_shares, tx_context::sender(ctx));
     }
 
-    // View real-time values and weekly change
-
+    // View functions
     public fun get_market_price(platform: &Platform, player_id: ID): u64 {
         let player = table::borrow(&platform.players, player_id);
         calculate_market_price(
@@ -878,18 +794,23 @@ module valor::valor {
         
         if (market_price > player.base_value) {
             let premium = ((market_price - player.base_value) * 100) / player.base_value;
-            (premium, false) // Overvalued
+            (premium, false)
         } else if (player.base_value > market_price) {
             let discount = ((player.base_value - market_price) * 100) / player.base_value;
-            (discount, true) // Undervalued - BUY signal
+            (discount, true)
         } else {
-            (0, true) // Fair value
+            (0, true)
         }
     }
 
     public fun get_player_name(platform: &Platform, player_id: ID): String {
         let player = table::borrow(&platform.players, player_id);
         player.name
+    }
+
+    public fun get_player_image_url(platform: &Platform, player_id: ID): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.image_url
     }
 
     public fun get_circulating_shares(platform: &Platform, player_id: ID): u64 {
@@ -926,6 +847,7 @@ module valor::valor {
         platform.total_volume
     }
 
+
     public fun get_player_count(platform: &Platform): u64 {
         platform.player_count
     }
@@ -947,10 +869,7 @@ module valor::valor {
         balance::value(&platform.liquidity_pool)
     }
 
-    public fun get_last_update_time(platform: &Platform, player_id: ID): u64 {
-        let player = table::borrow(&platform.players, player_id);
-        player.last_update_timestamp
-    }
+ 
 
     public fun get_walrus_blob_id(platform: &Platform, player_id: ID): String {
         let player = table::borrow(&platform.players, player_id);
@@ -997,7 +916,6 @@ module valor::valor {
         *vector::borrow(&player.performance_history, len - 1)
     }
 
-
     public fun get_share_count(shares: &PlayerShares): u64 {
         shares.shares
     }
@@ -1014,31 +932,13 @@ module valor::valor {
         shares.player_name
     }
 
+    public fun get_share_image_url(shares: &PlayerShares): String {
+        shares.image_url
+    }
+
     public fun get_share_purchase_timestamp(shares: &PlayerShares): u64 {
         shares.purchase_timestamp
     }
 
-    public entry fun transfer_update_capability(
-        cap: UpdateCapability,
-        recipient: address,
-    ) {
-        transfer::public_transfer(cap, recipient);
-    }
 
-    public entry fun burn_update_capability(cap: UpdateCapability) {
-        let UpdateCapability { id, player_id: _, player_name: _ } = cap;
-        object::delete(id);
-    }
-
-    public fun get_cap_player_id(cap: &UpdateCapability): ID {
-        cap.player_id
-    }
-
-    public fun get_player_id_by_name(platform: &Platform, name: String): Option<ID> {
-        if (table::contains(&platform.player_names, name)) {
-            option::some(*table::borrow(&platform.player_names, name))
-        } else {
-            option::none()
-        }
-    }   
 }
