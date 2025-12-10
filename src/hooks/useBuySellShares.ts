@@ -20,9 +20,9 @@ export interface BuySharesParams {
 }
 
 export interface SellSharesParams {
-  sharesObjectId: string;
-  sharesToSell: number;
+  operations: Array<{ objectId: string; amount: number }>;
   minPricePerShare: number; // in SUI
+  playerName: string;
 }
 
 export function useBuySellShares() {
@@ -46,6 +46,14 @@ export function useBuySellShares() {
     setIsProcessing(true);
 
     try {
+      console.log("🔵 Starting buy shares transaction:", {
+        playerId: params.playerId,
+        shares: params.shares,
+        maxPricePerShare: params.maxPricePerShare,
+        packageId: SUI_CONFIG.contracts.packageId,
+        platformObjectId: SUI_CONFIG.contracts.platformObjectId,
+      });
+
       const tx = new Transaction();
 
       // Set gas budget
@@ -54,6 +62,13 @@ export function useBuySellShares() {
       // Calculate payment amount (add 10% buffer for slippage)
       const estimatedCost = params.shares * params.maxPricePerShare * 1.1;
       const paymentAmount = suiToMist(estimatedCost);
+
+      console.log("💰 Payment calculation:", {
+        estimatedCost,
+        paymentAmountMist: paymentAmount,
+        shares: params.shares,
+        pricePerShare: params.maxPricePerShare,
+      });
 
       // Split coin for payment
       const [paymentCoin] = tx.splitCoins(tx.gas, [paymentAmount]);
@@ -76,45 +91,68 @@ export function useBuySellShares() {
         description: `Buying ${params.shares} shares of ${params.playerName}...`,
       });
 
+      console.log("📤 Executing transaction...");
+
       const result = await signAndExecute({
         transaction: tx,
-        options: {
-          showEffects: true,
-          showEvents: true,
-          showObjectChanges: true,
-        },
       });
 
-      // Check if transaction was successful
-      if (result.effects?.status?.status === "success") {
-        toast({
-          title: "Purchase Successful! 🎉",
-          description: `You now own ${params.shares} shares of ${params.playerName}`,
-        });
+      console.log("📥 Transaction result:", result);
+      console.log("✅ Transaction successful!");
 
-        return {
-          success: true,
-          digest: result.digest,
-          effects: result.effects,
-          events: result.events,
-        };
-      } else {
-        throw new Error("Transaction failed");
-      }
+      toast({
+        title: "Purchase Successful! 🎉",
+        description: `You now own ${params.shares} shares of ${params.playerName}`,
+      });
+
+      return {
+        success: true,
+        digest: result.digest,
+      };
     } catch (error: any) {
-      console.error("Buy shares error:", error);
+      console.error("❌ Buy shares error:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        cause: error.cause,
+      });
 
       let errorMessage = "Failed to buy shares. Please try again.";
 
-      if (error.message?.includes("EInsufficientPayment")) {
+      const errorStr = error.message || error.toString();
+
+      if (
+        errorStr.includes("InsufficientCoinBalance") ||
+        errorStr.includes("InsufficientGas")
+      ) {
+        errorMessage =
+          "Insufficient SUI balance. Please add more SUI to your wallet.";
+      } else if (errorStr.includes("EInsufficientPayment")) {
         errorMessage = "Insufficient SUI for purchase. Please add more SUI.";
-      } else if (error.message?.includes("EPriceSlippage")) {
+      } else if (errorStr.includes("EPriceSlippage")) {
         errorMessage = "Price changed too much. Please try again.";
-      } else if (error.message?.includes("EInsufficientShares")) {
+      } else if (errorStr.includes("EInsufficientShares")) {
         errorMessage = "Not enough shares available for purchase.";
-      } else if (error.message?.includes("EMaxPurchaseExceeded")) {
+      } else if (errorStr.includes("EMaxPurchaseExceeded")) {
         errorMessage =
           "Purchase amount exceeds maximum allowed (30% of total shares).";
+      } else if (errorStr.includes("EPlayerNotFound")) {
+        errorMessage =
+          "Player not found on-chain. They may need to be registered first.";
+      } else if (
+        errorStr.includes("object") &&
+        errorStr.includes("not found")
+      ) {
+        errorMessage =
+          "Contract object not found. Please check the configuration.";
+      } else if (
+        errorStr.includes("rejected") ||
+        errorStr.includes("User rejected")
+      ) {
+        errorMessage = "Transaction was rejected.";
+      } else if (error.message && error.message !== "Transaction failed") {
+        errorMessage = `Transaction failed: ${error.message}`;
       }
 
       toast({
@@ -130,7 +168,7 @@ export function useBuySellShares() {
   };
 
   /**
-   * Sell player shares
+   * Sell player shares (supports multiple share objects in ONE transaction)
    */
   const sellShares = async (params: SellSharesParams) => {
     if (!account) {
@@ -142,68 +180,104 @@ export function useBuySellShares() {
       return null;
     }
 
+    if (params.operations.length === 0) {
+      toast({
+        title: "No Shares to Sell",
+        description: "Please specify shares to sell.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     setIsProcessing(true);
 
     try {
+      const totalShares = params.operations.reduce(
+        (sum, op) => sum + op.amount,
+        0
+      );
+
+      console.log("🔵 Starting batched sell shares transaction:", {
+        operations: params.operations,
+        totalShares,
+        minPricePerShare: params.minPricePerShare,
+      });
+
       const tx = new Transaction();
 
-      // Set gas budget
-      tx.setGasBudget(SUI_CONFIG.gas.budget);
+      // Set gas budget (higher for multiple operations)
+      tx.setGasBudget(
+        SUI_CONFIG.gas.budget * Math.max(1, params.operations.length)
+      );
 
-      // Call sell_shares function
-      tx.moveCall({
-        target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
-        arguments: [
-          tx.object(SUI_CONFIG.contracts.platformObjectId), // platform
-          tx.object(params.sharesObjectId), // shares_obj
-          tx.pure.u64(params.sharesToSell), // shares_to_sell
-          tx.pure.u64(suiToMist(params.minPricePerShare)), // min_price_per_share (in MIST)
-          tx.object("0x6"), // clock
-        ],
-      });
+      // Add all sell operations to the SAME transaction
+      for (const operation of params.operations) {
+        console.log(
+          `  Adding sell operation: ${operation.amount} shares from ${operation.objectId}`
+        );
+
+        tx.moveCall({
+          target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
+          arguments: [
+            tx.object(SUI_CONFIG.contracts.platformObjectId), // platform
+            tx.object(operation.objectId), // shares_obj
+            tx.pure.u64(operation.amount), // shares_to_sell
+            tx.pure.u64(suiToMist(params.minPricePerShare)), // min_price_per_share (in MIST)
+            tx.object("0x6"), // clock
+          ],
+        });
+      }
 
       toast({
         title: "Transaction Submitted",
-        description: `Selling ${params.sharesToSell} shares...`,
+        description: `Selling ${totalShares} shares from ${params.operations.length} object(s)...`,
       });
+
+      console.log("📤 Executing batched transaction...");
 
       const result = await signAndExecute({
         transaction: tx,
-        options: {
-          showEffects: true,
-          showEvents: true,
-          showObjectChanges: true,
-        },
       });
 
-      // Check if transaction was successful
-      if (result.effects?.status?.status === "success") {
-        toast({
-          title: "Sale Successful! 💰",
-          description: `Successfully sold ${params.sharesToSell} shares`,
-        });
+      console.log("📥 Transaction result:", result);
+      console.log("✅ Transaction successful!");
 
-        return {
-          success: true,
-          digest: result.digest,
-          effects: result.effects,
-          events: result.events,
-        };
-      } else {
-        throw new Error("Transaction failed");
-      }
+      toast({
+        title: "Sale Successful! 💰",
+        description: `Successfully sold ${totalShares} shares of ${params.playerName} in ONE transaction`,
+      });
+
+      return {
+        success: true,
+        digest: result.digest,
+      };
     } catch (error: any) {
-      console.error("Sell shares error:", error);
+      console.error("❌ Sell shares error:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        cause: error.cause,
+      });
 
       let errorMessage = "Failed to sell shares. Please try again.";
 
-      if (error.message?.includes("EInsufficientShares")) {
+      const errorStr = error.message || error.toString();
+
+      if (errorStr.includes("EInsufficientShares")) {
         errorMessage = "You don't have enough shares to sell.";
-      } else if (error.message?.includes("EPriceSlippage")) {
+      } else if (errorStr.includes("EPriceSlippage")) {
         errorMessage = "Price changed too much. Please try again.";
-      } else if (error.message?.includes("EInsufficientLiquidity")) {
+      } else if (errorStr.includes("EInsufficientLiquidity")) {
         errorMessage =
           "Not enough liquidity in the pool. Try selling fewer shares.";
+      } else if (
+        errorStr.includes("rejected") ||
+        errorStr.includes("User rejected")
+      ) {
+        errorMessage = "Transaction was rejected.";
+      } else if (error.message && error.message !== "Transaction failed") {
+        errorMessage = `Transaction failed: ${error.message}`;
       }
 
       toast({
