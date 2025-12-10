@@ -382,7 +382,13 @@ function calculateWeeklyChange(
 
 export async function enrichPlayerWithContractData(
   footballPlayer: FootballPlayerData
-): Promise<Player & { onChainSeasonData?: any; onChainError?: string }> {
+): Promise<
+  Player & {
+    onChainSeasonData?: any;
+    onChainError?: string;
+    onChainPlayerId?: string;
+  }
+> {
   try {
     // Get player ID from contract
     const playerId = await getPlayerObjectId(footballPlayer.name);
@@ -439,6 +445,7 @@ export async function enrichPlayerWithContractData(
     console.log(`   Current Price: ${currentBaseValueSui} SUI`);
     console.log(`   Early Season: ${seasonData.early.baseValueSui} SUI`);
     console.log(`   Mid Season: ${seasonData.mid.baseValueSui} SUI`);
+    console.log(`   On-Chain Player ID: ${playerId}`);
 
     // Merge football stats with contract data
     return {
@@ -448,6 +455,7 @@ export async function enrichPlayerWithContractData(
       valueHistory,
       walrusProofId: onChainData.walrus_blob_id || "",
       onChainSeasonData: seasonData, // Seasonal prices + blobs
+      onChainPlayerId: playerId, // ⭐ CRITICAL: Store the on-chain player ID for transactions
     };
   } catch (error) {
     console.error(
@@ -474,7 +482,11 @@ export async function enrichPlayerWithContractData(
 // ============================================================================
 
 export async function enrichAllPlayersWithContractData(): Promise<
-  (Player & { onChainSeasonData?: any; onChainError?: string })[]
+  (Player & {
+    onChainSeasonData?: any;
+    onChainError?: string;
+    onChainPlayerId?: string;
+  })[]
 > {
   const enrichedPlayers = await Promise.allSettled(
     FOOTBALL_PLAYERS.map((player) => enrichPlayerWithContractData(player))

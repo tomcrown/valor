@@ -19,6 +19,7 @@ interface UseOnChainPlayersOptions {
 interface EnrichedPlayer extends Player {
   onChainSeasonData?: any;
   onChainError?: string;
+  onChainPlayerId?: string;
 }
 
 export function useOnChainPlayers({
@@ -46,7 +47,6 @@ export function useOnChainPlayers({
 
       const enriched = await enrichAllPlayersWithContractData();
 
-      // Count successes and failures
       const successful = enriched.filter((p) => !p.onChainError).length;
       const failed = enriched.filter((p) => p.onChainError).length;
 
@@ -69,7 +69,6 @@ export function useOnChainPlayers({
       console.error("❌ Failed to fetch contract data:", err);
       setError(err as Error);
 
-      // Fallback: Use football data only with default values
       const fallbackPlayers = FOOTBALL_PLAYERS.map((player) => ({
         ...player,
         currentValue: 1000,
@@ -86,14 +85,12 @@ export function useOnChainPlayers({
     }
   };
 
-  // Auto-fetch on mount
   useEffect(() => {
     if (autoFetch) {
       fetchPlayers();
     }
   }, []);
 
-  // Set up interval for periodic updates
   useEffect(() => {
     if (!refetchInterval) return;
 
@@ -105,7 +102,6 @@ export function useOnChainPlayers({
     return () => clearInterval(interval);
   }, [refetchInterval]);
 
-  // Helper to get enrichment stats
   const getEnrichmentStats = () => {
     const withData = enrichedPlayers.filter(
       (p) => p.onChainSeasonData && !p.onChainError
@@ -132,10 +128,6 @@ export function useOnChainPlayers({
     refetch: fetchPlayers,
   };
 }
-
-// ============================================================================
-// Hook for Single Player
-// ============================================================================
 
 interface UseOnChainPlayerOptions {
   playerId: string;
@@ -184,7 +176,6 @@ export function useOnChainPlayer({
       );
       setError(err as Error);
 
-      // Fallback to football data with defaults
       setEnrichedPlayer({
         ...footballPlayer,
         currentValue: 1000,

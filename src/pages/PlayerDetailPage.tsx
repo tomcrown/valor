@@ -71,7 +71,7 @@ const PlayerDetailPage = () => {
   } = useAutoAIAnalysis({
     player: safePlayer,
     selectedSeason,
-    autoRun: !!safePlayer, // only auto-run when data exists
+    autoRun: !!safePlayer,
   });
 
   if (!mergedPlayer) {
@@ -98,30 +98,24 @@ const PlayerDetailPage = () => {
     );
   }
 
-  // Get season-specific stats from football data
   const seasonStats = mergedPlayer.seasonalStats[selectedSeason];
 
-  // Get season-specific price from contract (or fallback to current)
   let baseValueSui = getSeasonBaseValue(mergedPlayer as any, selectedSeason);
 
-  // fallback if contract has not set seasonal prices yet
   if (!baseValueSui || baseValueSui <= 0) {
     baseValueSui = mergedPlayer.currentValue ?? 0;
   }
 
-  // Get season-specific performance score (contract or AI)
   const seasonPerformanceScore = getSeasonPerformanceScore(
     mergedPlayer as any,
     selectedSeason
   );
 
-  // Get season-specific Walrus blob ID from contract
   const seasonWalrusBlobId = getSeasonWalrusBlobId(
     mergedPlayer as any,
     selectedSeason
   );
 
-  // Display AI score in XX/100 format
   const displayAiScore =
     seasonPerformanceScore ||
     aiAnalysis?.performance_score ||
@@ -129,6 +123,11 @@ const PlayerDetailPage = () => {
     0;
 
   const isPositive = mergedPlayer.weeklyChange >= 0;
+
+  // Handler for when transaction completes - refresh player data
+  const handleTransactionComplete = () => {
+    refetchPlayer();
+  };
 
   return (
     <Layout>
@@ -315,7 +314,7 @@ const PlayerDetailPage = () => {
                 </div>
               )}
 
-            {/* Stats Grid - Seasonal (from football data) */}
+            {/* Stats Grid - Seasonal */}
             <div className="glass-card p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">
@@ -352,7 +351,6 @@ const PlayerDetailPage = () => {
                 </div>
               </div>
 
-              {/* Performance Metrics */}
               <div className="mt-4 pt-4 border-t border-border/50">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-muted/30 rounded-lg p-3">
@@ -447,14 +445,11 @@ const PlayerDetailPage = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <BuySellWidget
+                playerId={mergedPlayer.id}
+                onChainPlayerId={mergedPlayer.onChainPlayerId}
                 playerName={mergedPlayer.name}
                 currentPrice={baseValueSui}
-                onBuy={(qty) =>
-                  console.log(`Buy ${qty} shares of ${mergedPlayer.name}`)
-                }
-                onSell={(qty) =>
-                  console.log(`Sell ${qty} shares of ${mergedPlayer.name}`)
-                }
+                onTransactionComplete={handleTransactionComplete}
               />
               <div className="mt-4">
                 <button
