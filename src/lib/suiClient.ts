@@ -7,8 +7,8 @@ import { SuiGraphQLClient } from "@mysten/sui/graphql";
 import { graphql } from "@mysten/sui/graphql/schemas/latest";
 import { SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
+import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { fromBase64 } from "@mysten/sui/utils";
 import { SUI_CONFIG, suiToMist, mistToSui } from "../config/sui.config.ts";
 
 // ============================================================================
@@ -33,20 +33,12 @@ export const rpcClient = new SuiClient({
 
 export function loadAdminKeypair(): Ed25519Keypair {
   const privateKey = process.env.ADMIN_PRIVATE_KEY;
-
   if (!privateKey) {
     throw new Error("ADMIN_PRIVATE_KEY not found in environment variables");
   }
 
-  try {
-    // Handle different private key formats
-    const cleanKey = privateKey.replace("suiprivkey", "").trim();
-    const keyData = fromBase64(cleanKey);
-    return Ed25519Keypair.fromSecretKey(keyData);
-  } catch (error) {
-    console.error("Failed to load admin keypair:", error);
-    throw new Error("Invalid ADMIN_PRIVATE_KEY format");
-  }
+  const { secretKey } = decodeSuiPrivateKey(privateKey);
+  return Ed25519Keypair.fromSecretKey(secretKey);
 }
 
 // ============================================================================

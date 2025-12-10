@@ -2,30 +2,34 @@
 // ============================================================================
 // FILE: scripts/registerPlayers.ts
 // Register players on-chain from dummyData.ts
-// Usage: ts-node scripts/registerPlayers.ts --season early|mid|current
+// Usage:
+//   ts-node scripts/registerPlayers.ts --season early --baseValues "Haaland=0.1,Saka=0.07"
 // ============================================================================
-
+import dotenv from "dotenv";
+dotenv.config();
 import { Transaction } from "@mysten/sui/transactions";
 import { DUMMY_PLAYERS, type SeasonPeriod } from "../data/dummyData.ts";
-import { SUI_CONFIG, suiToMist } from "../config/sui.config.ts";
+import { SUI_CONFIG } from "../config/sui.config.ts";
 import {
   rpcClient,
   loadAdminKeypair,
   executeTransaction,
   getClockObjectId,
+  getPlatformState,
+  parsePlayerData,
 } from "../lib/suiClient.ts";
 import { walrusClient } from "../lib/walrusClient.ts";
 import { analyzePlayer, type AIAnalysis } from "../lib/openai.ts";
-import { createHash } from "crypto";
 
 // ============================================================================
-// Parse CLI Arguments
+// Helpers: parse CLI baseValues string and conversions
 // ============================================================================
 
 function parseArgs() {
   const args = process.argv.slice(2);
   let season: SeasonPeriod = "current";
   let playersToRegister: string[] = [];
+  let baseValuesRaw: string | null = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--season" && args[i + 1]) {
@@ -34,34 +38,77 @@ function parseArgs() {
     } else if (args[i] === "--players" && args[i + 1]) {
       playersToRegister = args[i + 1].split(",");
       i++;
+    } else if (args[i] === "--baseValues" && args[i + 1]) {
+      baseValuesRaw = args[i + 1];
+      i++;
     }
   }
 
-  return { season, playersToRegister };
+  const manualBaseValues = baseValuesRaw
+    ? parseBaseValuesString(baseValuesRaw)
+    : {};
+
+  return { season, playersToRegister, manualBaseValues };
 }
 
-// ============================================================================
-// Calculate Data Hash (matches Move contract)
-// ============================================================================
+/**
+ * Parse "Haaland=0.1,Messi=0.12" => { haaland: 0.1, messi: 0.12 }
+ * Keys lower-cased for flexible matching.
+ */
+function parseBaseValuesString(s: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  const pairs = s
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  for (const pair of pairs) {
+    const [rawName, rawVal] = pair.split("=");
+    if (!rawName || !rawVal) continue;
+    const name = rawName.trim().toLowerCase();
+    const val = Number(rawVal.trim());
+    if (isNaN(val)) {
+      console.warn(`Warning: invalid base value for ${rawName}: ${rawVal}`);
+      continue;
+    }
+    out[name] = val;
+  }
+  return out;
+}
 
-function calculateDataHash(
-  playerId: string,
-  performanceScore: number,
-  goals: number,
-  assists: number,
-  rating: number,
-  timestamp: number
-): string {
-  const data = Buffer.concat([
-    Buffer.from(playerId),
-    Buffer.from(performanceScore.toString()),
-    Buffer.from(goals.toString()),
-    Buffer.from(assists.toString()),
-    Buffer.from(rating.toString()),
-    Buffer.from(timestamp.toString()),
-  ]);
+/**
+ * Find matching base value for a player name
+ * Supports partial matching (e.g., "Haaland" matches "Erling Haaland")
+ */
+function findBaseValueForPlayer(
+  playerName: string,
+  manualBaseValues: Record<string, number>
+): number | null {
+  const lowerPlayerName = playerName.toLowerCase();
 
-  return "0x" + createHash("sha3-256").update(data).digest("hex");
+  // Try exact match first
+  if (manualBaseValues[lowerPlayerName] != null) {
+    return manualBaseValues[lowerPlayerName];
+  }
+
+  // Try partial match - check if any key is contained in the player name
+  for (const [key, value] of Object.entries(manualBaseValues)) {
+    if (lowerPlayerName.includes(key)) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+/** Convert SUI number -> MIST bigint */
+function suiToMistBigInt(sui: number): bigint {
+  return BigInt(Math.floor(sui * 1_000_000_000));
+}
+
+/** Convert on-chain base_value (MIST bigint) -> frontend "currentValue" */
+function onChainBaseMistToFrontendCurrentValue(baseValueMist: bigint): number {
+  const baseInSui = Number(baseValueMist) / 1_000_000_000;
+  return baseInSui * 1000;
 }
 
 // ============================================================================
@@ -69,22 +116,70 @@ function calculateDataHash(
 // ============================================================================
 
 function calculateBaseValue(aiScore: number, currentValue: number): bigint {
-  // Convert current frontend value to base value
-  // Your frontend values are in the 1000-3000 range
-  // Convert to MIST (multiply by 1M for proper on-chain value)
-  const baseInSui = currentValue / 1000; // Normalize
+  const baseInSui = currentValue / 1000;
   const adjustedForAI = baseInSui * (aiScore / 100);
 
-  // Ensure within contract limits
   const finalValue = Math.max(
     Number(SUI_CONFIG.market.minBaseValue),
     Math.min(
-      adjustedForAI * 1_000_000_000, // Convert to MIST
+      adjustedForAI * 1_000_000_000,
       Number(SUI_CONFIG.market.maxBaseValue)
     )
   );
 
   return BigInt(Math.floor(finalValue));
+}
+
+// ============================================================================
+// Helper: fetch on-chain player object id from platform.player_names table
+// ============================================================================
+
+async function getPlayerObjectIdFromPlatform(
+  playerName: string
+): Promise<string | null> {
+  try {
+    const platformJson = (await getPlatformState()) as Record<string, any>;
+
+    const tryPaths = [
+      platformJson?.player_names,
+      platformJson?.fields?.player_names,
+      platformJson?.contents?.json?.player_names,
+      platformJson?.contents?.json?.fields?.player_names,
+    ];
+
+    for (const candidate of tryPaths) {
+      if (!candidate) continue;
+
+      // Case 1: plain object mapping
+      if (typeof candidate === "object" && !Array.isArray(candidate)) {
+        const lower = playerName.toLowerCase();
+        for (const [k, v] of Object.entries(candidate)) {
+          if (k.toLowerCase() === lower) return String(v);
+        }
+      }
+
+      // Case 2: entries array
+      if (Array.isArray(candidate)) {
+        for (const entry of candidate) {
+          const key = entry?.key ?? entry?.name ?? entry?.k ?? null;
+          let value = entry?.value ?? entry?.v ?? null;
+          if (!key || !value) continue;
+
+          if (String(key).toLowerCase() === playerName.toLowerCase()) {
+            if (typeof value === "string") return value;
+            if (typeof value === "object" && value.objectId)
+              return value.objectId;
+            if (typeof value === "object" && value.id) return value.id;
+          }
+        }
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.error("Failed to read platform.player_names:", err);
+    return null;
+  }
 }
 
 // ============================================================================
@@ -94,14 +189,14 @@ function calculateBaseValue(aiScore: number, currentValue: number): bigint {
 async function registerPlayer(
   playerData: (typeof DUMMY_PLAYERS)[0],
   season: SeasonPeriod,
-  keypair: ReturnType<typeof loadAdminKeypair>
+  keypair: ReturnType<typeof loadAdminKeypair>,
+  manualBaseValues: Record<string, number>
 ): Promise<{ success: boolean; playerId?: string; blobId?: string }> {
   try {
     console.log(`\n${"=".repeat(70)}`);
     console.log(`🏃 Registering: ${playerData.name}`);
     console.log("=".repeat(70));
 
-    // Get stats for the selected season
     const seasonStats = playerData.seasonalStats[season];
 
     console.log(`📊 Season: ${season.toUpperCase()}`);
@@ -127,28 +222,73 @@ async function registerPlayer(
     console.log(`   AI Score: ${aiAnalysis.performance_score}/100`);
     console.log(`   Trend: ${aiAnalysis.performance_trend}`);
 
-    // Step 2: Calculate base value
-    const baseValue = calculateBaseValue(
-      aiAnalysis.performance_score,
-      playerData.currentValue
+    // Step 2: Determine base value
+    let baseValueMist: bigint;
+
+    // FIXED: Use partial matching function
+    const manualValue = findBaseValueForPlayer(
+      playerData.name,
+      manualBaseValues
     );
 
-    console.log(
-      `\n💰 Calculated base value: ${Number(baseValue) / 1_000_000_000} SUI`
-    );
+    if (season === "early" && manualValue != null) {
+      // Manual override in SUI
+      baseValueMist = suiToMistBigInt(manualValue);
+      console.log(
+        `\n💰 EARLY - manual base value: ${manualValue} SUI (${baseValueMist} MIST)`
+      );
+    } else if (season === "early") {
+      // No manual value -> use AI calculation
+      baseValueMist = calculateBaseValue(
+        aiAnalysis.performance_score,
+        playerData.currentValue
+      );
+      console.log(
+        `\n💰 EARLY - AI calculated base value: ${
+          Number(baseValueMist) / 1_000_000_000
+        } SUI`
+      );
+    } else {
+      // MID or CURRENT -> fetch previous on-chain base_value
+      console.log("\n🔎 Fetching previous on-chain base value...");
+      const playerObjId = await getPlayerObjectIdFromPlatform(playerData.name);
+      if (!playerObjId) {
+        throw new Error(
+          `Player object ID not found on-chain for ${playerData.name}`
+        );
+      }
 
-    // Step 3: Create data hash
-    const timestamp = Date.now();
-    const dataHash = calculateDataHash(
-      playerData.id,
-      aiAnalysis.performance_score,
-      seasonStats.goals,
-      seasonStats.assists,
-      Math.round((aiAnalysis.recent_form?.goals_per_90 || 0) * 100), // Convert to integer
-      timestamp
-    );
+      const onChainObj = await rpcClient.getObject({
+        id: playerObjId,
+        options: { showContent: true },
+      });
 
-    console.log(`\n🔐 Data hash: ${dataHash}`);
+      const parsed = parsePlayerData(onChainObj);
+      if (!parsed) {
+        throw new Error(
+          `Failed to parse on-chain Player object for ${playerData.name}`
+        );
+      }
+
+      const previousBaseMist: bigint = parsed.base_value;
+      console.log(
+        `   🔁 Previous on-chain base value: ${
+          Number(previousBaseMist) / 1_000_000_000
+        } SUI`
+      );
+
+      const frontendCurrentValue =
+        onChainBaseMistToFrontendCurrentValue(previousBaseMist);
+      baseValueMist = calculateBaseValue(
+        aiAnalysis.performance_score,
+        frontendCurrentValue
+      );
+      console.log(
+        `\n💰 ${season.toUpperCase()} - AI adjusted base value: ${
+          Number(baseValueMist) / 1_000_000_000
+        } SUI`
+      );
+    }
 
     // Step 4: Upload to Walrus
     console.log("\n📦 Uploading to Walrus...");
@@ -168,8 +308,7 @@ async function registerPlayer(
         clean_sheets: 0,
       },
       aiAnalysis,
-      Number(baseValue),
-      dataHash
+      Number(baseValueMist)
     );
 
     console.log(`   ✅ Walrus Blob ID: ${blobId}`);
@@ -179,6 +318,12 @@ async function registerPlayer(
 
     const tx = new Transaction();
     const clockId = await getClockObjectId();
+    const imageUrl = playerData.imageUrl ?? "";
+
+    // Move contract signature:
+    // register_player(_: &AdminCap, platform: &mut Platform, name: vector<u8>,
+    //                 team: vector<u8>, position: vector<u8>, image_url: vector<u8>,
+    //                 base_value: u64, total_shares: u64, clock: &Clock)
 
     tx.moveCall({
       target: `${SUI_CONFIG.contracts.packageId}::valor::register_player`,
@@ -188,7 +333,8 @@ async function registerPlayer(
         tx.pure.string(playerData.name),
         tx.pure.string(playerData.club),
         tx.pure.string(playerData.position),
-        tx.pure.u64(baseValue),
+        tx.pure.string(imageUrl),
+        tx.pure.u64(baseValueMist),
         tx.pure.u64(SUI_CONFIG.market.defaultShares),
         tx.object(clockId),
       ],
@@ -202,7 +348,6 @@ async function registerPlayer(
       console.log(`   ✅ Transaction successful!`);
       console.log(`   📝 Digest: ${result.digest}`);
 
-      // Extract player ID from events
       const playerRegisteredEvent = result.events?.find((e) =>
         e.type.includes("PlayerRegistered")
       );
@@ -233,12 +378,20 @@ async function main() {
   console.log("🚀 Valor Player Registration Script");
   console.log("=".repeat(70));
 
-  const { season, playersToRegister } = parseArgs();
+  const { season, playersToRegister, manualBaseValues } = parseArgs();
 
   console.log(`\n📅 Season Period: ${season.toUpperCase()}`);
   console.log(`🌐 Network: ${SUI_CONFIG.network}`);
   console.log(`📦 Package ID: ${SUI_CONFIG.contracts.packageId}`);
   console.log(`🏛️  Platform ID: ${SUI_CONFIG.contracts.platformObjectId}`);
+
+  // Show manual base values if provided
+  if (Object.keys(manualBaseValues).length > 0) {
+    console.log(`\n💰 Manual Base Values (SUI):`);
+    for (const [name, value] of Object.entries(manualBaseValues)) {
+      console.log(`   ${name}: ${value} SUI`);
+    }
+  }
 
   // Load admin keypair
   console.log("\n🔑 Loading admin keypair...");
@@ -277,7 +430,12 @@ async function main() {
   }> = [];
 
   for (const player of playersToProcess) {
-    const result = await registerPlayer(player, season, keypair);
+    const result = await registerPlayer(
+      player,
+      season,
+      keypair,
+      manualBaseValues
+    );
     results.push({
       player: player.name,
       success: result.success,
@@ -285,7 +443,7 @@ async function main() {
       blobId: result.blobId,
     });
 
-    // Rate limiting: wait 2 seconds between registrations
+    // Rate limiting
     if (playersToProcess.indexOf(player) < playersToProcess.length - 1) {
       console.log("\n⏳ Waiting 2s before next registration...");
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -314,12 +472,11 @@ async function main() {
   console.log("\n✨ Registration complete!\n");
 }
 
-// Run script
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
     console.error("\n❌ Script failed:", error);
     process.exit(1);
   });
 }
 
-export { registerPlayer, calculateBaseValue, calculateDataHash };
+export { registerPlayer, calculateBaseValue };

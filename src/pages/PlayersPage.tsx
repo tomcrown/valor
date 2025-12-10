@@ -6,18 +6,20 @@ import {
   Zap,
   AlertCircle,
   Calendar,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 import PlayerCard from "@/components/PlayerCard";
 import {
-  DUMMY_PLAYERS,
   getTopPerformers,
   getRisingPlayers,
   getUndervaluedPlayers,
   type SeasonPeriod,
 } from "@/data/dummyData";
+import { useOnChainPlayers } from "@/hooks/useOnChainPlayers";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -43,9 +45,9 @@ const seasonOptions: {
   label: string;
   description: string;
 }[] = [
-  { id: "early", label: "Early Season", description: "Matches 1-3" },
-  { id: "mid", label: "Mid Season", description: "Matches 4-9" },
-  { id: "current", label: "Current Season", description: "All matches" },
+  { id: "early", label: "Early Season", description: "Initial Performance" },
+  { id: "mid", label: "Mid Season", description: "Mid-Season Form" },
+  { id: "current", label: "Current Season", description: "Latest Performance" },
 ];
 
 const PlayersPage = () => {
@@ -53,23 +55,48 @@ const PlayersPage = () => {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [selectedSeason, setSelectedSeason] = useState<SeasonPeriod>("current");
 
-  const filteredPlayers = useMemo(() => {
-    let players = DUMMY_PLAYERS;
+  // Fetch merged players (football stats + contract data)
+  const {
+    players: mergedPlayers,
+    isLoading,
+    error,
+    lastFetched,
+    stats,
+    refetch,
+  } = useOnChainPlayers({
+    autoFetch: true,
+    refetchInterval: 60000, // Refresh every minute
+  });
 
+  const filteredPlayers = useMemo(() => {
+    let players = mergedPlayers;
+
+    // Apply filter
     switch (activeFilter) {
       case "top":
-        players = getTopPerformers();
+        // Top performers based on AI score
+        players = players
+          .filter((p) => p.aiScore >= 80)
+          .sort((a, b) => b.aiScore - a.aiScore);
         break;
       case "rising":
-        players = getRisingPlayers();
+        // Rising based on weekly change
+        players = players
+          .filter((p) => p.weeklyChange > 5)
+          .sort((a, b) => b.weeklyChange - a.weeklyChange);
         break;
       case "undervalued":
-        players = getUndervaluedPlayers();
+        // High AI score but low price change
+        players = players
+          .filter((p) => p.aiScore > 85 && p.weeklyChange < 5)
+          .sort((a, b) => b.aiScore - a.aiScore);
         break;
       default:
-        players = DUMMY_PLAYERS;
+        // All players
+        players = [...mergedPlayers];
     }
 
+    // Apply search
     if (searchQuery) {
       players = players.filter(
         (p) =>
@@ -80,13 +107,21 @@ const PlayersPage = () => {
     }
 
     return players;
-  }, [activeFilter, searchQuery]);
+  }, [activeFilter, searchQuery, mergedPlayers]);
 
   const handleBuy = (playerId: string) => {
-    const player = DUMMY_PLAYERS.find((p) => p.id === playerId);
+    const player = mergedPlayers.find((p) => p.id === playerId);
     toast({
       title: "Order Initiated",
       description: `Opening buy order for ${player?.name}...`,
+    });
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    toast({
+      title: "Refreshing Data",
+      description: "Fetching latest contract prices and football stats...",
     });
   };
 
@@ -95,12 +130,51 @@ const PlayersPage = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
-            Player <span className="gradient-text">Market</span>
-          </h1>
-          <p className="text-muted-foreground">
-            Browse and trade shares of top football players worldwide
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                Player <span className="gradient-text">Market</span>
+              </h1>
+              <p className="text-muted-foreground">
+                Browse and trade shares of top football players worldwide
+              </p>
+            </div>
+
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              {isLoading ? "Updating..." : "Refresh"}
+            </Button>
+          </div>
+
+          {lastFetched && (
+            <div className="mt-2 flex items-center gap-4">
+              <p className="text-xs text-muted-foreground">
+                Last updated: {lastFetched.toLocaleTimeString()}
+              </p>
+              {stats.enriched > 0 && (
+                <p className="text-xs text-success">
+                  ✓ {stats.enriched}/{stats.total} players with contract data
+                </p>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              Failed to fetch contract data. Using football stats with default
+              prices.
+            </div>
+          )}
         </div>
 
         {/* Season Toggle */}
@@ -132,7 +206,6 @@ const PlayersPage = () => {
 
         {/* Search and Filters */}
         <div className="flex flex-col lg:flex-row gap-4 mb-8">
-          {/* Search */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
@@ -144,7 +217,6 @@ const PlayersPage = () => {
             />
           </div>
 
-          {/* Filter Buttons */}
           <div className="flex flex-wrap gap-2">
             {filters.map((filter) => (
               <Button
@@ -179,6 +251,16 @@ const PlayersPage = () => {
           </p>
         </div>
 
+        {/* Loading State */}
+        {isLoading && filteredPlayers.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <Loader2 className="w-12 h-12 animate-spin text-accent" />
+            <p className="text-muted-foreground">
+              Loading football stats and contract data...
+            </p>
+          </div>
+        )}
+
         {/* Players Grid */}
         {filteredPlayers.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -196,7 +278,7 @@ const PlayersPage = () => {
               </div>
             ))}
           </div>
-        ) : (
+        ) : !isLoading ? (
           <div className="glass-card p-12 text-center">
             <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-bold mb-2">No Players Found</h3>
@@ -204,7 +286,7 @@ const PlayersPage = () => {
               Try adjusting your search or filter criteria
             </p>
           </div>
-        )}
+        ) : null}
       </div>
     </Layout>
   );

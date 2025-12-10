@@ -1,22 +1,25 @@
 #!/usr/bin/env ts-node
 // ============================================================================
 // FILE: scripts/updateBaseValues.ts
-// Update player base values on-chain
-// Usage: ts-node scripts/updateBaseValues.ts --season mid --player "Erling Haaland"
+// Update player base values on-chain (Simplified - No UpdateCapability needed)
+// Usage:
+//   ts-node scripts/updateBaseValues.ts --season mid --players "Erling Haaland"
 // ============================================================================
 
+import dotenv from "dotenv";
+dotenv.config();
 import { Transaction } from "@mysten/sui/transactions";
-import { DUMMY_PLAYERS, type SeasonPeriod } from "../data/dummyData";
-import { SUI_CONFIG } from "../config/sui.config";
+import { DUMMY_PLAYERS, type SeasonPeriod } from "../data/dummyData.ts";
+import { SUI_CONFIG } from "../config/sui.config.ts";
 import {
   rpcClient,
   loadAdminKeypair,
   executeTransaction,
   getClockObjectId,
-} from "../lib/suiClient";
-import { walrusClient } from "../lib/walrusClient";
-import { analyzePlayer } from "../lib/openai";
-import { calculateBaseValue, calculateDataHash } from "./registerPlayers";
+} from "../lib/suiClient.ts";
+import { walrusClient } from "../lib/walrusClient.ts";
+import { analyzePlayer } from "../lib/openai.ts";
+import { calculateBaseValue } from "../scripts/registerPlayers.ts";
 
 // ============================================================================
 // Parse CLI Arguments
@@ -26,7 +29,6 @@ function parseArgs() {
   const args = process.argv.slice(2);
   let season: SeasonPeriod = "current";
   let playersToUpdate: string[] = [];
-  let updateCapId: string | null = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--season" && args[i + 1]) {
@@ -35,87 +37,250 @@ function parseArgs() {
     } else if (args[i] === "--players" && args[i + 1]) {
       playersToUpdate = args[i + 1].split(",");
       i++;
-    } else if (args[i] === "--update-cap" && args[i + 1]) {
-      updateCapId = args[i + 1];
-      i++;
     }
   }
 
-  return { season, playersToUpdate, updateCapId };
+  return { season, playersToUpdate };
 }
 
-// ============================================================================
-// Get UpdateCapability for Player
-// ============================================================================
-
-async function getUpdateCapability(
-  playerName: string,
-  ownerAddress: string
+/**
+ * FIXED VERSION: Find the on-chain Player object ID from platform.player_names table.
+ *
+ * This function properly handles the dynamic field lookup for Sui tables.
+ */
+async function getPlayerObjectIdFromPlatform(
+  playerName: string
 ): Promise<string | null> {
   try {
-    // Query for UpdateCapability objects owned by admin
-    const objects = await rpcClient.getOwnedObjects({
-      owner: ownerAddress,
-      filter: {
-        StructType: `${SUI_CONFIG.contracts.packageId}::valor::UpdateCapability`,
-      },
-      options: {
-        showContent: true,
-      },
+    const platformId = SUI_CONFIG.contracts.platformObjectId;
+
+    // Get platform object
+    const platform = await rpcClient.getObject({
+      id: platformId,
+      options: { showContent: true },
     });
 
-    // Find the capability for this player
-    for (const obj of objects.data) {
-      if ((obj.data?.content as any)?.type === "moveObject") {
-        const fields = (obj.data?.content as any).fields;
-        if (fields && fields.player_name === playerName) {
-          return obj.data?.objectId ?? null;
+    const content = platform?.data?.content as any;
+    const tableId = content?.fields?.player_names?.fields?.id?.id;
+
+    if (!tableId) {
+      console.error("   ❌ player_names table ID not found");
+      return null;
+    }
+
+    console.log(`   📋 Table ID: ${tableId}`);
+
+    // FIRST: Try to list all dynamic fields to see what's available
+    try {
+      const allFields = await rpcClient.getDynamicFields({
+        parentId: tableId,
+      });
+
+      console.log(
+        `   📊 Found ${allFields.data.length} total players in table`
+      );
+
+      // Look for exact match (case-insensitive)
+      const matchingField = allFields.data.find(
+        (f) => String(f.name.value).toLowerCase() === playerName.toLowerCase()
+      );
+
+      if (matchingField) {
+        console.log(
+          `   ✅ Found matching field for: ${matchingField.name.value}`
+        );
+
+        // Now get the actual value (player ID) from this field
+        const fieldObject = await rpcClient.getDynamicFieldObject({
+          parentId: tableId,
+          name: matchingField.name,
+        });
+
+        if (fieldObject?.data?.content) {
+          const fieldContent = fieldObject.data.content as any;
+          const playerId = fieldContent?.fields?.value;
+
+          if (playerId) {
+            console.log(`   🎯 Player ID: ${playerId}`);
+            return String(playerId);
+          }
+        }
+      } else {
+        console.error(`   ❌ No player found with name: "${playerName}"`);
+        console.log(`   📝 Available players:`);
+        allFields.data.forEach((f) => {
+          console.log(`      - ${f.name.value}`);
+        });
+        return null;
+      }
+    } catch (listErr: any) {
+      console.error(`   ❌ Error listing fields: ${listErr.message}`);
+    }
+
+    // FALLBACK: Try direct query with exact string
+    try {
+      const field = await rpcClient.getDynamicFieldObject({
+        parentId: tableId,
+        name: {
+          type: "0x1::string::String",
+          value: playerName,
+        },
+      });
+
+      if (field?.data?.content) {
+        const fieldContent = field.data.content as any;
+        const playerId = fieldContent?.fields?.value;
+        return playerId ? String(playerId) : null;
+      }
+    } catch (directErr: any) {
+      console.error(`   ⚠️  Direct query failed: ${directErr.message}`);
+    }
+
+    return null;
+  } catch (err: any) {
+    console.error(`   ❌ Error looking up player: ${err.message}`);
+    return null;
+  }
+}
+
+// Alternative approach: Get player ID by querying the players table directly
+async function getAllRegisteredPlayers(): Promise<Map<string, string>> {
+  const playerMap = new Map<string, string>();
+
+  try {
+    const platformId = SUI_CONFIG.contracts.platformObjectId;
+    const platform = await rpcClient.getObject({
+      id: platformId,
+      options: { showContent: true },
+    });
+
+    const content = platform?.data?.content as any;
+    const tableId = content?.fields?.player_names?.fields?.id?.id;
+
+    if (!tableId) {
+      console.error("❌ player_names table not found");
+      return playerMap;
+    }
+
+    const allFields = await rpcClient.getDynamicFields({
+      parentId: tableId,
+    });
+
+    for (const field of allFields.data) {
+      const playerName = String(field.name.value);
+
+      const fieldObject = await rpcClient.getDynamicFieldObject({
+        parentId: tableId,
+        name: field.name,
+      });
+
+      if (fieldObject?.data?.content) {
+        const fieldContent = fieldObject.data.content as any;
+        const playerId = fieldContent?.fields?.value;
+
+        if (playerId) {
+          playerMap.set(playerName, String(playerId));
         }
       }
     }
 
-    return null;
-  } catch (error) {
-    console.error("Failed to find UpdateCapability:", error);
-    return null;
+    return playerMap;
+  } catch (err: any) {
+    console.error("Error fetching all players:", err.message);
+    return playerMap;
   }
 }
-
 // ============================================================================
 // Update Single Player
 // ============================================================================
 
 async function updatePlayer(
-  playerData: (typeof DUMMY_PLAYERS)[0],
+  playerInfo: (typeof DUMMY_PLAYERS)[0],
   season: SeasonPeriod,
-  updateCapId: string,
   keypair: ReturnType<typeof loadAdminKeypair>
 ): Promise<boolean> {
   try {
     console.log(`\n${"=".repeat(70)}`);
-    console.log(`📊 Updating: ${playerData.name}`);
+    console.log(`📊 Updating: ${playerInfo.name}`);
     console.log("=".repeat(70));
 
     // Get stats for the selected season
-    const seasonStats = playerData.seasonalStats[season];
+    const seasonStats = playerInfo.seasonalStats[season];
 
     console.log(`📅 Season: ${season.toUpperCase()}`);
     console.log(`   Goals: ${seasonStats.goals}`);
     console.log(`   Assists: ${seasonStats.assists}`);
     console.log(`   Matches: ${seasonStats.matchesPlayed}`);
 
-    // Step 1: Run AI Analysis
+    // Step 1: Get player ID from platform
+    console.log("\n🔍 Looking up player on-chain...");
+    const playerObjId = await getPlayerObjectIdFromPlatform(playerInfo.name);
+    if (!playerObjId) {
+      console.error(`   ❌ Player not found on-chain: ${playerInfo.name}`);
+      return false;
+    }
+    console.log(`   ✅ Player ID: ${playerObjId}`);
+
+    // Step 2: Fetch current player data from platform table
+    console.log(`   🔍 Fetching player data from platform...`);
+
+    const platformId = SUI_CONFIG.contracts.platformObjectId;
+    const platform = await rpcClient.getObject({
+      id: platformId,
+      options: { showContent: true },
+    });
+
+    const platformContent = platform?.data?.content as any;
+    const playersTableId = platformContent?.fields?.players?.fields?.id?.id;
+
+    if (!playersTableId) {
+      console.error(`   ❌ Could not find players table`);
+      return false;
+    }
+
+    // Query the player from the players table
+    const playerField = await rpcClient.getDynamicFieldObject({
+      parentId: playersTableId,
+      name: {
+        type: "0x2::object::ID",
+        value: playerObjId,
+      },
+    });
+
+    if (!playerField?.data) {
+      console.error(`   ❌ Could not fetch player data`);
+      return false;
+    }
+
+    const onChainPlayerData = (playerField.data.content as any)?.fields?.value
+      ?.fields;
+    if (!onChainPlayerData) {
+      console.error(`   ❌ Could not parse player data`);
+      return false;
+    }
+
+    const previousBaseMist = BigInt(onChainPlayerData.base_value);
+    const frontendCurrentValue =
+      (Number(previousBaseMist) / 1_000_000_000) * 1000;
+
+    console.log(
+      `   📊 Current base value: ${
+        Number(previousBaseMist) / 1_000_000_000
+      } SUI`
+    );
+
+    // Step 3: Run AI Analysis
     console.log("\n🤖 Running AI analysis...");
     const aiAnalysis = await analyzePlayer({
-      name: playerData.name,
-      position: playerData.position,
-      team: playerData.club,
+      name: playerInfo.name,
+      position: playerInfo.position,
+      team: playerInfo.club,
       goals: seasonStats.goals,
       assists: seasonStats.assists,
       minutesPlayed: seasonStats.minutesPlayed,
       matchesPlayed: seasonStats.matchesPlayed,
-      currentValue: playerData.currentValue,
-      weeklyChange: playerData.weeklyChange,
+      currentValue: frontendCurrentValue,
+      weeklyChange: playerInfo.weeklyChange,
       season: season,
     });
 
@@ -123,41 +288,41 @@ async function updatePlayer(
     console.log(`   Trend: ${aiAnalysis.performance_trend}`);
     console.log(`   Form: ${aiAnalysis.form_status}`);
 
-    // Step 2: Calculate new base value
+    // Step 4: Calculate new base value
     const newBaseValue = calculateBaseValue(
       aiAnalysis.performance_score,
-      playerData.currentValue
+      frontendCurrentValue
     );
 
     console.log(
       `\n💰 New base value: ${Number(newBaseValue) / 1_000_000_000} SUI`
     );
+    const changePercent =
+      Number(previousBaseMist) > 0
+        ? ((Number(newBaseValue) - Number(previousBaseMist)) /
+            Number(previousBaseMist)) *
+          100
+        : 0;
+    console.log(
+      `   📈 Change: ${changePercent > 0 ? "+" : ""}${changePercent.toFixed(
+        2
+      )}%`
+    );
 
-    // Step 3: Create data hash
+    // Step 5: Create data hash
     const timestamp = Date.now();
     const rating = Math.round(
       (aiAnalysis.recent_form?.goals_per_90 || 0) * 100
     );
 
-    const dataHash = calculateDataHash(
-      playerData.id,
-      aiAnalysis.performance_score,
-      seasonStats.goals,
-      seasonStats.assists,
-      rating,
-      timestamp
-    );
-
-    console.log(`🔐 Data hash: ${dataHash}`);
-
-    // Step 4: Upload to Walrus
+    // Step 6: Upload to Walrus
     console.log("\n📦 Uploading to Walrus...");
     const blobId = await walrusClient.uploadPlayerPerformance(
-      playerData.id,
-      playerData.name,
-      playerData.club,
-      playerData.position,
-      playerData.nationality ?? "Unknown",
+      playerInfo.id,
+      playerInfo.name,
+      playerInfo.club,
+      playerInfo.position,
+      playerInfo.nationality ?? "Unknown",
       season,
       {
         goals: seasonStats.goals,
@@ -168,36 +333,33 @@ async function updatePlayer(
         clean_sheets: 0,
       },
       aiAnalysis,
-      Number(newBaseValue),
-      dataHash
+      Number(newBaseValue)
     );
 
     console.log(`   ✅ Walrus Blob ID: ${blobId}`);
 
-    // Step 5: Update on-chain
+    // Step 7: Update on-chain
     console.log("\n⛓️  Updating on Sui blockchain...");
 
     const tx = new Transaction();
     const clockId = await getClockObjectId();
 
-    // Convert data hash to bytes (remove 0x prefix)
-    const dataHashBytes = Array.from(Buffer.from(dataHash.slice(2), "hex"));
-
+    // UPDATED: Now takes AdminCap and player_id as first arguments
     tx.moveCall({
       target: `${SUI_CONFIG.contracts.packageId}::valor::update_base_value`,
       arguments: [
-        tx.object(SUI_CONFIG.contracts.platformObjectId),
-        tx.object(updateCapId),
-        tx.pure.u64(newBaseValue),
-        tx.pure.u64(aiAnalysis.performance_score),
-        tx.pure.u64(seasonStats.goals),
-        tx.pure.u64(seasonStats.assists),
-        tx.pure.u64(rating),
-        tx.pure.u64(seasonStats.minutesPlayed),
+        tx.object(SUI_CONFIG.contracts.adminCapId), // AdminCap
+        tx.object(SUI_CONFIG.contracts.platformObjectId), // Platform
+        tx.pure.address(playerObjId), // player_id (ID)
+        tx.pure.u64(newBaseValue), // new_base_value
+        tx.pure.u64(aiAnalysis.performance_score), // performance_score
+        tx.pure.u64(seasonStats.goals), // goals
+        tx.pure.u64(seasonStats.assists), // assists
+        tx.pure.u64(rating), // rating
+        tx.pure.u64(seasonStats.minutesPlayed), // minutes_played
         tx.pure.u64(0), // clean_sheets
-        tx.pure.string(blobId),
-        tx.pure.vector("u8", dataHashBytes),
-        tx.object(clockId),
+        tx.pure.string(blobId), // walrus_blob_id
+        tx.object(clockId), // clock
       ],
     });
 
@@ -224,7 +386,7 @@ async function updatePlayer(
       throw new Error("Transaction failed");
     }
   } catch (error: any) {
-    console.error(`\n❌ Failed to update ${playerData.name}:`, error.message);
+    console.error(`\n❌ Failed to update ${playerInfo.name}:`, error.message);
     return false;
   }
 }
@@ -237,7 +399,7 @@ async function main() {
   console.log("🔄 Valor Base Value Update Script");
   console.log("=".repeat(70));
 
-  const { season, playersToUpdate, updateCapId } = parseArgs();
+  const { season, playersToUpdate } = parseArgs();
 
   console.log(`\n📅 Season Period: ${season.toUpperCase()}`);
   console.log(`🌐 Network: ${SUI_CONFIG.network}`);
@@ -277,30 +439,13 @@ async function main() {
   const results: Array<{ player: string; success: boolean }> = [];
 
   for (const player of playersToProcess) {
-    // Get or use provided UpdateCapability
-    let capId = updateCapId;
-
-    if (!capId) {
-      console.log(`\n🔍 Finding UpdateCapability for ${player.name}...`);
-      capId = await getUpdateCapability(player.name, address);
-
-      if (!capId) {
-        console.error(`   ❌ No UpdateCapability found for ${player.name}`);
-        console.error(`   ℹ️  Player may not be registered yet`);
-        results.push({ player: player.name, success: false });
-        continue;
-      }
-
-      console.log(`   ✅ Found UpdateCapability: ${capId}`);
-    }
-
-    const success = await updatePlayer(player, season, capId, keypair);
+    const success = await updatePlayer(player, season, keypair);
     results.push({ player: player.name, success });
 
-    // Rate limiting: wait 3 seconds between updates (7-day cooldown in contract)
+    // Rate limiting
     if (playersToProcess.indexOf(player) < playersToProcess.length - 1) {
-      console.log("\n⏳ Waiting 3s before next update...");
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      console.log("\n⏳ Waiting 2s before next update...");
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 
@@ -324,12 +469,9 @@ async function main() {
   console.log("\n✨ Updates complete!\n");
 }
 
-// Run script
-if (require.main === module) {
-  main().catch((error) => {
-    console.error("\n❌ Script failed:", error);
-    process.exit(1);
-  });
-}
+main().catch((error) => {
+  console.error("\n❌ Script failed:", error);
+  process.exit(1);
+});
 
 export { updatePlayer };

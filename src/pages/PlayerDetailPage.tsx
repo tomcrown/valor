@@ -4,6 +4,12 @@ import { useState } from "react";
 import { AIAnalysisButton } from "@/components/AiAnalysisButton";
 import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
 import { useAutoAIAnalysis } from "@/hooks/useAutoAIAnalysis";
+import { useOnChainPlayer } from "@/hooks/useOnChainPlayers";
+import {
+  getSeasonBaseValue,
+  getSeasonPerformanceScore,
+  getSeasonWalrusBlobId,
+} from "@/lib/suiDataFetcher";
 import type { SeasonPeriod } from "@/data/dummyData";
 import {
   ArrowLeft,
@@ -16,12 +22,12 @@ import {
   Activity,
   Calendar,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 import Chart from "@/components/Chart";
 import BuySellWidget from "@/components/BuySellWidget";
-import { getPlayerById } from "@/data/dummyData";
 import { cn } from "@/lib/utils";
 
 const SEASON_LABELS = {
@@ -31,64 +37,137 @@ const SEASON_LABELS = {
 };
 
 const SEASON_DESCRIPTIONS = {
-  early: "Matches 1-3",
-  mid: "Matches 4-9",
-  current: "All Matches",
+  early: "Initial Performance",
+  mid: "Mid-Season Form",
+  current: "Latest Performance",
 };
 
 const PlayerDetailPage = () => {
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
-  const player = getPlayerById(id || "");
 
-  // Get season from navigation state or default to current
   const [selectedSeason, setSelectedSeason] = useState<SeasonPeriod>(
     (location.state?.selectedSeason as SeasonPeriod) || "current"
   );
 
-  // Auto-run AI analysis
+  // Fetch merged player data (football stats + contract data)
+  const {
+    player: mergedPlayer,
+    isLoading: isLoadingContract,
+    error: contractError,
+    refetch: refetchPlayer,
+  } = useOnChainPlayer({
+    playerId: id || "",
+    autoFetch: true,
+  });
+
+  const safePlayer = mergedPlayer ?? null;
+
   const {
     analysis: aiAnalysis,
     isAnalyzing,
     runAnalysis,
   } = useAutoAIAnalysis({
-    player: player!,
+    player: safePlayer,
     selectedSeason,
-    autoRun: true,
+    autoRun: !!safePlayer, // only auto-run when data exists
   });
 
-  // Get stats for selected season
-  const seasonStats = player?.seasonalStats[selectedSeason];
-
-  const displayAiScore = aiAnalysis?.performance_score ?? player?.aiScore ?? 0;
-
-  if (!player || !seasonStats) {
+  if (!mergedPlayer) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12 text-center">
-          <h1 className="text-2xl font-bold mb-4">Player Not Found</h1>
-          <Link to="/players">
-            <Button variant="outline">Back to Players</Button>
-          </Link>
+          {isLoadingContract ? (
+            <>
+              <Loader2 className="w-12 h-12 animate-spin text-accent mx-auto mb-4" />
+              <h1 className="text-2xl font-bold mb-4">
+                Loading Player Data...
+              </h1>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold mb-4">Player Not Found</h1>
+              <Link to="/players">
+                <Button variant="outline">Back to Players</Button>
+              </Link>
+            </>
+          )}
         </div>
       </Layout>
     );
   }
 
-  const isPositive = player.weeklyChange >= 0;
+  // Get season-specific stats from football data
+  const seasonStats = mergedPlayer.seasonalStats[selectedSeason];
+
+  // Get season-specific price from contract (or fallback to current)
+  let baseValueSui = getSeasonBaseValue(mergedPlayer as any, selectedSeason);
+
+  // fallback if contract has not set seasonal prices yet
+  if (!baseValueSui || baseValueSui <= 0) {
+    baseValueSui = mergedPlayer.currentValue ?? 0;
+  }
+
+  // Get season-specific performance score (contract or AI)
+  const seasonPerformanceScore = getSeasonPerformanceScore(
+    mergedPlayer as any,
+    selectedSeason
+  );
+
+  // Get season-specific Walrus blob ID from contract
+  const seasonWalrusBlobId = getSeasonWalrusBlobId(
+    mergedPlayer as any,
+    selectedSeason
+  );
+
+  // Display AI score in XX/100 format
+  const displayAiScore =
+    seasonPerformanceScore ||
+    aiAnalysis?.performance_score ||
+    mergedPlayer.aiScore ||
+    0;
+
+  const isPositive = mergedPlayer.weeklyChange >= 0;
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
-        <Link
-          to="/players"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Players
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            to="/players"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Players
+          </Link>
+
+          {/* Refresh Button */}
+          <Button
+            onClick={refetchPlayer}
+            variant="outline"
+            size="sm"
+            disabled={isLoadingContract}
+            className="flex items-center gap-2"
+          >
+            {isLoadingContract ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            {isLoadingContract ? "Updating..." : "Refresh"}
+          </Button>
+        </div>
+
+        {/* Contract Error Warning */}
+        {mergedPlayer.onChainError && (
+          <div className="mb-6 p-4 rounded-lg bg-warning/10 border border-warning/20 text-warning text-sm">
+            ⚠️ Contract data unavailable: {mergedPlayer.onChainError}
+            <br />
+            Showing football stats with default prices.
+          </div>
+        )}
 
         {/* Season Selector */}
         <div className="glass-card p-6 mb-6">
@@ -97,25 +176,44 @@ const PlayerDetailPage = () => {
             <h3 className="font-semibold">Select Season Period</h3>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {(["early", "mid", "current"] as SeasonPeriod[]).map((season) => (
-              <button
-                key={season}
-                onClick={() => setSelectedSeason(season)}
-                className={cn(
-                  "p-4 rounded-xl border-2 transition-all text-left",
-                  selectedSeason === season
-                    ? "border-accent bg-accent/10 shadow-lg shadow-accent/20"
-                    : "border-border/50 hover:border-border bg-card/50"
-                )}
-              >
-                <div className="font-semibold mb-1">
-                  {SEASON_LABELS[season]}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {SEASON_DESCRIPTIONS[season]}
-                </div>
-              </button>
-            ))}
+            {(["early", "mid", "current"] as SeasonPeriod[]).map((season) => {
+              const seasonValue = getSeasonBaseValue(
+                mergedPlayer as any,
+                season
+              );
+              const seasonScore = getSeasonPerformanceScore(
+                mergedPlayer as any,
+                season
+              );
+
+              return (
+                <button
+                  key={season}
+                  onClick={() => setSelectedSeason(season)}
+                  className={cn(
+                    "p-4 rounded-xl border-2 transition-all text-left",
+                    selectedSeason === season
+                      ? "border-accent bg-accent/10 shadow-lg shadow-accent/20"
+                      : "border-border/50 hover:border-border bg-card/50"
+                  )}
+                >
+                  <div className="font-semibold mb-1">
+                    {SEASON_LABELS[season]}
+                  </div>
+                  <div className="text-sm text-muted-foreground mb-2">
+                    {SEASON_DESCRIPTIONS[season]}
+                  </div>
+                  <div className="text-xs text-accent font-mono">
+                    {seasonValue.toFixed(3)} SUI
+                  </div>
+                  {seasonScore > 0 && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Score: {seasonScore}/100
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -127,8 +225,8 @@ const PlayerDetailPage = () => {
               <div className="relative h-64 md:h-80">
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent z-10" />
                 <img
-                  src={player.imageUrl}
-                  alt={player.name}
+                  src={mergedPlayer.imageUrl}
+                  alt={mergedPlayer.name}
                   className="w-full h-full object-contain"
                 />
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
@@ -136,21 +234,21 @@ const PlayerDetailPage = () => {
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
-                          {player.position}
+                          {mergedPlayer.position}
                         </span>
                         <span className="text-muted-foreground">
-                          {player.nationality}
+                          {mergedPlayer.nationality}
                         </span>
                       </div>
                       <h1 className="text-3xl md:text-4xl font-bold mb-1">
-                        {player.name}
+                        {mergedPlayer.name}
                       </h1>
                       <p className="text-lg text-muted-foreground">
-                        {player.club}
+                        {mergedPlayer.club}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50">
-                      {isAnalyzing ? (
+                      {isAnalyzing || isLoadingContract ? (
                         <Loader2 className="w-4 h-4 text-accent animate-spin" />
                       ) : (
                         <Zap className="w-4 h-4 text-warning" />
@@ -158,16 +256,14 @@ const PlayerDetailPage = () => {
                       <span
                         className={cn(
                           "font-semibold",
-                          aiAnalysis && "text-accent"
+                          seasonPerformanceScore && "text-accent"
                         )}
                       >
-                        AI Score: {displayAiScore}
-                        {aiAnalysis && (
-                          <span className="text-xs ml-1 opacity-80">
-                            (AI Updated)
-                          </span>
-                        )}
+                        {displayAiScore}/100
                       </span>
+                      {seasonPerformanceScore > 0 && (
+                        <span className="text-xs ml-1 opacity-80">⛓️</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -177,10 +273,13 @@ const PlayerDetailPage = () => {
                 <div className="flex flex-wrap items-center gap-6">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">
-                      Current Value
+                      Base Value ({SEASON_LABELS[selectedSeason]})
                     </p>
                     <p className="text-3xl font-bold gradient-text">
-                      ${player.currentValue.toLocaleString()}
+                      {baseValueSui.toFixed(3)} SUI
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Season: {selectedSeason}
                     </p>
                   </div>
                   <div
@@ -198,7 +297,7 @@ const PlayerDetailPage = () => {
                     )}
                     <span className="text-lg font-semibold">
                       {isPositive ? "+" : ""}
-                      {player.weeklyChange.toFixed(1)}% this week
+                      {mergedPlayer.weeklyChange.toFixed(1)}% this week
                     </span>
                   </div>
                 </div>
@@ -206,14 +305,17 @@ const PlayerDetailPage = () => {
             </div>
 
             {/* Value Chart */}
-            <div className="glass-card p-6">
-              <h2 className="text-xl font-bold mb-6">7-Day Value Trend</h2>
-              <div className="pl-12">
-                <Chart data={player.valueHistory} height={250} />
-              </div>
-            </div>
+            {mergedPlayer.valueHistory &&
+              mergedPlayer.valueHistory.length > 0 && (
+                <div className="glass-card p-6">
+                  <h2 className="text-xl font-bold mb-6">7-Day Value Trend</h2>
+                  <div className="pl-12">
+                    <Chart data={mergedPlayer.valueHistory} height={250} />
+                  </div>
+                </div>
+              )}
 
-            {/* Stats Grid - Seasonal */}
+            {/* Stats Grid - Seasonal (from football data) */}
             <div className="glass-card p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">
@@ -285,7 +387,7 @@ const PlayerDetailPage = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">AI-Powered Insights</h2>
                 <AIAnalysisButton
-                  player={player}
+                  player={mergedPlayer}
                   selectedSeason={selectedSeason}
                   onAnalysisComplete={runAnalysis}
                 />
@@ -295,17 +397,22 @@ const PlayerDetailPage = () => {
                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
                   <Loader2 className="w-12 h-12 animate-spin text-accent" />
                   <p className="text-sm text-muted-foreground">
-                    Analyzing {player.name}'s performance with GPT-4...
+                    Analyzing {mergedPlayer.name}'s performance with GPT-4...
                   </p>
                 </div>
               ) : aiAnalysis ? (
                 <AIAnalysisPanel
                   analysis={aiAnalysis}
-                  playerName={player.name}
+                  playerName={mergedPlayer.name}
                 />
+              ) : isLoadingContract ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading contract data...
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  Loading AI insights for {SEASON_LABELS[selectedSeason]}...
+                  Click "Run Analysis" to get AI insights for{" "}
+                  {SEASON_LABELS[selectedSeason]}
                 </div>
               )}
             </div>
@@ -316,15 +423,20 @@ const PlayerDetailPage = () => {
                 <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
                   <Shield className="w-6 h-6 text-accent" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="font-bold mb-1">Walrus Verified Data</h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    All performance data for this player is cryptographically
-                    verified and stored on Walrus decentralized storage.
+                    {SEASON_LABELS[selectedSeason]} performance data is
+                    cryptographically verified and stored on Walrus
+                    decentralized storage.
                   </p>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted font-mono text-sm">
-                    <span className="text-muted-foreground">Proof ID:</span>
-                    <span className="text-accent">{player.walrusProofId}</span>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted font-mono text-xs break-all">
+                    <span className="text-muted-foreground">Blob ID:</span>
+                    <span className="text-accent">
+                      {seasonWalrusBlobId ||
+                        mergedPlayer.walrusProofId ||
+                        "Not available"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -335,13 +447,13 @@ const PlayerDetailPage = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <BuySellWidget
-                playerName={player.name}
-                currentPrice={player.currentValue}
+                playerName={mergedPlayer.name}
+                currentPrice={baseValueSui}
                 onBuy={(qty) =>
-                  console.log(`Buy ${qty} shares of ${player.name}`)
+                  console.log(`Buy ${qty} shares of ${mergedPlayer.name}`)
                 }
                 onSell={(qty) =>
-                  console.log(`Sell ${qty} shares of ${player.name}`)
+                  console.log(`Sell ${qty} shares of ${mergedPlayer.name}`)
                 }
               />
               <div className="mt-4">
