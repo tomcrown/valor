@@ -1,26 +1,9 @@
 // ==========================================
-// REAL DATA FOR VALOR (Fetched from AllSportsAPI)
-// SEASONAL STATS RESEARCHED BY AI WITH WEB SEARCH
-// Last Updated: 2025-12-09T00:41:31.920Z
+// PURE FOOTBALL STATS (No Prices, No Blockchain Data)
+// Stats from AllSportsAPI - Updated: 2025-12-10
 // ==========================================
 
-export interface Player {
-  id: string;
-  name: string;
-  club: string;
-  position: string;
-  nationality: string;
-  imageUrl: string;
-  currentValue: number;
-  weeklyChange: number;
-  aiScore: number;
-  stats: PlayerStats;
-  seasonalStats: SeasonalData;
-  valueHistory: ValueDataPoint[];
-  walrusProofId: string;
-}
-
-export interface PlayerStats {
+export interface PurePlayerStats {
   goals: number;
   assists: number;
   minutesPlayed: number;
@@ -29,13 +12,67 @@ export interface PlayerStats {
   saves?: number;
 }
 
-export interface SeasonalData {
-  early: PlayerStats;
-  mid: PlayerStats;
-  current: PlayerStats;
+export interface SeasonalFootballStats {
+  early: PurePlayerStats;
+  mid: PurePlayerStats;
+  current: PurePlayerStats;
 }
 
 export type SeasonPeriod = "early" | "mid" | "current";
+
+// Pure football player data - NO PRICES, NO BLOCKCHAIN DATA
+export interface FootballPlayerData {
+  id: string;
+  name: string;
+  club: string;
+  position: string;
+  nationality: string;
+  imageUrl: string;
+  seasonalStats: SeasonalFootballStats;
+  // AI score from GPT-4o analysis (0-100)
+  aiScore: number;
+}
+
+// Contract data structure (fetched separately)
+export interface ContractPlayerData {
+  earlySeasonPrice: number; // in SUI
+  midSeasonPrice: number; // in SUI
+  currentSeasonPrice: number; // in SUI
+  earlyWalrusBlobId: string;
+  midWalrusBlobId: string;
+  currentWalrusBlobId: string;
+  weeklyChange: number; // Market change %
+  valueHistory: ValueDataPoint[];
+}
+
+// Merged player data for UI
+export interface Player extends FootballPlayerData {
+  // Contract data merged in
+  currentValue: number;
+  weeklyChange: number;
+  valueHistory: ValueDataPoint[];
+  walrusProofId: string;
+  seasonalStats: SeasonalFootballStats;
+  // Contract seasonal data
+  onChainSeasonData?: {
+    early: {
+      baseValueSui: number;
+      performanceScore: number;
+      walrusBlobId: string;
+    };
+    mid: {
+      baseValueSui: number;
+      performanceScore: number;
+      walrusBlobId: string;
+    };
+    current: {
+      baseValueSui: number;
+      performanceScore: number;
+      walrusBlobId: string;
+    };
+  };
+  onChainError?: string;
+}
 
 export interface ValueDataPoint {
   date: string;
@@ -71,24 +108,19 @@ export interface LeaderboardEntry {
   totalTrades: number;
 }
 
-export const DUMMY_PLAYERS: Player[] = [
+// ==========================================
+// PURE FOOTBALL DATA - NO PRICES
+// ==========================================
+
+export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
   {
     id: "659972248",
     name: "Erling Haaland",
     club: "Manchester City",
     position: "Attacker",
     nationality: "Norway",
-    imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/header/418560-1709108116.png?lm=1",
-    currentValue: 2829,
-    weeklyChange: 7.7,
-    aiScore: 81,
-    stats: {
-      goals: 15,
-      assists: 3,
-      minutesPlayed: 1218,
-      matchesPlayed: 14,
-    },
+    imageUrl: "https://apiv2.allsportsapi.com/logo/players/68451_e-haaland.jpg",
+    aiScore: 85,
     seasonalStats: {
       early: {
         goals: 4,
@@ -109,37 +141,6 @@ export const DUMMY_PLAYERS: Player[] = [
         matchesPlayed: 14,
       },
     },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 2675,
-      },
-      {
-        date: "Tue",
-        value: 2670,
-      },
-      {
-        date: "Wed",
-        value: 2711,
-      },
-      {
-        date: "Thu",
-        value: 2751,
-      },
-      {
-        date: "Fri",
-        value: 2793,
-      },
-      {
-        date: "Sat",
-        value: 2783,
-      },
-      {
-        date: "Sun",
-        value: 2829,
-      },
-    ],
-    walrusProofId: "0x6be7...4b26",
   },
   {
     id: "2354545782",
@@ -147,17 +148,8 @@ export const DUMMY_PLAYERS: Player[] = [
     club: "Real Madrid",
     position: "Attacker",
     nationality: "France",
-    imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/header/342229-1682683695.jpg?lm=1",
-    currentValue: 2946,
-    weeklyChange: -3.6,
-    aiScore: 75,
-    stats: {
-      goals: 16,
-      assists: 4,
-      minutesPlayed: 1306,
-      matchesPlayed: 15,
-    },
+    imageUrl: "https://apiv2.allsportsapi.com/logo/players/51921_k-mbappe.jpg",
+    aiScore: 87,
     seasonalStats: {
       early: {
         goals: 4,
@@ -166,7 +158,7 @@ export const DUMMY_PLAYERS: Player[] = [
         matchesPlayed: 3,
       },
       mid: {
-        goals: 6,
+        goals: 7,
         assists: 2,
         minutesPlayed: 540,
         matchesPlayed: 6,
@@ -178,37 +170,6 @@ export const DUMMY_PLAYERS: Player[] = [
         matchesPlayed: 15,
       },
     },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 2795,
-      },
-      {
-        date: "Tue",
-        value: 2807,
-      },
-      {
-        date: "Wed",
-        value: 2843,
-      },
-      {
-        date: "Thu",
-        value: 2896,
-      },
-      {
-        date: "Fri",
-        value: 2936,
-      },
-      {
-        date: "Sat",
-        value: 2927,
-      },
-      {
-        date: "Sun",
-        value: 2946,
-      },
-    ],
-    walrusProofId: "0x1c65...e776",
   },
   {
     id: "2456487342",
@@ -216,17 +177,8 @@ export const DUMMY_PLAYERS: Player[] = [
     club: "Manchester United",
     position: "Defender",
     nationality: "England",
-    imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/big/177907-1663841733.jpg?lm=1",
-    currentValue: 1260,
-    weeklyChange: 10.5,
-    aiScore: 84,
-    stats: {
-      goals: 1,
-      assists: 1,
-      minutesPlayed: 356,
-      matchesPlayed: 8,
-    },
+    imageUrl: "https://apiv2.allsportsapi.com/logo/players/14381_h-maguire.jpg",
+    aiScore: 78,
     seasonalStats: {
       early: {
         goals: 0,
@@ -247,37 +199,6 @@ export const DUMMY_PLAYERS: Player[] = [
         matchesPlayed: 8,
       },
     },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 1207,
-      },
-      {
-        date: "Tue",
-        value: 1207,
-      },
-      {
-        date: "Wed",
-        value: 1255,
-      },
-      {
-        date: "Thu",
-        value: 1295,
-      },
-      {
-        date: "Fri",
-        value: 1290,
-      },
-      {
-        date: "Sat",
-        value: 1271,
-      },
-      {
-        date: "Sun",
-        value: 1260,
-      },
-    ],
-    walrusProofId: "0x006a...d34a",
   },
   {
     id: "2432523569",
@@ -285,17 +206,8 @@ export const DUMMY_PLAYERS: Player[] = [
     club: "Liverpool",
     position: "Attacker",
     nationality: "Egypt",
-    imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/big/148455-1727337594.jpg?lm=1",
-    currentValue: 1609,
-    weeklyChange: 1.3,
-    aiScore: 90,
-    stats: {
-      goals: 4,
-      assists: 2,
-      minutesPlayed: 1119,
-      matchesPlayed: 13,
-    },
+    imageUrl: "https://apiv2.allsportsapi.com/logo/players/5705_m-salah.jpg",
+    aiScore: 88,
     seasonalStats: {
       early: {
         goals: 1,
@@ -316,37 +228,6 @@ export const DUMMY_PLAYERS: Player[] = [
         matchesPlayed: 13,
       },
     },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 1541,
-      },
-      {
-        date: "Tue",
-        value: 1594,
-      },
-      {
-        date: "Wed",
-        value: 1589,
-      },
-      {
-        date: "Thu",
-        value: 1590,
-      },
-      {
-        date: "Fri",
-        value: 1590,
-      },
-      {
-        date: "Sat",
-        value: 1613,
-      },
-      {
-        date: "Sun",
-        value: 1609,
-      },
-    ],
-    walrusProofId: "0x0011...207a",
   },
   {
     id: "1521124062",
@@ -355,19 +236,11 @@ export const DUMMY_PLAYERS: Player[] = [
     position: "Midfielder",
     nationality: "Hungary",
     imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/header/451276-1758715234.jpg?lm=1",
-    currentValue: 1258,
-    weeklyChange: 11.2,
-    aiScore: 76,
-    stats: {
-      goals: 1,
-      assists: 1,
-      minutesPlayed: 1260,
-      matchesPlayed: 14,
-    },
+      "https://apiv2.allsportsapi.com/logo/players/75735_d-szoboszlai.jpg",
+    aiScore: 79,
     seasonalStats: {
       early: {
-        goals: 0,
+        goals: 1,
         assists: 0,
         minutesPlayed: 270,
         matchesPlayed: 3,
@@ -379,43 +252,12 @@ export const DUMMY_PLAYERS: Player[] = [
         matchesPlayed: 6,
       },
       current: {
-        goals: 1,
+        goals: 2,
         assists: 1,
-        minutesPlayed: 1260,
-        matchesPlayed: 14,
+        minutesPlayed: 1350,
+        matchesPlayed: 15,
       },
     },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 1190,
-      },
-      {
-        date: "Tue",
-        value: 1215,
-      },
-      {
-        date: "Wed",
-        value: 1244,
-      },
-      {
-        date: "Thu",
-        value: 1236,
-      },
-      {
-        date: "Fri",
-        value: 1246,
-      },
-      {
-        date: "Sat",
-        value: 1273,
-      },
-      {
-        date: "Sun",
-        value: 1258,
-      },
-    ],
-    walrusProofId: "0x5a73...c03a",
   },
   {
     id: "3537658166",
@@ -424,16 +266,8 @@ export const DUMMY_PLAYERS: Player[] = [
     position: "Midfielder",
     nationality: "England",
     imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/header/581678-1748102891.jpg?lm=1",
-    currentValue: 1589,
-    weeklyChange: 3.1,
-    aiScore: 81,
-    stats: {
-      goals: 3,
-      assists: 2,
-      minutesPlayed: 741,
-      matchesPlayed: 11,
-    },
+      "https://apiv2.allsportsapi.com/logo/players/110036_j-bellingham.jpg",
+    aiScore: 90,
     seasonalStats: {
       early: {
         goals: 1,
@@ -454,37 +288,6 @@ export const DUMMY_PLAYERS: Player[] = [
         matchesPlayed: 11,
       },
     },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 1401,
-      },
-      {
-        date: "Tue",
-        value: 1438,
-      },
-      {
-        date: "Wed",
-        value: 1472,
-      },
-      {
-        date: "Thu",
-        value: 1476,
-      },
-      {
-        date: "Fri",
-        value: 1534,
-      },
-      {
-        date: "Sat",
-        value: 1530,
-      },
-      {
-        date: "Sun",
-        value: 1589,
-      },
-    ],
-    walrusProofId: "0xf717...f102",
   },
   {
     id: "3446405013",
@@ -492,17 +295,8 @@ export const DUMMY_PLAYERS: Player[] = [
     club: "Arsenal FC",
     position: "Goalkeeper",
     nationality: "Spain",
-    imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/header/262749-1668168018.jpg?lm=1",
-    currentValue: 1055,
-    weeklyChange: -8.3,
-    aiScore: 94,
-    stats: {
-      goals: 0,
-      assists: 0,
-      minutesPlayed: 1260,
-      matchesPlayed: 14,
-    },
+    imageUrl: "https://apiv2.allsportsapi.com/logo/players/44666_d-raya.jpg",
+    aiScore: 76,
     seasonalStats: {
       early: {
         goals: 0,
@@ -523,37 +317,6 @@ export const DUMMY_PLAYERS: Player[] = [
         matchesPlayed: 14,
       },
     },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 999,
-      },
-      {
-        date: "Tue",
-        value: 1034,
-      },
-      {
-        date: "Wed",
-        value: 1070,
-      },
-      {
-        date: "Thu",
-        value: 1062,
-      },
-      {
-        date: "Fri",
-        value: 1055,
-      },
-      {
-        date: "Sat",
-        value: 1057,
-      },
-      {
-        date: "Sun",
-        value: 1055,
-      },
-    ],
-    walrusProofId: "0x7a5d...1b9e",
   },
   {
     id: "2764979995",
@@ -561,17 +324,8 @@ export const DUMMY_PLAYERS: Player[] = [
     club: "Arsenal FC",
     position: "Attacker",
     nationality: "England",
-    imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/big/433177-1684155052.jpg?lm=1",
-    currentValue: 1549,
-    weeklyChange: -3.3,
-    aiScore: 90,
-    stats: {
-      goals: 4,
-      assists: 1,
-      minutesPlayed: 893,
-      matchesPlayed: 12,
-    },
+    imageUrl: "https://apiv2.allsportsapi.com/logo/players/86333_b-saka.jpg",
+    aiScore: 76,
     seasonalStats: {
       early: {
         goals: 1,
@@ -592,73 +346,12 @@ export const DUMMY_PLAYERS: Player[] = [
         matchesPlayed: 12,
       },
     },
-    valueHistory: [
-      {
-        date: "Mon",
-        value: 1438,
-      },
-      {
-        date: "Tue",
-        value: 1434,
-      },
-      {
-        date: "Wed",
-        value: 1431,
-      },
-      {
-        date: "Thu",
-        value: 1488,
-      },
-      {
-        date: "Fri",
-        value: 1503,
-      },
-      {
-        date: "Sat",
-        value: 1494,
-      },
-      {
-        date: "Sun",
-        value: 1549,
-      },
-    ],
-    walrusProofId: "0x0ad1...095a",
   },
 ];
 
-export const DUMMY_PORTFOLIO: PortfolioPosition[] = [
-  {
-    playerId: "659972248",
-    playerName: "Erling Haaland",
-    club: "Manchester City",
-    quantity: 15,
-    averageEntryPrice: 2479,
-    currentValue: 2829,
-    imageUrl: "https://apiv2.allsportsapi.com/logo/players/68451_e-haaland.jpg",
-  },
-  {
-    playerId: "2354545782",
-    playerName: "Kylian Mbappe",
-    club: "Real Madrid",
-    quantity: 10,
-    averageEntryPrice: 2716,
-    currentValue: 2946,
-    imageUrl: "https://apiv2.allsportsapi.com/logo/players/51921_k-mbappe.jpg",
-  },
-].filter(Boolean);
-
-export const DUMMY_LEADERBOARD: LeaderboardEntry[] = [
-  {
-    rank: 1,
-    address: "0x7f3a...8c2d",
-    displayName: "CryptoWhale",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
-    portfolioValue: 125400,
-    weeklyGrowth: 34.5,
-    totalTrades: 156,
-  },
-];
+// Dummy portfolio and leaderboard (unchanged)
+export const DUMMY_PORTFOLIO: PortfolioPosition[] = [];
+export const DUMMY_LEADERBOARD: LeaderboardEntry[] = [];
 
 export const PLATFORM_STATS = {
   totalVolume: 2450000,
@@ -667,48 +360,49 @@ export const PLATFORM_STATS = {
   avgDailyTrades: 3420,
 };
 
-export const getPlayerById = (id: string): Player | undefined => {
-  return DUMMY_PLAYERS.find((player) => player.id === id);
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+
+export const getFootballPlayerById = (
+  id: string
+): FootballPlayerData | undefined => {
+  return FOOTBALL_PLAYERS.find((player) => player.id === id);
 };
 
 export const getPlayerStatsBySeason = (
-  player: Player,
+  player: FootballPlayerData | Player,
   season: SeasonPeriod
-): PlayerStats => {
+): PurePlayerStats => {
   return player.seasonalStats[season];
 };
 
-export const getTopPerformers = (): Player[] => {
-  return [...DUMMY_PLAYERS]
-    .sort((a, b) => {
-      const scoreA = a.aiScore;
-      const scoreB = b.aiScore;
-      if (Math.abs(scoreA - scoreB) > 5) return scoreB - scoreA;
-      return b.weeklyChange - a.weeklyChange;
-    })
+export const getTopPerformers = (): FootballPlayerData[] => {
+  return [...FOOTBALL_PLAYERS]
+    .sort((a, b) => b.aiScore - a.aiScore)
     .slice(0, 4);
 };
 
-export const getRisingPlayers = (): Player[] => {
-  return DUMMY_PLAYERS.filter(
-    (p) => p.weeklyChange > 5 && p.aiScore >= 75
-  ).sort((a, b) => b.weeklyChange - a.weeklyChange);
-};
-
-export const getUndervaluedPlayers = (): Player[] => {
-  return DUMMY_PLAYERS.filter((p) => p.aiScore > 85 && p.weeklyChange < 5).sort(
+export const getRisingPlayers = (): FootballPlayerData[] => {
+  return FOOTBALL_PLAYERS.filter((p) => p.aiScore >= 75).sort(
     (a, b) => b.aiScore - a.aiScore
   );
 };
 
-export const getFallingPlayers = (): Player[] => {
-  return DUMMY_PLAYERS.filter((p) => p.weeklyChange < -5).sort(
-    (a, b) => a.weeklyChange - b.weeklyChange
+export const getUndervaluedPlayers = (): FootballPlayerData[] => {
+  return FOOTBALL_PLAYERS.filter((p) => p.aiScore > 85).sort(
+    (a, b) => b.aiScore - a.aiScore
   );
 };
 
-export const getHighPerformers = (): Player[] => {
-  return DUMMY_PLAYERS.filter((p) => p.aiScore >= 85).sort(
+export const getFallingPlayers = (): FootballPlayerData[] => {
+  return FOOTBALL_PLAYERS.filter((p) => p.aiScore < 70).sort(
+    (a, b) => a.aiScore - b.aiScore
+  );
+};
+
+export const getHighPerformers = (): FootballPlayerData[] => {
+  return FOOTBALL_PLAYERS.filter((p) => p.aiScore >= 85).sort(
     (a, b) => b.aiScore - a.aiScore
   );
 };
@@ -733,7 +427,7 @@ export const calculatePortfolioPnL = (
     (total, pos) => total + pos.quantity * pos.averageEntryPrice,
     0
   );
-  return ((totalCurrent - totalEntry) / totalEntry) * 100;
+  return totalEntry > 0 ? ((totalCurrent - totalEntry) / totalEntry) * 100 : 0;
 };
 
 export const calculateTrend = (

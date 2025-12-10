@@ -1,9 +1,28 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true,
-});
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey =
+      typeof process !== "undefined" && process.env
+        ? process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY
+        : (import.meta as any).env?.VITE_OPENAI_API_KEY;
+
+    if (!apiKey) {
+      throw new Error(
+        "Missing OpenAI API key. Please set OPENAI_API_KEY in your .env file"
+      );
+    }
+
+    openaiClient = new OpenAI({
+      apiKey: apiKey,
+      dangerouslyAllowBrowser: true,
+    });
+  }
+
+  return openaiClient;
+}
 
 export interface AIAnalysis {
   performance_score: number;
@@ -114,6 +133,7 @@ const SUMMARY_STYLES = [
 export async function analyzePlayer(
   playerStats: SeasonalPlayerStats
 ): Promise<AIAnalysis> {
+  const openai = getOpenAIClient();
   const seasonLabel = SEASON_LABELS[playerStats.season];
   const seasonContext = SEASON_CONTEXT[playerStats.season];
   const positionGuidelines =
@@ -308,3 +328,333 @@ Make it impressive. Make it unique. Make it useful.`,
     throw new Error("Failed to analyze player");
   }
 }
+
+// import OpenAI from "openai";
+
+// let openaiClient: OpenAI | null = null;
+
+// function getOpenAIClient(): OpenAI {
+//   if (!openaiClient) {
+//     const apiKey =
+//       typeof process !== "undefined" && process.env
+//         ? process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY
+//         : (import.meta as any).env?.VITE_OPENAI_API_KEY;
+
+//     if (!apiKey) {
+//       throw new Error(
+//         "Missing OpenAI API key. Please set OPENAI_API_KEY in your .env file"
+//       );
+//     }
+
+//     openaiClient = new OpenAI({
+//       apiKey: apiKey,
+//       dangerouslyAllowBrowser: true,
+//     });
+//   }
+
+//   return openaiClient;
+// }
+
+// export interface AIAnalysis {
+//   performance_score: number;
+//   performance_trend: "improving" | "stable" | "declining";
+//   form_status: "excellent" | "good" | "average" | "poor";
+//   confidence: number;
+//   reasoning: string;
+//   key_factors: string[];
+//   prediction: string;
+//   short_summary: string;
+//   season_context?: string;
+//   availability_status: {
+//     is_playing: boolean;
+//     injury_risk: "low" | "medium" | "high";
+//     playing_time: "regular" | "rotation" | "bench" | "unknown";
+//     notes: string;
+//   };
+//   recent_form: {
+//     last_5_games: string;
+//     goals_per_90: number;
+//     consistency_rating: number;
+//   };
+//   position_specific_analysis: {
+//     role_effectiveness: number;
+//     tactical_importance: number;
+//     key_metrics: string[];
+//   };
+//   // ✅ NEW: Return the real stats found
+//   real_stats: {
+//     goals: number;
+//     assists: number;
+//     minutes_played: number;
+//     matches_played: number;
+//   };
+// }
+
+// export type SeasonPeriod = "early" | "mid" | "current";
+
+// interface SeasonalPlayerStats {
+//   name: string;
+//   position: string;
+//   team: string;
+//   goals: number;
+//   assists: number;
+//   minutesPlayed: number;
+//   matchesPlayed: number;
+//   currentValue: number;
+//   weeklyChange: number;
+//   season: SeasonPeriod;
+// }
+
+// const SEASON_LABELS = {
+//   early: "Early Season (Matches 1-3)",
+//   mid: "Mid Season (Cumulative through Match 9)",
+//   current: "Current Season (Full Season Cumulative)",
+// };
+
+// const SEASON_CONTEXT = {
+//   early:
+//     "Early in the campaign (first 3 matches). Players are finding rhythm. Initial performances often signal the season ahead.",
+//   mid: "Mid-season snapshot (cumulative through match 9). Form patterns become clear. Consistency and tactical fit are now evident.",
+//   current:
+//     "Full season view (all matches cumulative). Recent form weighs heavily in current valuation.",
+// };
+
+// const SEASON_MATCH_RANGES = {
+//   early: "matches 1-3",
+//   mid: "matches 1-9 (cumulative)",
+//   current: "all matches this season (cumulative)",
+// };
+
+// const POSITION_GUIDELINES = {
+//   Attacker: {
+//     primary_metrics: ["goals", "shots on target", "conversion rate", "xG"],
+//     secondary_metrics: ["assists", "key passes", "dribbles"],
+//     good_goals_per_match: 0.5,
+//     excellent_goals_per_match: 0.8,
+//     role_description: "Goal-scoring threat and attacking catalyst",
+//   },
+//   Midfielder: {
+//     primary_metrics: [
+//       "assists",
+//       "key passes",
+//       "pass completion",
+//       "chances created",
+//     ],
+//     secondary_metrics: ["goals", "tackles", "interceptions"],
+//     good_goals_per_match: 0.2,
+//     excellent_goals_per_match: 0.4,
+//     role_description: "Creative engine and midfield controller",
+//   },
+//   Defender: {
+//     primary_metrics: ["tackles", "interceptions", "clearances", "clean sheets"],
+//     secondary_metrics: ["pass completion", "aerial duels", "blocks"],
+//     good_goals_per_match: 0.05,
+//     excellent_goals_per_match: 0.15,
+//     role_description: "Defensive anchor and last line of defense",
+//   },
+//   Goalkeeper: {
+//     primary_metrics: [
+//       "saves",
+//       "clean sheets",
+//       "save percentage",
+//       "goals conceded",
+//     ],
+//     secondary_metrics: ["distribution", "sweeper actions", "penalties saved"],
+//     good_goals_per_match: 0,
+//     excellent_goals_per_match: 0,
+//     role_description: "Shot-stopper and defensive commander",
+//   },
+// };
+
+// const SUMMARY_STYLES = [
+//   "performance",
+//   "momentum",
+//   "impact",
+//   "tactical",
+//   "clinical",
+// ];
+
+// export async function analyzePlayer(
+//   playerStats: SeasonalPlayerStats
+// ): Promise<AIAnalysis> {
+//   const openai = getOpenAIClient();
+
+//   const seasonLabel = SEASON_LABELS[playerStats.season];
+//   const seasonContext = SEASON_CONTEXT[playerStats.season];
+//   const matchRange = SEASON_MATCH_RANGES[playerStats.season];
+//   const positionGuidelines =
+//     POSITION_GUIDELINES[
+//       playerStats.position as keyof typeof POSITION_GUIDELINES
+//     ] || POSITION_GUIDELINES.Attacker;
+
+//   const summaryStyle =
+//     SUMMARY_STYLES[Math.floor(Math.random() * SUMMARY_STYLES.length)];
+
+//   // ============================================================================
+//   // CRITICAL FIX: Tell OpenAI to fetch REAL stats, ignore provided numbers
+//   // ============================================================================
+//   const prompt = `You are an elite football analyst for Valor, a fantasy stock market platform.
+
+// CRITICAL INSTRUCTION: The stats provided below may be INCORRECT or outdated.
+// You MUST use web search to find the REAL, ACCURATE stats for this player.
+
+// PLAYER PROFILE:
+// Name: ${playerStats.name}
+// Position: ${playerStats.position} (${positionGuidelines.role_description})
+// Team: ${playerStats.team}
+// Analysis Period: ${seasonLabel}
+// Match Range: ${matchRange}
+
+// ${seasonContext}
+
+// ⚠️  IMPORTANT: Use web search to find REAL cumulative stats for ${matchRange}.
+// Do NOT trust the numbers below - they may be wrong!
+
+// PROVIDED STATS (MAY BE INCORRECT):
+// - Goals: ${playerStats.goals} ❌ VERIFY WITH WEB SEARCH
+// - Assists: ${playerStats.assists} ❌ VERIFY WITH WEB SEARCH
+// - Matches: ${playerStats.matchesPlayed} ❌ VERIFY WITH WEB SEARCH
+
+// MARKET SNAPSHOT:
+// - Current Value: $${playerStats.currentValue}
+// - Weekly Trend: ${playerStats.weeklyChange.toFixed(1)}%
+
+// RESEARCH REQUIREMENTS - YOU MUST DO THIS:
+
+// 1. **WEB SEARCH FOR REAL ${playerStats.season.toUpperCase()} SEASON STATS:**
+//    - Search: "${playerStats.name} ${playerStats.team} 2024/25 season stats"
+//    - Find CUMULATIVE stats for ${matchRange}
+//    - Get: goals, assists, minutes played, matches played
+//    - Double-check on multiple sources (FBref, Transfermarkt, ESPN)
+
+// 2. **AVAILABILITY & FITNESS:**
+//    - Current injury status or suspensions?
+//    - Recent playing time patterns?
+//    - Latest team news?
+
+// 3. **RECENT FORM (Last 3-5 Matches):**
+//    - Match-by-match performance
+//    - Starting XI or substitute?
+//    - Goals, assists, key contributions
+
+// 4. **TACTICAL ANALYSIS:**
+//    - Role in team's system
+//    - Position-specific effectiveness
+//    - ${positionGuidelines.primary_metrics.join(", ")} performance
+
+// SCORING FRAMEWORK (Position-Appropriate):
+
+// **Attackers:**
+// - 90-100: Elite goal threat, consistent finishing
+// - 75-89: Reliable goal contributions
+// - 60-74: Decent output
+// - Below 60: Struggling
+
+// **Midfielders:**
+// - 90-100: Dictating games, creating chances
+// - 75-89: Solid contributions
+// - 60-74: Functional
+// - Below 60: Limited impact
+
+// **Defenders:**
+// - 90-100: Defensive wall
+// - 75-89: Reliable defender
+// - 60-74: Adequate
+// - Below 60: Error-prone
+
+// **Goalkeepers:**
+// - 90-100: Match-winner
+// - 75-89: Dependable
+// - 60-74: Average
+// - Below 60: Struggling
+
+// WRITING GUIDELINES:
+// ✓ Use REAL stats from your web search
+// ✓ Be specific with match details
+// ✓ Vary language and style
+// ✓ Explain for casual fans
+// ✓ Celebrate position-specific contributions
+
+// Summary style: "${summaryStyle}"
+
+// YOU MUST RETURN JSON WITH THIS STRUCTURE:
+// {
+//   "performance_score": <0-100, based on REAL stats>,
+//   "performance_trend": "<improving|stable|declining>",
+//   "form_status": "<excellent|good|average|poor>",
+//   "confidence": <0-100>,
+//   "reasoning": "<Based on REAL stats you found via web search>",
+//   "key_factors": [
+//     "<5 insights based on REAL data>",
+//     "...",
+//   ],
+//   "prediction": "<Future trajectory based on REAL current form>",
+//   "short_summary": "<ONE punchy sentence using ${summaryStyle} style>",
+//   "availability_status": {
+//     "is_playing": <boolean>,
+//     "injury_risk": "<low|medium|high>",
+//     "playing_time": "<regular|rotation|bench|unknown>",
+//     "notes": "<Latest real info>"
+//   },
+//   "recent_form": {
+//     "last_5_games": "<Real match-by-match breakdown>",
+//     "goals_per_90": <actual number from real stats>,
+//     "consistency_rating": <0-100>
+//   },
+//   "position_specific_analysis": {
+//     "role_effectiveness": <0-100>,
+//     "tactical_importance": <0-100>,
+//     "key_metrics": ["<Real metrics for this position>"]
+//   },
+//   "real_stats": {
+//     "goals": <REAL cumulative goals for ${matchRange}>,
+//     "assists": <REAL cumulative assists>,
+//     "minutes_played": <REAL cumulative minutes>,
+//     "matches_played": <REAL number of matches>
+//   }
+// }
+
+// CRITICAL: The "real_stats" object must contain the ACTUAL stats you found via web search for ${matchRange}.`;
+
+//   try {
+//     const completion = await openai.chat.completions.create({
+//       model: "gpt-4o",
+//       messages: [
+//         {
+//           role: "system",
+//           content: `You are an expert football analyst with web search capabilities.
+
+// YOU MUST:
+// 1. Use web search to find REAL ${playerStats.season} season stats for ${
+//             playerStats.name
+//           }
+// 2. Search for cumulative stats covering ${matchRange}
+// 3. Verify stats on multiple sources
+// 4. Return the REAL stats in the "real_stats" field
+// 5. Base your entire analysis on REAL data, not provided estimates
+
+// For ${playerStats.position}s: ${positionGuidelines.primary_metrics.join(
+//             ", "
+//           )} matter most.
+
+// Season: ${seasonLabel}
+// Match range: ${matchRange}
+
+// Make it factual. Make it accurate. Use REAL data only.`,
+//         },
+//         { role: "user", content: prompt },
+//       ],
+//       response_format: { type: "json_object" },
+//       temperature: 0.7,
+//     });
+
+//     const result = JSON.parse(completion.choices[0].message.content || "{}");
+//     return {
+//       ...result,
+//       season_context: seasonLabel,
+//     } as AIAnalysis;
+//   } catch (error) {
+//     console.error("OpenAI analysis error:", error);
+//     throw new Error("Failed to analyze player");
+//   }
+// }

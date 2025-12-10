@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { analyzePlayer } from "@/lib/openai";
 import type { Player, SeasonPeriod } from "@/data/dummyData";
 import type { AIAnalysis } from "@/lib/openai";
 
 interface UseAutoAIAnalysisOptions {
-  player: Player;
+  player: Player | null; // allow null safely
   selectedSeason: SeasonPeriod;
-  autoRun?: boolean; // Whether to auto-run analysis on mount
+  autoRun?: boolean;
   onAnalysisComplete?: (analysis: AIAnalysis) => void;
 }
 
@@ -16,37 +16,16 @@ export function useAutoAIAnalysis({
   autoRun = true,
   onAnalysisComplete,
 }: UseAutoAIAnalysisOptions) {
+  // Always declare hooks first
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasRunRef = useRef(false);
 
-  useEffect(() => {
-    // Reset on season change
-    hasRunRef.current = false;
+  // Stable callback
+  const runAnalysis = useCallback(async () => {
+    if (!player) return; // guard early
 
-    const cacheKey = `ai-analysis-${player.id}-${selectedSeason}`;
-    const cached = localStorage.getItem(cacheKey);
-
-    if (cached) {
-      try {
-        const parsedAnalysis = JSON.parse(cached);
-        setAnalysis(parsedAnalysis);
-        onAnalysisComplete?.(parsedAnalysis);
-        return;
-      } catch (e) {
-        console.error("Failed to parse cached analysis");
-      }
-    }
-
-    // Auto-run analysis if enabled and not already running
-    if (autoRun && !hasRunRef.current && !isAnalyzing) {
-      hasRunRef.current = true;
-      runAnalysis();
-    }
-  }, [player.id, selectedSeason]);
-
-  const runAnalysis = async () => {
     setIsAnalyzing(true);
     setError(null);
 
@@ -69,18 +48,52 @@ export function useAutoAIAnalysis({
       setAnalysis(result);
       onAnalysisComplete?.(result);
 
-      // Cache the result
       localStorage.setItem(
         `ai-analysis-${player.id}-${selectedSeason}`,
         JSON.stringify(result)
       );
     } catch (err) {
-      console.error("Analysis failed:", err);
+      console.error("AI analysis failed:", err);
       setError("AI analysis failed. Please try again.");
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [player, selectedSeason, onAnalysisComplete]);
+
+  // Effect: run on mount or season change
+  useEffect(() => {
+    if (!player) return; // guard early
+
+    hasRunRef.current = false;
+    setAnalysis(null);
+    setError(null);
+
+    const cacheKey = `ai-analysis-${player.id}-${selectedSeason}`;
+    const cached = localStorage.getItem(cacheKey);
+
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setAnalysis(parsed);
+        onAnalysisComplete?.(parsed);
+        return;
+      } catch {
+        console.error("Failed to parse cached analysis");
+      }
+    }
+
+    if (autoRun && !hasRunRef.current && !isAnalyzing) {
+      hasRunRef.current = true;
+      runAnalysis();
+    }
+  }, [
+    player,
+    selectedSeason,
+    autoRun,
+    isAnalyzing,
+    onAnalysisComplete,
+    runAnalysis,
+  ]);
 
   return {
     analysis,

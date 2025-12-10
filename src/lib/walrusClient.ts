@@ -86,7 +86,6 @@ export interface PlayerPerformanceBlob {
   };
 
   // Verification
-  data_hash: string;
   verified: boolean;
 
   // Audit Trail
@@ -129,7 +128,7 @@ export class WalrusClient {
       console.log(`   Storage: ${this.epochs} epochs`);
 
       const response = await axios.put(
-        `${this.publisherUrl}/v1/store`,
+        `${this.publisherUrl}/v1/blobs`,
         jsonData,
         {
           headers: {
@@ -271,7 +270,6 @@ export class WalrusClient {
     },
     aiAnalysis: AIAnalysis,
     baseValueMist: number,
-    dataHash: string,
     uploadedBy: string = "admin"
   ): Promise<string> {
     const seasonLabels = {
@@ -322,7 +320,7 @@ export class WalrusClient {
       },
 
       // Verification
-      data_hash: dataHash,
+
       verified: true,
 
       // Audit trail
