@@ -28,6 +28,7 @@ export interface FootballPlayerData {
   position: string;
   nationality: string;
   imageUrl: string;
+  nftImageUrl: string; // NEW: NFT image URL
   seasonalStats: SeasonalFootballStats;
   // AI score from GPT-4o analysis (0-100)
   aiScore: number;
@@ -120,16 +121,18 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     position: "Attacker",
     nationality: "Norway",
     imageUrl: "https://apiv2.allsportsapi.com/logo/players/68451_e-haaland.jpg",
+    nftImageUrl:
+      "https://github.com/tomcrown/valor_images/blob/main/haaland.png?raw=true",
     aiScore: 85,
     seasonalStats: {
       early: {
-        goals: 4,
+        goals: 3,
         assists: 1,
         minutesPlayed: 270,
         matchesPlayed: 3,
       },
       mid: {
-        goals: 6,
+        goals: 8,
         assists: 1,
         minutesPlayed: 540,
         matchesPlayed: 6,
@@ -138,7 +141,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
         goals: 15,
         assists: 3,
         minutesPlayed: 1218,
-        matchesPlayed: 14,
+        matchesPlayed: 15,
       },
     },
   },
@@ -149,24 +152,26 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     position: "Attacker",
     nationality: "France",
     imageUrl: "https://apiv2.allsportsapi.com/logo/players/51921_k-mbappe.jpg",
+    nftImageUrl:
+      "https://github.com/tomcrown/valor_images/blob/main/mbappe.png?raw=true",
     aiScore: 87,
     seasonalStats: {
       early: {
-        goals: 4,
-        assists: 1,
+        goals: 3,
+        assists: 0,
         minutesPlayed: 270,
         matchesPlayed: 3,
       },
       mid: {
         goals: 7,
-        assists: 2,
+        assists: 1,
         minutesPlayed: 540,
         matchesPlayed: 6,
       },
       current: {
         goals: 16,
         assists: 4,
-        minutesPlayed: 1306,
+        minutesPlayed: 1398,
         matchesPlayed: 15,
       },
     },
@@ -178,6 +183,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     position: "Defender",
     nationality: "England",
     imageUrl: "https://apiv2.allsportsapi.com/logo/players/14381_h-maguire.jpg",
+    nftImageUrl:
+      "https://github.com/tomcrown/valor_images/blob/main/maguire.png?raw=true",
     aiScore: 78,
     seasonalStats: {
       early: {
@@ -187,7 +194,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
         matchesPlayed: 3,
       },
       mid: {
-        goals: 1,
+        goals: 0,
         assists: 1,
         minutesPlayed: 450,
         matchesPlayed: 5,
@@ -207,6 +214,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     position: "Attacker",
     nationality: "Egypt",
     imageUrl: "https://apiv2.allsportsapi.com/logo/players/5705_m-salah.jpg",
+    nftImageUrl:
+      "https://github.com/tomcrown/valor_images/blob/main/salah.png?raw=true",
     aiScore: 88,
     seasonalStats: {
       early: {
@@ -217,7 +226,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
       },
       mid: {
         goals: 2,
-        assists: 0,
+        assists: 2,
         minutesPlayed: 540,
         matchesPlayed: 6,
       },
@@ -237,6 +246,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     nationality: "Hungary",
     imageUrl:
       "https://apiv2.allsportsapi.com/logo/players/75735_d-szoboszlai.jpg",
+    nftImageUrl:
+      "https://github.com/tomcrown/valor_images/blob/main/dominik.png?raw=true",
     aiScore: 79,
     seasonalStats: {
       early: {
@@ -247,7 +258,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
       },
       mid: {
         goals: 1,
-        assists: 1,
+        assists: 0,
         minutesPlayed: 540,
         matchesPlayed: 6,
       },
@@ -267,25 +278,27 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     nationality: "England",
     imageUrl:
       "https://apiv2.allsportsapi.com/logo/players/110036_j-bellingham.jpg",
+    nftImageUrl:
+      "https://github.com/tomcrown/valor_images/blob/main/valor-bellingham.png?raw=true",
     aiScore: 90,
     seasonalStats: {
       early: {
-        goals: 1,
-        assists: 1,
-        minutesPlayed: 270,
-        matchesPlayed: 3,
+        goals: 0,
+        assists: 0,
+        minutesPlayed: 0,
+        matchesPlayed: 0,
       },
       mid: {
-        goals: 2,
-        assists: 1,
-        minutesPlayed: 540,
-        matchesPlayed: 6,
+        goals: 0,
+        assists: 0,
+        minutesPlayed: 0,
+        matchesPlayed: 0,
       },
       current: {
         goals: 3,
         assists: 2,
         minutesPlayed: 741,
-        matchesPlayed: 11,
+        matchesPlayed: 12,
       },
     },
   },
@@ -296,6 +309,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     position: "Goalkeeper",
     nationality: "Spain",
     imageUrl: "https://apiv2.allsportsapi.com/logo/players/44666_d-raya.jpg",
+    nftImageUrl:
+      "https://github.com/tomcrown/valor_images/blob/main/raya.png?raw=true",
     aiScore: 76,
     seasonalStats: {
       early: {
@@ -313,8 +328,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
       current: {
         goals: 0,
         assists: 0,
-        minutesPlayed: 1260,
-        matchesPlayed: 14,
+        minutesPlayed: 1350,
+        matchesPlayed: 15,
       },
     },
   },
@@ -325,25 +340,27 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     position: "Attacker",
     nationality: "England",
     imageUrl: "https://apiv2.allsportsapi.com/logo/players/86333_b-saka.jpg",
+    nftImageUrl:
+      "https://github.com/tomcrown/valor_images/blob/main/saka.png?raw=true",
     aiScore: 76,
     seasonalStats: {
       early: {
         goals: 1,
         assists: 0,
-        minutesPlayed: 270,
-        matchesPlayed: 3,
+        minutesPlayed: 180,
+        matchesPlayed: 2,
       },
       mid: {
-        goals: 2,
-        assists: 1,
-        minutesPlayed: 540,
-        matchesPlayed: 6,
+        goals: 1,
+        assists: 0,
+        minutesPlayed: 360,
+        matchesPlayed: 4,
       },
       current: {
         goals: 4,
         assists: 1,
         minutesPlayed: 893,
-        matchesPlayed: 12,
+        matchesPlayed: 13,
       },
     },
   },

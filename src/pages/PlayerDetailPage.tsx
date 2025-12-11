@@ -9,6 +9,7 @@ import {
   getSeasonBaseValue,
   getSeasonPerformanceScore,
   getSeasonWalrusBlobId,
+  getCurrentSeasonBaseValue,
 } from "@/lib/suiDataFetcher";
 import type { SeasonPeriod } from "@/data/dummyData";
 import {
@@ -23,6 +24,7 @@ import {
   Calendar,
   Loader2,
   RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
@@ -100,11 +102,18 @@ const PlayerDetailPage = () => {
 
   const seasonStats = mergedPlayer.seasonalStats[selectedSeason];
 
-  let baseValueSui = getSeasonBaseValue(mergedPlayer as any, selectedSeason);
+  // Get season-specific display price (for showing historical data)
+  let displayBaseValueSui = getSeasonBaseValue(
+    mergedPlayer as any,
+    selectedSeason
+  );
 
-  if (!baseValueSui || baseValueSui <= 0) {
-    baseValueSui = mergedPlayer.currentValue ?? 0;
+  if (!displayBaseValueSui || displayBaseValueSui <= 0) {
+    displayBaseValueSui = mergedPlayer.currentValue ?? 0.001;
   }
+
+  // Get CURRENT season price (for transactions - ALWAYS CURRENT)
+  const currentSeasonPrice = getCurrentSeasonBaseValue(mergedPlayer as any);
 
   const seasonPerformanceScore = getSeasonPerformanceScore(
     mergedPlayer as any,
@@ -203,17 +212,45 @@ const PlayerDetailPage = () => {
                     {SEASON_DESCRIPTIONS[season]}
                   </div>
                   <div className="text-xs text-accent font-mono">
-                    {seasonValue.toFixed(3)} SUI
+                    {seasonValue.toFixed(4)} SUI
                   </div>
                   {seasonScore > 0 && (
                     <div className="text-xs text-muted-foreground mt-1">
                       Score: {seasonScore}/100
                     </div>
                   )}
+                  {season === "current" && (
+                    <div className="mt-2 text-[10px] font-semibold text-success">
+                      ⚡ ACTIVE TRADING PRICE
+                    </div>
+                  )}
                 </button>
               );
             })}
           </div>
+
+          {/* Important Notice */}
+          {selectedSeason !== "current" && (
+            <div className="mt-4 p-3 rounded-lg bg-info/10 border border-info/20 flex items-start gap-2 text-sm">
+              <AlertCircle className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-info font-semibold mb-1">
+                  Historical Data View
+                </p>
+                <p className="text-muted-foreground">
+                  You are viewing {SEASON_LABELS[selectedSeason].toLowerCase()}{" "}
+                  data. All buy/sell transactions use the{" "}
+                  <span className="text-success font-semibold">
+                    Current Season
+                  </span>{" "}
+                  price:
+                  <span className="font-mono ml-1">
+                    {currentSeasonPrice.toFixed(4)} SUI
+                  </span>
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -272,13 +309,17 @@ const PlayerDetailPage = () => {
                 <div className="flex flex-wrap items-center gap-6">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">
-                      Base Value ({SEASON_LABELS[selectedSeason]})
+                      {selectedSeason === "current"
+                        ? "Current Trading Price"
+                        : `${SEASON_LABELS[selectedSeason]} Price`}
                     </p>
                     <p className="text-3xl font-bold gradient-text">
-                      {baseValueSui.toFixed(3)} SUI
+                      {displayBaseValueSui.toFixed(4)} SUI
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Season: {selectedSeason}
+                      {selectedSeason === "current"
+                        ? "⚡ Active"
+                        : `📊 ${selectedSeason}`}
                     </p>
                   </div>
                   <div
@@ -448,7 +489,7 @@ const PlayerDetailPage = () => {
                 playerId={mergedPlayer.id}
                 onChainPlayerId={mergedPlayer.onChainPlayerId}
                 playerName={mergedPlayer.name}
-                currentPrice={baseValueSui}
+                currentPrice={currentSeasonPrice} // ALWAYS CURRENT SEASON PRICE
                 onTransactionComplete={handleTransactionComplete}
               />
               <div className="mt-4">
