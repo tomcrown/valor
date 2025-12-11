@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AIAnalysisDialog } from "@/components/AiAnalysisDialog";
 import { useAutoAIAnalysis } from "@/hooks/useAutoAIAnalysis";
+import { getSeasonBaseValue } from "@/lib/suiDataFetcher";
 import type { Player, SeasonPeriod } from "@/data/dummyData";
 
 interface PlayerCardProps {
@@ -28,6 +29,9 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
 
   // Get stats for selected season
   const seasonStats = player.seasonalStats[selectedSeason];
+
+  // Get season-specific price for DISPLAY
+  const displayPrice = getSeasonBaseValue(player as any, selectedSeason);
 
   // Dynamic AI score with loading state
   const displayAiScore = aiAnalysis?.performance_score ?? player.aiScore;
@@ -198,9 +202,18 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">
-                  Current Value
+                  {selectedSeason === "current"
+                    ? "Current Value"
+                    : `${getSeasonLabel()} Value`}
                 </p>
-                <p className="text-xl font-bold">${player.currentValue}</p>
+                <p className="text-xl font-bold">
+                  {displayPrice.toFixed(4)} SUI
+                </p>
+                {selectedSeason !== "current" && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Historical
+                  </p>
+                )}
               </div>
               <div
                 className={cn(
@@ -235,7 +248,7 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
                 onClick={handleBuy}
                 className="w-full btn-gradient text-primary-foreground font-semibold"
               >
-                Buy Shares
+                {selectedSeason === "current" ? "Buy Shares" : "View Details"}
               </Button>
             </div>
           </div>

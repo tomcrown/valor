@@ -8,6 +8,9 @@ module valor::valor {
     use sui::event;
     use std::string::{Self, String};
     use sui::clock::{Self, Clock};
+    use sui::url::{Self, Url};
+    use sui::display;
+    use sui::package;
 
     const EInvalidPrice: u64 = 1;
     const EInsufficientShares: u64 = 2;
@@ -23,6 +26,8 @@ module valor::valor {
     const ECircuitBreakerTriggered: u64 = 14;
     const EMaxPurchaseExceeded: u64 = 22;
     const EPlayerAlreadyExists: u64 = 26;
+    const EInvalidSeason: u64 = 27;
+    const EEarlySeasonAlreadySet: u64 = 28;
     
     const MAX_PERFORMANCE_SCORE: u64 = 1000;
     const CURVE_STEEPNESS: u64 = 1000;
@@ -30,11 +35,18 @@ module valor::valor {
     const BASIS_POINTS: u64 = 10000;
     const MIN_BASE_VALUE: u64 = 1000000;
     const MAX_BASE_VALUE: u64 = 1000000000000;
-    const MAX_HISTORY_RECORDS: u64 = 24; // 6 months of weekly updates
-    const CIRCUIT_BREAKER_THRESHOLD_BPS: u64 = 10000; // 100% for testing
-    const CIRCUIT_BREAKER_COOLDOWN_MS: u64 = 900000; // 15 minutes
-    const MAX_PURCHASE_PERCENT: u64 = 3000; // 30%
+    const MAX_HISTORY_RECORDS: u64 = 24;
+    const CIRCUIT_BREAKER_THRESHOLD_BPS: u64 = 10000;
+    const CIRCUIT_BREAKER_COOLDOWN_MS: u64 = 900000;
+    const MAX_PURCHASE_PERCENT: u64 = 3000;
     
+    // Season constants
+    const SEASON_EARLY: u8 = 0;
+    const SEASON_MID: u8 = 1;
+    const SEASON_CURRENT: u8 = 2;
+
+    public struct VALOR has drop {}
+
     public struct AdminCap has key, store {
         id: UID,
     }
@@ -60,7 +72,11 @@ module valor::valor {
         team: String,
         position: String,
         image_url: String,
+        nft_image_url: String, // NFT image for this player
         base_value: u64, 
+        early_season_base_value: u64, // Set once at registration
+        mid_season_base_value: u64,   // Updated via update function
+        current_season_base_value: u64, // Updated via update function
         total_shares: u64,      
         circulating_shares: u64,
         performance_history: vector<PerformanceRecord>,
@@ -83,14 +99,15 @@ module valor::valor {
         base_value: u64,
     }
 
-    public struct PlayerShares has key, store {
+    // NFT structure representing player shares
+    public struct PlayerSharesNFT has key, store {
         id: UID,
         player_id: ID,
         player_name: String,
-        image_url: String,
         shares: u64,
-        purchase_price: u64,  
+        purchase_price: u64,
         purchase_timestamp: u64,
+        nft_image_url: Url,
     }
 
     public struct PlayerRegistered has copy, drop {
@@ -99,6 +116,7 @@ module valor::valor {
         team: String,
         position: String,
         image_url: String,
+        nft_image_url: String,
         base_value: u64,
         total_shares: u64,
         timestamp: u64,
@@ -113,6 +131,7 @@ module valor::valor {
         market_price: u64,      
         total_paid: u64,
         new_circulating: u64,
+        nft_id: ID,
         timestamp: u64,
     }
 
@@ -132,6 +151,7 @@ module valor::valor {
     public struct BaseValueUpdated has copy, drop {
         player_id: ID,
         player_name: String,
+        season: u8,
         old_base_value: u64,
         new_base_value: u64,
         old_market_price: u64,
@@ -183,7 +203,32 @@ module valor::valor {
         timestamp: u64,
     }
 
-    fun init(ctx: &mut TxContext) {
+    public struct NFTMinted has copy, drop {
+        nft_id: ID,
+        player_id: ID,
+        player_name: String,
+        shares: u64,
+        owner: address,
+        timestamp: u64,
+    }
+
+    public struct NFTBurned has copy, drop {
+        nft_id: ID,
+        player_id: ID,
+        shares: u64,
+        timestamp: u64,
+    }
+
+    public struct NFTSplit has copy, drop {
+        original_nft_id: ID,
+        new_nft_id: ID,
+        player_id: ID,
+        original_shares: u64,
+        split_amount: u64,
+        timestamp: u64,
+    }
+
+    fun init(witness: VALOR, ctx: &mut TxContext) {
         let admin_address = tx_context::sender(ctx);
         
         let admin_cap = AdminCap {
@@ -205,6 +250,32 @@ module valor::valor {
             version: 1,
         };
 
+        // Setup NFT Display
+        let publisher = package::claim(witness, ctx);
+        let keys = vector[
+            string::utf8(b"name"),
+            string::utf8(b"description"),
+            string::utf8(b"image_url"),
+            string::utf8(b"project_url"),
+            string::utf8(b"creator")
+        ];
+        let values = vector[
+            string::utf8(b"{player_name} Share Certificate"),
+            string::utf8(b"This NFT represents {shares} shares of {player_name}. Purchase Date: {purchase_timestamp}"),
+            string::utf8(b"{nft_image_url}"),
+            string::utf8(b"https://valor.wal.app"),
+            string::utf8(b"Valor Platform")
+        ];
+        let mut display = display::new_with_fields<PlayerSharesNFT>(
+            &publisher, 
+            keys,
+            values,
+            ctx
+        );
+        display::update_version(&mut display);
+        
+        transfer::public_transfer(publisher, admin_address);
+        transfer::public_transfer(display, admin_address);
         transfer::transfer(admin_cap, admin_address);
         transfer::share_object(platform);
     }
@@ -355,13 +426,14 @@ module valor::valor {
         team: vector<u8>,
         position: vector<u8>,
         image_url: vector<u8>,
-        base_value: u64,
+        nft_image_url: vector<u8>,
+        early_season_base_value: u64,
         total_shares: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        assert!(base_value >= MIN_BASE_VALUE, EInvalidPrice);
-        assert!(base_value <= MAX_BASE_VALUE, EInvalidPrice);
+        assert!(early_season_base_value >= MIN_BASE_VALUE, EInvalidPrice);
+        assert!(early_season_base_value <= MAX_BASE_VALUE, EInvalidPrice);
         assert!(total_shares > 0, EInvalidShareAmount);
         assert!(total_shares <= 1000000000, EInvalidShareAmount);
 
@@ -372,21 +444,27 @@ module valor::valor {
         let player_id = object::uid_to_inner(&player_uid);
         object::delete(player_uid);
 
+        let nft_url_string = string::utf8(nft_image_url);
+
         let player_info = PlayerInfo {
             player_id,
             name: player_name,
             team: string::utf8(team),
             position: string::utf8(position),
             image_url: string::utf8(image_url),
-            base_value,
+            nft_image_url: nft_url_string,
+            base_value: early_season_base_value,
+            early_season_base_value,
+            mid_season_base_value: 0,
+            current_season_base_value: 0,
             total_shares,
             circulating_shares: 0,
             performance_history: vector::empty(),
             walrus_blob_id: string::utf8(b""),
             active: true,
             lifetime_volume: 0,
-            all_time_high: base_value,
-            all_time_low: base_value,
+            all_time_high: early_season_base_value,
+            all_time_low: early_season_base_value,
         };
 
         table::add(&mut platform.players, player_id, player_info);
@@ -399,17 +477,18 @@ module valor::valor {
             team: string::utf8(team),
             position: string::utf8(position),
             image_url: string::utf8(image_url),
-            base_value,
+            nft_image_url: nft_url_string,
+            base_value: early_season_base_value,
             total_shares,
             timestamp: clock::timestamp_ms(clock),
         });
     }
 
-    // SIMPLIFIED: No cooldown, no hash validation, no blob ID tracking
     public entry fun update_base_value(
         _: &AdminCap,
         platform: &mut Platform,
         player_id: ID,
+        season: u8,
         new_base_value: u64,
         performance_score: u64,
         goals: u64,
@@ -428,6 +507,7 @@ module valor::valor {
             ECircuitBreakerTriggered
         );
         
+        assert!(season == SEASON_MID || season == SEASON_CURRENT, EInvalidSeason);
         assert!(new_base_value >= MIN_BASE_VALUE, EInvalidPrice);
         assert!(new_base_value <= MAX_BASE_VALUE, EInvalidPrice);
         assert!(performance_score <= MAX_PERFORMANCE_SCORE, EInvalidPerformanceScore);
@@ -457,7 +537,6 @@ module valor::valor {
             0
         };
 
-        // Circuit breaker: 100% change required to trigger (for testing)
         if (change_percent > CIRCUIT_BREAKER_THRESHOLD_BPS) {
             platform.circuit_breaker_active = true;
             platform.circuit_breaker_until = current_time + CIRCUIT_BREAKER_COOLDOWN_MS;
@@ -473,6 +552,13 @@ module valor::valor {
             });
             
             return
+        };
+
+        // Update the appropriate season value
+        if (season == SEASON_MID) {
+            player.mid_season_base_value = new_base_value;
+        } else if (season == SEASON_CURRENT) {
+            player.current_season_base_value = new_base_value;
         };
 
         player.base_value = new_base_value;
@@ -512,6 +598,7 @@ module valor::valor {
         event::emit(BaseValueUpdated {
             player_id,
             player_name: player.name,
+            season,
             old_base_value,
             new_base_value,
             old_market_price,
@@ -582,15 +669,21 @@ module valor::valor {
             balance::destroy_zero(payment_balance);
         };
 
-        let player_shares = PlayerShares {
+        let current_time = clock::timestamp_ms(clock);
+        
+        // Mint NFT
+        let nft_url = url::new_unsafe(string::to_ascii(player.nft_image_url));
+        let nft = PlayerSharesNFT {
             id: object::new(ctx),
             player_id,
             player_name: player.name,
-            image_url: player.image_url,
             shares,
             purchase_price: avg_price,
-            purchase_timestamp: clock::timestamp_ms(clock),
+            purchase_timestamp: current_time,
+            nft_image_url: nft_url,
         };
+
+        let nft_id = object::id(&nft);
 
         platform.total_volume = platform.total_volume + total_cost;
 
@@ -603,15 +696,25 @@ module valor::valor {
             market_price: market_price_before,
             total_paid: total_cost,
             new_circulating: player.circulating_shares,
-            timestamp: clock::timestamp_ms(clock),
+            nft_id,
+            timestamp: current_time,
         });
 
-        transfer::transfer(player_shares, tx_context::sender(ctx));
+        event::emit(NFTMinted {
+            nft_id,
+            player_id,
+            player_name: player.name,
+            shares,
+            owner: tx_context::sender(ctx),
+            timestamp: current_time,
+        });
+
+        transfer::public_transfer(nft, tx_context::sender(ctx));
     }
 
     public entry fun sell_shares(
         platform: &mut Platform,
-        shares_obj: PlayerShares,
+        nft: PlayerSharesNFT,
         shares_to_sell: u64,
         min_price_per_share: u64,
         clock: &Clock,
@@ -624,25 +727,14 @@ module valor::valor {
             ECircuitBreakerTriggered
         );
 
-        let PlayerShares { 
-            id, 
-            player_id, 
-            player_name,
-            image_url,
-            shares, 
-            purchase_price,
-            purchase_timestamp: _
-        } = shares_obj;
-
-        assert!(shares >= shares_to_sell, EInsufficientShares);
+        assert!(nft.shares >= shares_to_sell, EInsufficientShares);
         assert!(shares_to_sell > 0, EInvalidShareAmount);
-        assert!(table::contains(&platform.players, player_id), EPlayerNotFound);
+        assert!(table::contains(&platform.players, nft.player_id), EPlayerNotFound);
 
-        let player = table::borrow(&platform.players, player_id);
-
+        let player = table::borrow(&platform.players, nft.player_id);
         let total_payout = calculate_sell_payout(platform, player, shares_to_sell);
         
-        let player = table::borrow_mut(&mut platform.players, player_id);
+        let player = table::borrow_mut(&mut platform.players, nft.player_id);
         let avg_price = total_payout / shares_to_sell;
 
         assert!(avg_price >= min_price_per_share, EPriceSlippage);
@@ -662,7 +754,7 @@ module valor::valor {
         let payout_coin = coin::from_balance(payout_balance, ctx);
         transfer::public_transfer(payout_coin, tx_context::sender(ctx));
 
-        let cost_basis = purchase_price * shares_to_sell;
+        let cost_basis = nft.purchase_price * shares_to_sell;
         let profit_loss = if (total_payout > cost_basis) {
             total_payout - cost_basis
         } else {
@@ -673,8 +765,8 @@ module valor::valor {
 
         event::emit(SharesSold {
             seller: tx_context::sender(ctx),
-            player_id,
-            player_name,
+            player_id: nft.player_id,
+            player_name: nft.player_name,
             shares: shares_to_sell,
             base_value: player.base_value,
             market_price: market_price_before,
@@ -684,27 +776,46 @@ module valor::valor {
             timestamp: clock::timestamp_ms(clock),
         });
 
-        let remaining = shares - shares_to_sell;
+        let remaining = nft.shares - shares_to_sell;
         if (remaining > 0) {
-            let new_id = object::new(ctx);
-            let remaining_shares = PlayerShares {
-                id: new_id,
-                player_id,
-                player_name,
-                image_url,
+            // Split NFT: keep remaining shares
+            let nft_url = nft.nft_image_url;
+            let remaining_nft = PlayerSharesNFT {
+                id: object::new(ctx),
+                player_id: nft.player_id,
+                player_name: nft.player_name,
                 shares: remaining,
-                purchase_price,
-                purchase_timestamp: clock::timestamp_ms(clock),
+                purchase_price: nft.purchase_price,
+                purchase_timestamp: nft.purchase_timestamp,
+                nft_image_url: nft_url,
             };
+            
+            // Burn original NFT
+            let PlayerSharesNFT { id, player_id: _, player_name: _, shares: _, purchase_price: _, purchase_timestamp: _, nft_image_url: _ } = nft;
+            event::emit(NFTBurned {
+                nft_id: object::uid_to_inner(&id),
+                player_id: player.player_id,
+                shares: shares_to_sell,
+                timestamp: clock::timestamp_ms(clock),
+            });
             object::delete(id);
-            transfer::transfer(remaining_shares, tx_context::sender(ctx));
+            
+            transfer::public_transfer(remaining_nft, tx_context::sender(ctx));
         } else {
+            // Burn NFT completely
+            let PlayerSharesNFT { id, player_id: _, player_name: _, shares: _, purchase_price: _, purchase_timestamp: _, nft_image_url: _ } = nft;
+            event::emit(NFTBurned {
+                nft_id: object::uid_to_inner(&id),
+                player_id: player.player_id,
+                shares: shares_to_sell,
+                timestamp: clock::timestamp_ms(clock),
+            });
             object::delete(id);
         };
     }
 
     public entry fun transfer_shares(
-        shares_obj: PlayerShares,
+        nft: PlayerSharesNFT,
         recipient: address,
         clock: &Clock,
         ctx: &mut TxContext
@@ -712,59 +823,80 @@ module valor::valor {
         event::emit(SharesTransferred {
             from: tx_context::sender(ctx),
             to: recipient,
-            player_id: shares_obj.player_id,
-            shares: shares_obj.shares,
+            player_id: nft.player_id,
+            shares: nft.shares,
             timestamp: clock::timestamp_ms(clock),
         });
 
-        transfer::public_transfer(shares_obj, recipient);
-    }
-
-    public entry fun merge_shares(
-        shares1: &mut PlayerShares,
-        shares2: PlayerShares,
-    ) {
-        let PlayerShares { 
-            id, 
-            player_id, 
-            player_name: _,
-            image_url: _,
-            shares, 
-            purchase_price,
-            purchase_timestamp: _
-        } = shares2;
-        
-        assert!(shares1.player_id == player_id, EPlayerNotFound);
-
-        let total_shares = shares1.shares + shares;
-        let total_cost = (shares1.shares * shares1.purchase_price) + (shares * purchase_price);
-        shares1.purchase_price = total_cost / total_shares;
-        shares1.shares = total_shares;
-
-        object::delete(id);
+        transfer::public_transfer(nft, recipient);
     }
 
     public entry fun split_shares(
-        shares_obj: &mut PlayerShares,
+        nft: &mut PlayerSharesNFT,
         split_amount: u64,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
-        assert!(shares_obj.shares > split_amount, EInsufficientShares);
+        assert!(nft.shares > split_amount, EInsufficientShares);
         assert!(split_amount > 0, EInvalidShareAmount);
 
-        shares_obj.shares = shares_obj.shares - split_amount;
+        let original_shares = nft.shares;
+        nft.shares = nft.shares - split_amount;
 
-        let new_shares = PlayerShares {
+        let new_nft = PlayerSharesNFT {
             id: object::new(ctx),
-            player_id: shares_obj.player_id,
-            player_name: shares_obj.player_name,
-            image_url: shares_obj.image_url,
+            player_id: nft.player_id,
+            player_name: nft.player_name,
             shares: split_amount,
-            purchase_price: shares_obj.purchase_price,
-            purchase_timestamp: shares_obj.purchase_timestamp,
+            purchase_price: nft.purchase_price,
+            purchase_timestamp: nft.purchase_timestamp,
+            nft_image_url: nft.nft_image_url,
         };
 
-        transfer::transfer(new_shares, tx_context::sender(ctx));
+        let new_nft_id = object::id(&new_nft);
+
+        event::emit(NFTSplit {
+            original_nft_id: object::id(nft),
+            new_nft_id,
+            player_id: nft.player_id,
+            original_shares,
+            split_amount,
+            timestamp: clock::timestamp_ms(clock),
+        });
+
+        transfer::public_transfer(new_nft, tx_context::sender(ctx));
+    }
+
+    public entry fun merge_shares(
+        nft1: &mut PlayerSharesNFT,
+        nft2: PlayerSharesNFT,
+        clock: &Clock,
+    ) {
+        let PlayerSharesNFT { 
+            id, 
+            player_id, 
+            player_name: _,
+            shares, 
+            purchase_price,
+            purchase_timestamp: _,
+            nft_image_url: _
+        } = nft2;
+        
+        assert!(nft1.player_id == player_id, EPlayerNotFound);
+
+        let total_shares = nft1.shares + shares;
+        let total_cost = (nft1.shares * nft1.purchase_price) + (shares * purchase_price);
+        nft1.purchase_price = total_cost / total_shares;
+        nft1.shares = total_shares;
+
+        event::emit(NFTBurned {
+            nft_id: object::uid_to_inner(&id),
+            player_id,
+            shares,
+            timestamp: clock::timestamp_ms(clock),
+        });
+
+        object::delete(id);
     }
 
     // View functions
@@ -781,6 +913,21 @@ module valor::valor {
     public fun get_base_value(platform: &Platform, player_id: ID): u64 {
         let player = table::borrow(&platform.players, player_id);
         player.base_value
+    }
+
+    public fun get_early_season_base_value(platform: &Platform, player_id: ID): u64 {
+        let player = table::borrow(&platform.players, player_id);
+        player.early_season_base_value
+    }
+
+    public fun get_mid_season_base_value(platform: &Platform, player_id: ID): u64 {
+        let player = table::borrow(&platform.players, player_id);
+        player.mid_season_base_value
+    }
+
+    public fun get_current_season_base_value(platform: &Platform, player_id: ID): u64 {
+        let player = table::borrow(&platform.players, player_id);
+        player.current_season_base_value
     }
 
     public fun get_valuation_gap(platform: &Platform, player_id: ID): (u64, bool) {
@@ -811,6 +958,11 @@ module valor::valor {
     public fun get_player_image_url(platform: &Platform, player_id: ID): String {
         let player = table::borrow(&platform.players, player_id);
         player.image_url
+    }
+
+    public fun get_player_nft_image_url(platform: &Platform, player_id: ID): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.nft_image_url
     }
 
     public fun get_circulating_shares(platform: &Platform, player_id: ID): u64 {
@@ -847,7 +999,6 @@ module valor::valor {
         platform.total_volume
     }
 
-
     public fun get_player_count(platform: &Platform): u64 {
         platform.player_count
     }
@@ -868,8 +1019,6 @@ module valor::valor {
     public fun get_liquidity_balance(platform: &Platform): u64 {
         balance::value(&platform.liquidity_pool)
     }
-
- 
 
     public fun get_walrus_blob_id(platform: &Platform, player_id: ID): String {
         let player = table::borrow(&platform.players, player_id);
@@ -916,29 +1065,24 @@ module valor::valor {
         *vector::borrow(&player.performance_history, len - 1)
     }
 
-    public fun get_share_count(shares: &PlayerShares): u64 {
-        shares.shares
+    // NFT view functions
+    public fun get_nft_share_count(nft: &PlayerSharesNFT): u64 {
+        nft.shares
     }
 
-    public fun get_share_player_id(shares: &PlayerShares): ID {
-        shares.player_id
+    public fun get_nft_player_id(nft: &PlayerSharesNFT): ID {
+        nft.player_id
     }
 
-    public fun get_share_purchase_price(shares: &PlayerShares): u64 {
-        shares.purchase_price
+    public fun get_nft_purchase_price(nft: &PlayerSharesNFT): u64 {
+        nft.purchase_price
     }
 
-    public fun get_share_player_name(shares: &PlayerShares): String {
-        shares.player_name
+    public fun get_nft_player_name(nft: &PlayerSharesNFT): String {
+        nft.player_name
     }
 
-    public fun get_share_image_url(shares: &PlayerShares): String {
-        shares.image_url
+    public fun get_nft_purchase_timestamp(nft: &PlayerSharesNFT): u64 {
+        nft.purchase_timestamp
     }
-
-    public fun get_share_purchase_timestamp(shares: &PlayerShares): u64 {
-        shares.purchase_timestamp
-    }
-
-
 }

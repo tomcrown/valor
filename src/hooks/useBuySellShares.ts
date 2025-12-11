@@ -1,6 +1,7 @@
 // ============================================================================
 // FILE: hooks/useBuySellShares.ts
 // Custom hook for buying and selling player shares
+// BUY/SELL ALWAYS USES CURRENT SEASON VALUE
 // ============================================================================
 
 import { useState } from "react";
@@ -13,15 +14,16 @@ import { SUI_CONFIG, suiToMist } from "@/config/sui.config";
 import { toast } from "@/hooks/use-toast";
 
 export interface BuySharesParams {
-  playerId: string;
+  playerId: string; // On-chain player ID (NOT football player ID)
   playerName: string;
   shares: number;
-  maxPricePerShare: number; // in SUI
+  maxPricePerShare: number; // in SUI (ALWAYS CURRENT SEASON PRICE)
 }
 
 export interface SellSharesParams {
-  operations: Array<{ objectId: string; amount: number }>;
-  minPricePerShare: number; // in SUI
+  nftObjectId: string; // The PlayerSharesNFT object ID
+  sharesToSell: number;
+  minPricePerShare: number; // in SUI (ALWAYS CURRENT SEASON PRICE)
   playerName: string;
 }
 
@@ -32,6 +34,7 @@ export function useBuySellShares() {
 
   /**
    * Buy player shares
+   * ALWAYS uses CURRENT SEASON base value for pricing
    */
   const buyShares = async (params: BuySharesParams) => {
     if (!account) {
@@ -59,15 +62,15 @@ export function useBuySellShares() {
       // Set gas budget
       tx.setGasBudget(SUI_CONFIG.gas.budget);
 
-      // Calculate payment amount (add 10% buffer for slippage)
-      const estimatedCost = params.shares * params.maxPricePerShare * 1.1;
+      // Calculate payment amount (add 20% buffer for slippage and bonding curve)
+      const estimatedCost = params.shares * params.maxPricePerShare * 1.2;
       const paymentAmount = suiToMist(estimatedCost);
 
       console.log("💰 Payment calculation:", {
-        estimatedCost,
-        paymentAmountMist: paymentAmount,
+        estimatedCost: estimatedCost.toFixed(4),
+        paymentAmountMist: paymentAmount.toString(),
         shares: params.shares,
-        pricePerShare: params.maxPricePerShare,
+        maxPricePerShare: params.maxPricePerShare,
       });
 
       // Split coin for payment
@@ -78,7 +81,7 @@ export function useBuySellShares() {
         target: `${SUI_CONFIG.contracts.packageId}::valor::buy_shares`,
         arguments: [
           tx.object(SUI_CONFIG.contracts.platformObjectId), // platform
-          tx.pure.id(params.playerId), // player_id
+          tx.pure.address(params.playerId), // player_id (on-chain ID)
           tx.pure.u64(params.shares), // shares
           tx.pure.u64(suiToMist(params.maxPricePerShare)), // max_price_per_share (in MIST)
           paymentCoin, // payment
@@ -168,7 +171,8 @@ export function useBuySellShares() {
   };
 
   /**
-   * Sell player shares (supports multiple share objects in ONE transaction)
+   * Sell player shares
+   * ALWAYS uses CURRENT SEASON base value for pricing
    */
   const sellShares = async (params: SellSharesParams) => {
     if (!account) {
@@ -180,10 +184,10 @@ export function useBuySellShares() {
       return null;
     }
 
-    if (params.operations.length === 0) {
+    if (!params.nftObjectId || params.sharesToSell <= 0) {
       toast({
-        title: "No Shares to Sell",
-        description: "Please specify shares to sell.",
+        title: "Invalid Parameters",
+        description: "Please specify valid shares to sell.",
         variant: "destructive",
       });
       return null;
@@ -192,48 +196,35 @@ export function useBuySellShares() {
     setIsProcessing(true);
 
     try {
-      const totalShares = params.operations.reduce(
-        (sum, op) => sum + op.amount,
-        0
-      );
-
-      console.log("🔵 Starting batched sell shares transaction:", {
-        operations: params.operations,
-        totalShares,
+      console.log("🔵 Starting sell shares transaction:", {
+        nftObjectId: params.nftObjectId,
+        sharesToSell: params.sharesToSell,
         minPricePerShare: params.minPricePerShare,
       });
 
       const tx = new Transaction();
 
-      // Set gas budget (higher for multiple operations)
-      tx.setGasBudget(
-        SUI_CONFIG.gas.budget * Math.max(1, params.operations.length)
-      );
+      // Set gas budget
+      tx.setGasBudget(SUI_CONFIG.gas.budget);
 
-      // Add all sell operations to the SAME transaction
-      for (const operation of params.operations) {
-        console.log(
-          `  Adding sell operation: ${operation.amount} shares from ${operation.objectId}`
-        );
-
-        tx.moveCall({
-          target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
-          arguments: [
-            tx.object(SUI_CONFIG.contracts.platformObjectId), // platform
-            tx.object(operation.objectId), // shares_obj
-            tx.pure.u64(operation.amount), // shares_to_sell
-            tx.pure.u64(suiToMist(params.minPricePerShare)), // min_price_per_share (in MIST)
-            tx.object("0x6"), // clock
-          ],
-        });
-      }
+      // Call sell_shares function
+      tx.moveCall({
+        target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
+        arguments: [
+          tx.object(SUI_CONFIG.contracts.platformObjectId), // platform
+          tx.object(params.nftObjectId), // nft (PlayerSharesNFT object)
+          tx.pure.u64(params.sharesToSell), // shares_to_sell
+          tx.pure.u64(suiToMist(params.minPricePerShare)), // min_price_per_share (in MIST)
+          tx.object("0x6"), // clock
+        ],
+      });
 
       toast({
         title: "Transaction Submitted",
-        description: `Selling ${totalShares} shares from ${params.operations.length} object(s)...`,
+        description: `Selling ${params.sharesToSell} shares of ${params.playerName}...`,
       });
 
-      console.log("📤 Executing batched transaction...");
+      console.log("📤 Executing transaction...");
 
       const result = await signAndExecute({
         transaction: tx,
@@ -244,7 +235,7 @@ export function useBuySellShares() {
 
       toast({
         title: "Sale Successful! 💰",
-        description: `Successfully sold ${totalShares} shares of ${params.playerName} in ONE transaction`,
+        description: `Successfully sold ${params.sharesToSell} shares of ${params.playerName}`,
       });
 
       return {

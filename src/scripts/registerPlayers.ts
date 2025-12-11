@@ -1,33 +1,37 @@
 #!/usr/bin/env ts-node
 // ============================================================================
-// FILE: scripts/registerPlayers.ts
+// FILE: scripts/registerPlayers.ts (UPDATED with Decentralized Pricing)
 // Register players on-chain from dummyData.ts
 // Usage:
-//   ts-node scripts/registerPlayers.ts --season early --baseValues "Haaland=0.1,Saka=0.07"
+//   ts-node scripts/registerPlayers.ts --season early
+//   ts-node scripts/registerPlayers.ts --season early --players "Haaland,Salah"
+//   ts-node scripts/registerPlayers.ts --season early --baseValues "Haaland=0.15" (optional override)
 // ============================================================================
 import dotenv from "dotenv";
 dotenv.config();
 import { Transaction } from "@mysten/sui/transactions";
-import { DUMMY_PLAYERS, type SeasonPeriod } from "../data/dummyData.ts";
+import { FOOTBALL_PLAYERS, type SeasonPeriod } from "../data/dummyData.ts";
 import { SUI_CONFIG } from "../config/sui.config.ts";
 import {
   rpcClient,
   loadAdminKeypair,
   executeTransaction,
   getClockObjectId,
-  getPlatformState,
-  parsePlayerData,
 } from "../lib/suiClient.ts";
 import { walrusClient } from "../lib/walrusClient.ts";
 import { analyzePlayer, type AIAnalysis } from "../lib/openai.ts";
+import {
+  calculateEarlySeasonBaseValue,
+  suiToMistBigInt,
+} from "../lib/valueCalculator.ts";
 
 // ============================================================================
-// Helpers: parse CLI baseValues string and conversions
+// Parse CLI Arguments
 // ============================================================================
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  let season: SeasonPeriod = "current";
+  let season: SeasonPeriod = "early";
   let playersToRegister: string[] = [];
   let baseValuesRaw: string | null = null;
 
@@ -51,46 +55,48 @@ function parseArgs() {
   return { season, playersToRegister, manualBaseValues };
 }
 
-/**
- * Parse "Haaland=0.1,Messi=0.12" => { haaland: 0.1, messi: 0.12 }
- * Keys lower-cased for flexible matching.
- */
 function parseBaseValuesString(s: string): Record<string, number> {
   const out: Record<string, number> = {};
   const pairs = s
     .split(",")
     .map((p) => p.trim())
     .filter(Boolean);
+
   for (const pair of pairs) {
     const [rawName, rawVal] = pair.split("=");
     if (!rawName || !rawVal) continue;
+
     const name = rawName.trim().toLowerCase();
     const val = Number(rawVal.trim());
+
     if (isNaN(val)) {
-      console.warn(`Warning: invalid base value for ${rawName}: ${rawVal}`);
+      console.warn(`⚠️  Invalid base value for ${rawName}: ${rawVal}`);
       continue;
     }
-    out[name] = val;
+
+    if (val > 0.2) {
+      console.warn(
+        `⚠️  ${rawName}: ${val} exceeds 0.20 SUI cap, capping at 0.20`
+      );
+      out[name] = 0.2;
+    } else {
+      out[name] = val;
+    }
   }
+
   return out;
 }
 
-/**
- * Find matching base value for a player name
- * Supports partial matching (e.g., "Haaland" matches "Erling Haaland")
- */
 function findBaseValueForPlayer(
   playerName: string,
   manualBaseValues: Record<string, number>
 ): number | null {
   const lowerPlayerName = playerName.toLowerCase();
 
-  // Try exact match first
   if (manualBaseValues[lowerPlayerName] != null) {
     return manualBaseValues[lowerPlayerName];
   }
 
-  // Try partial match - check if any key is contained in the player name
   for (const [key, value] of Object.entries(manualBaseValues)) {
     if (lowerPlayerName.includes(key)) {
       return value;
@@ -100,94 +106,12 @@ function findBaseValueForPlayer(
   return null;
 }
 
-/** Convert SUI number -> MIST bigint */
-function suiToMistBigInt(sui: number): bigint {
-  return BigInt(Math.floor(sui * 1_000_000_000));
-}
-
-/** Convert on-chain base_value (MIST bigint) -> frontend "currentValue" */
-function onChainBaseMistToFrontendCurrentValue(baseValueMist: bigint): number {
-  const baseInSui = Number(baseValueMist) / 1_000_000_000;
-  return baseInSui * 1000;
-}
-
 // ============================================================================
-// Calculate Base Value from AI Score
-// ============================================================================
-
-function calculateBaseValue(aiScore: number, currentValue: number): bigint {
-  const baseInSui = currentValue / 1000;
-  const adjustedForAI = baseInSui * (aiScore / 100);
-
-  const finalValue = Math.max(
-    Number(SUI_CONFIG.market.minBaseValue),
-    Math.min(
-      adjustedForAI * 1_000_000_000,
-      Number(SUI_CONFIG.market.maxBaseValue)
-    )
-  );
-
-  return BigInt(Math.floor(finalValue));
-}
-
-// ============================================================================
-// Helper: fetch on-chain player object id from platform.player_names table
-// ============================================================================
-
-async function getPlayerObjectIdFromPlatform(
-  playerName: string
-): Promise<string | null> {
-  try {
-    const platformJson = (await getPlatformState()) as Record<string, any>;
-
-    const tryPaths = [
-      platformJson?.player_names,
-      platformJson?.fields?.player_names,
-      platformJson?.contents?.json?.player_names,
-      platformJson?.contents?.json?.fields?.player_names,
-    ];
-
-    for (const candidate of tryPaths) {
-      if (!candidate) continue;
-
-      // Case 1: plain object mapping
-      if (typeof candidate === "object" && !Array.isArray(candidate)) {
-        const lower = playerName.toLowerCase();
-        for (const [k, v] of Object.entries(candidate)) {
-          if (k.toLowerCase() === lower) return String(v);
-        }
-      }
-
-      // Case 2: entries array
-      if (Array.isArray(candidate)) {
-        for (const entry of candidate) {
-          const key = entry?.key ?? entry?.name ?? entry?.k ?? null;
-          let value = entry?.value ?? entry?.v ?? null;
-          if (!key || !value) continue;
-
-          if (String(key).toLowerCase() === playerName.toLowerCase()) {
-            if (typeof value === "string") return value;
-            if (typeof value === "object" && value.objectId)
-              return value.objectId;
-            if (typeof value === "object" && value.id) return value.id;
-          }
-        }
-      }
-    }
-
-    return null;
-  } catch (err) {
-    console.error("Failed to read platform.player_names:", err);
-    return null;
-  }
-}
-
-// ============================================================================
-// Register Single Player
+// Register Single Player (EARLY SEASON ONLY)
 // ============================================================================
 
 async function registerPlayer(
-  playerData: (typeof DUMMY_PLAYERS)[0],
+  playerData: (typeof FOOTBALL_PLAYERS)[0],
   season: SeasonPeriod,
   keypair: ReturnType<typeof loadAdminKeypair>,
   manualBaseValues: Record<string, number>
@@ -197,9 +121,16 @@ async function registerPlayer(
     console.log(`🏃 Registering: ${playerData.name}`);
     console.log("=".repeat(70));
 
+    if (season !== "early") {
+      console.error(`\n❌ Registration only allowed for early season!`);
+      console.log(`   For ${season} season, use updateBaseValues.ts instead`);
+      return { success: false };
+    }
+
     const seasonStats = playerData.seasonalStats[season];
 
     console.log(`📊 Season: ${season.toUpperCase()}`);
+    console.log(`   Position: ${playerData.position}`);
     console.log(`   Goals: ${seasonStats.goals}`);
     console.log(`   Assists: ${seasonStats.assists}`);
     console.log(`   Matches: ${seasonStats.matchesPlayed}`);
@@ -214,83 +145,51 @@ async function registerPlayer(
       assists: seasonStats.assists,
       minutesPlayed: seasonStats.minutesPlayed,
       matchesPlayed: seasonStats.matchesPlayed,
-      currentValue: playerData.currentValue,
-      weeklyChange: playerData.weeklyChange,
+      currentValue: playerData.aiScore,
+      weeklyChange: 0,
       season: season,
     });
 
-    console.log(`   AI Score: ${aiAnalysis.performance_score}/100`);
-    console.log(`   Trend: ${aiAnalysis.performance_trend}`);
+    console.log(`   ✅ AI Score: ${aiAnalysis.performance_score}/100`);
+    console.log(`   📈 Trend: ${aiAnalysis.performance_trend}`);
 
-    // Step 2: Determine base value
+    // Step 2: Calculate base value (decentralized or manual override)
     let baseValueMist: bigint;
 
-    // FIXED: Use partial matching function
     const manualValue = findBaseValueForPlayer(
       playerData.name,
       manualBaseValues
     );
 
-    if (season === "early" && manualValue != null) {
-      // Manual override in SUI
-      baseValueMist = suiToMistBigInt(manualValue);
+    if (manualValue != null) {
+      // Manual override (still capped at 0.20)
+      baseValueMist = suiToMistBigInt(Math.min(manualValue, 0.2));
       console.log(
-        `\n💰 EARLY - manual base value: ${manualValue} SUI (${baseValueMist} MIST)`
+        `\n💰 Using MANUAL override: ${Math.min(manualValue, 0.2)} SUI`
       );
-    } else if (season === "early") {
-      // No manual value -> use AI calculation
-      baseValueMist = calculateBaseValue(
-        aiAnalysis.performance_score,
-        playerData.currentValue
-      );
-      console.log(
-        `\n💰 EARLY - AI calculated base value: ${
-          Number(baseValueMist) / 1_000_000_000
-        } SUI`
-      );
+      if (manualValue > 0.2) {
+        console.log(
+          `   ⚠️  Capped from ${manualValue} to 0.20 SUI for decentralization`
+        );
+      }
     } else {
-      // MID or CURRENT -> fetch previous on-chain base_value
-      console.log("\n🔎 Fetching previous on-chain base value...");
-      const playerObjId = await getPlayerObjectIdFromPlatform(playerData.name);
-      if (!playerObjId) {
-        throw new Error(
-          `Player object ID not found on-chain for ${playerData.name}`
-        );
-      }
-
-      const onChainObj = await rpcClient.getObject({
-        id: playerObjId,
-        options: { showContent: true },
-      });
-
-      const parsed = parsePlayerData(onChainObj);
-      if (!parsed) {
-        throw new Error(
-          `Failed to parse on-chain Player object for ${playerData.name}`
-        );
-      }
-
-      const previousBaseMist: bigint = parsed.base_value;
-      console.log(
-        `   🔁 Previous on-chain base value: ${
-          Number(previousBaseMist) / 1_000_000_000
-        } SUI`
-      );
-
-      const frontendCurrentValue =
-        onChainBaseMistToFrontendCurrentValue(previousBaseMist);
-      baseValueMist = calculateBaseValue(
+      // Decentralized calculation
+      console.log(`\n💰 Using DECENTRALIZED calculation:`);
+      baseValueMist = calculateEarlySeasonBaseValue(
         aiAnalysis.performance_score,
-        frontendCurrentValue
-      );
-      console.log(
-        `\n💰 ${season.toUpperCase()} - AI adjusted base value: ${
-          Number(baseValueMist) / 1_000_000_000
-        } SUI`
+        playerData.position,
+        seasonStats
       );
     }
 
-    // Step 4: Upload to Walrus
+    const finalSuiValue = Number(baseValueMist) / 1_000_000_000;
+    console.log(
+      `\n✅ Final early season base: ${finalSuiValue.toFixed(
+        4
+      )} SUI (${baseValueMist} MIST)`
+    );
+
+    // Step 3: Upload to Walrus
     console.log("\n📦 Uploading to Walrus...");
     const blobId = await walrusClient.uploadPlayerPerformance(
       playerData.id,
@@ -313,17 +212,13 @@ async function registerPlayer(
 
     console.log(`   ✅ Walrus Blob ID: ${blobId}`);
 
-    // Step 5: Register on-chain
+    // Step 4: Register on-chain
     console.log("\n⛓️  Registering on Sui blockchain...");
 
     const tx = new Transaction();
     const clockId = await getClockObjectId();
     const imageUrl = playerData.imageUrl ?? "";
-
-    // Move contract signature:
-    // register_player(_: &AdminCap, platform: &mut Platform, name: vector<u8>,
-    //                 team: vector<u8>, position: vector<u8>, image_url: vector<u8>,
-    //                 base_value: u64, total_shares: u64, clock: &Clock)
+    const nftImageUrl = playerData.nftImageUrl;
 
     tx.moveCall({
       target: `${SUI_CONFIG.contracts.packageId}::valor::register_player`,
@@ -334,6 +229,7 @@ async function registerPlayer(
         tx.pure.string(playerData.club),
         tx.pure.string(playerData.position),
         tx.pure.string(imageUrl),
+        tx.pure.string(nftImageUrl),
         tx.pure.u64(baseValueMist),
         tx.pure.u64(SUI_CONFIG.market.defaultShares),
         tx.object(clockId),
@@ -375,31 +271,44 @@ async function registerPlayer(
 // ============================================================================
 
 async function main() {
-  console.log("🚀 Valor Player Registration Script");
+  console.log("🚀 Valor Player Registration Script (Decentralized Pricing)");
   console.log("=".repeat(70));
 
   const { season, playersToRegister, manualBaseValues } = parseArgs();
+
+  if (season !== "early") {
+    console.error(`\n❌ ERROR: Registration only allowed for --season early`);
+    console.log(
+      `   For mid/current seasons, use: ts-node scripts/updateBaseValues.ts`
+    );
+    process.exit(1);
+  }
 
   console.log(`\n📅 Season Period: ${season.toUpperCase()}`);
   console.log(`🌐 Network: ${SUI_CONFIG.network}`);
   console.log(`📦 Package ID: ${SUI_CONFIG.contracts.packageId}`);
   console.log(`🏛️  Platform ID: ${SUI_CONFIG.contracts.platformObjectId}`);
+  console.log(
+    `\n💡 Pricing Mode: ${
+      Object.keys(manualBaseValues).length > 0
+        ? "HYBRID (Manual + Decentralized)"
+        : "FULLY DECENTRALIZED"
+    }`
+  );
+  console.log(`   Max base value: 0.20 SUI (decentralization cap)`);
 
-  // Show manual base values if provided
   if (Object.keys(manualBaseValues).length > 0) {
-    console.log(`\n💰 Manual Base Values (SUI):`);
+    console.log(`\n💰 Manual Overrides (SUI):`);
     for (const [name, value] of Object.entries(manualBaseValues)) {
       console.log(`   ${name}: ${value} SUI`);
     }
   }
 
-  // Load admin keypair
   console.log("\n🔑 Loading admin keypair...");
   const keypair = loadAdminKeypair();
   const address = keypair.getPublicKey().toSuiAddress();
   console.log(`   Admin address: ${address}`);
 
-  // Check balance
   const balance = await rpcClient.getBalance({ owner: address });
   console.log(
     `   Balance: ${Number(balance.totalBalance) / 1_000_000_000} SUI`
@@ -409,10 +318,9 @@ async function main() {
     throw new Error("Insufficient balance. Need at least 0.1 SUI for gas.");
   }
 
-  // Filter players to register
-  let playersToProcess = DUMMY_PLAYERS;
+  let playersToProcess = FOOTBALL_PLAYERS;
   if (playersToRegister.length > 0) {
-    playersToProcess = DUMMY_PLAYERS.filter(
+    playersToProcess = FOOTBALL_PLAYERS.filter(
       (p) =>
         playersToRegister.includes(p.name) || playersToRegister.includes(p.id)
     );
@@ -421,7 +329,6 @@ async function main() {
     console.log(`\n📋 Registering all ${playersToProcess.length} players`);
   }
 
-  // Process each player
   const results: Array<{
     player: string;
     success: boolean;
@@ -443,14 +350,12 @@ async function main() {
       blobId: result.blobId,
     });
 
-    // Rate limiting
     if (playersToProcess.indexOf(player) < playersToProcess.length - 1) {
       console.log("\n⏳ Waiting 2s before next registration...");
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 
-  // Summary
   console.log("\n" + "=".repeat(70));
   console.log("📊 REGISTRATION SUMMARY");
   console.log("=".repeat(70));
@@ -479,4 +384,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { registerPlayer, calculateBaseValue };
+export { registerPlayer };

@@ -1,15 +1,16 @@
 #!/usr/bin/env ts-node
 // ============================================================================
-// FILE: scripts/updateBaseValues.ts
-// Update player base values on-chain (Simplified - No UpdateCapability needed)
+// FILE: scripts/updateBaseValues.ts (UPDATED with Performance-Based Pricing)
+// Update player base values on-chain (Mid/Current seasons only)
 // Usage:
-//   ts-node scripts/updateBaseValues.ts --season mid --players "Erling Haaland"
+//   ts-node scripts/updateBaseValues.ts --season mid
+//   ts-node scripts/updateBaseValues.ts --season current --players "Erling Haaland"
 // ============================================================================
 
 import dotenv from "dotenv";
 dotenv.config();
 import { Transaction } from "@mysten/sui/transactions";
-import { DUMMY_PLAYERS, type SeasonPeriod } from "../data/dummyData.ts";
+import { FOOTBALL_PLAYERS, type SeasonPeriod } from "../data/dummyData.ts";
 import { SUI_CONFIG } from "../config/sui.config.ts";
 import {
   rpcClient,
@@ -19,7 +20,11 @@ import {
 } from "../lib/suiClient.ts";
 import { walrusClient } from "../lib/walrusClient.ts";
 import { analyzePlayer } from "../lib/openai.ts";
-import { calculateBaseValue } from "../scripts/registerPlayers.ts";
+import {
+  calculateMidCurrentSeasonValue,
+  getPreviousSeasonStats,
+  mistToSui,
+} from "../lib/valueCalculator.ts";
 
 // ============================================================================
 // Parse CLI Arguments
@@ -44,9 +49,26 @@ function parseArgs() {
 }
 
 /**
- * FIXED VERSION: Find the on-chain Player object ID from platform.player_names table.
- *
- * This function properly handles the dynamic field lookup for Sui tables.
+ * Convert season string to contract season code
+ * early = 0 (but shouldn't be used in updates)
+ * mid = 1
+ * current = 2
+ */
+function seasonToContractCode(season: SeasonPeriod): number {
+  switch (season) {
+    case "early":
+      return 0;
+    case "mid":
+      return 1;
+    case "current":
+      return 2;
+    default:
+      throw new Error(`Invalid season: ${season}`);
+  }
+}
+
+/**
+ * Find the on-chain Player object ID from platform.player_names table.
  */
 async function getPlayerObjectIdFromPlatform(
   playerName: string
@@ -54,7 +76,6 @@ async function getPlayerObjectIdFromPlatform(
   try {
     const platformId = SUI_CONFIG.contracts.platformObjectId;
 
-    // Get platform object
     const platform = await rpcClient.getObject({
       id: platformId,
       options: { showContent: true },
@@ -70,7 +91,6 @@ async function getPlayerObjectIdFromPlatform(
 
     console.log(`   📋 Table ID: ${tableId}`);
 
-    // FIRST: Try to list all dynamic fields to see what's available
     try {
       const allFields = await rpcClient.getDynamicFields({
         parentId: tableId,
@@ -80,7 +100,6 @@ async function getPlayerObjectIdFromPlatform(
         `   📊 Found ${allFields.data.length} total players in table`
       );
 
-      // Look for exact match (case-insensitive)
       const matchingField = allFields.data.find(
         (f) => String(f.name.value).toLowerCase() === playerName.toLowerCase()
       );
@@ -90,7 +109,6 @@ async function getPlayerObjectIdFromPlatform(
           `   ✅ Found matching field for: ${matchingField.name.value}`
         );
 
-        // Now get the actual value (player ID) from this field
         const fieldObject = await rpcClient.getDynamicFieldObject({
           parentId: tableId,
           name: matchingField.name,
@@ -117,7 +135,7 @@ async function getPlayerObjectIdFromPlatform(
       console.error(`   ❌ Error listing fields: ${listErr.message}`);
     }
 
-    // FALLBACK: Try direct query with exact string
+    // FALLBACK: Try direct query
     try {
       const field = await rpcClient.getDynamicFieldObject({
         parentId: tableId,
@@ -143,59 +161,12 @@ async function getPlayerObjectIdFromPlatform(
   }
 }
 
-// Alternative approach: Get player ID by querying the players table directly
-async function getAllRegisteredPlayers(): Promise<Map<string, string>> {
-  const playerMap = new Map<string, string>();
-
-  try {
-    const platformId = SUI_CONFIG.contracts.platformObjectId;
-    const platform = await rpcClient.getObject({
-      id: platformId,
-      options: { showContent: true },
-    });
-
-    const content = platform?.data?.content as any;
-    const tableId = content?.fields?.player_names?.fields?.id?.id;
-
-    if (!tableId) {
-      console.error("❌ player_names table not found");
-      return playerMap;
-    }
-
-    const allFields = await rpcClient.getDynamicFields({
-      parentId: tableId,
-    });
-
-    for (const field of allFields.data) {
-      const playerName = String(field.name.value);
-
-      const fieldObject = await rpcClient.getDynamicFieldObject({
-        parentId: tableId,
-        name: field.name,
-      });
-
-      if (fieldObject?.data?.content) {
-        const fieldContent = fieldObject.data.content as any;
-        const playerId = fieldContent?.fields?.value;
-
-        if (playerId) {
-          playerMap.set(playerName, String(playerId));
-        }
-      }
-    }
-
-    return playerMap;
-  } catch (err: any) {
-    console.error("Error fetching all players:", err.message);
-    return playerMap;
-  }
-}
 // ============================================================================
-// Update Single Player
+// Update Single Player (MID/CURRENT SEASONS ONLY)
 // ============================================================================
 
 async function updatePlayer(
-  playerInfo: (typeof DUMMY_PLAYERS)[0],
+  playerInfo: (typeof FOOTBALL_PLAYERS)[0],
   season: SeasonPeriod,
   keypair: ReturnType<typeof loadAdminKeypair>
 ): Promise<boolean> {
@@ -204,13 +175,29 @@ async function updatePlayer(
     console.log(`📊 Updating: ${playerInfo.name}`);
     console.log("=".repeat(70));
 
-    // Get stats for the selected season
-    const seasonStats = playerInfo.seasonalStats[season];
+    // Validate season
+    if (season === "early") {
+      console.error(`\n❌ Cannot update early season values!`);
+      console.log(`   Early season values are set once during registration`);
+      return false;
+    }
+
+    const currentSeasonStats = playerInfo.seasonalStats[season];
+    const previousSeasonStats = getPreviousSeasonStats(
+      playerInfo.seasonalStats,
+      season
+    );
 
     console.log(`📅 Season: ${season.toUpperCase()}`);
-    console.log(`   Goals: ${seasonStats.goals}`);
-    console.log(`   Assists: ${seasonStats.assists}`);
-    console.log(`   Matches: ${seasonStats.matchesPlayed}`);
+    console.log(`   Position: ${playerInfo.position}`);
+    console.log(`\n📊 Current Season Stats:`);
+    console.log(`   Goals: ${currentSeasonStats.goals}`);
+    console.log(`   Assists: ${currentSeasonStats.assists}`);
+    console.log(`   Matches: ${currentSeasonStats.matchesPlayed}`);
+    console.log(`\n📊 Previous Season Stats:`);
+    console.log(`   Goals: ${previousSeasonStats.goals}`);
+    console.log(`   Assists: ${previousSeasonStats.assists}`);
+    console.log(`   Matches: ${previousSeasonStats.matchesPlayed}`);
 
     // Step 1: Get player ID from platform
     console.log("\n🔍 Looking up player on-chain...");
@@ -260,57 +247,64 @@ async function updatePlayer(
     }
 
     const previousBaseMist = BigInt(onChainPlayerData.base_value);
-    const frontendCurrentValue =
-      (Number(previousBaseMist) / 1_000_000_000) * 1000;
-
     console.log(
-      `   📊 Current base value: ${
-        Number(previousBaseMist) / 1_000_000_000
-      } SUI`
+      `   📊 Current on-chain base: ${mistToSui(previousBaseMist).toFixed(
+        4
+      )} SUI`
     );
 
     // Step 3: Run AI Analysis
     console.log("\n🤖 Running AI analysis...");
+    const frontendCurrentValue =
+      (Number(previousBaseMist) / 1_000_000_000) * 1000;
+
     const aiAnalysis = await analyzePlayer({
       name: playerInfo.name,
       position: playerInfo.position,
       team: playerInfo.club,
-      goals: seasonStats.goals,
-      assists: seasonStats.assists,
-      minutesPlayed: seasonStats.minutesPlayed,
-      matchesPlayed: seasonStats.matchesPlayed,
+      goals: currentSeasonStats.goals,
+      assists: currentSeasonStats.assists,
+      minutesPlayed: currentSeasonStats.minutesPlayed,
+      matchesPlayed: currentSeasonStats.matchesPlayed,
       currentValue: frontendCurrentValue,
-      weeklyChange: playerInfo.weeklyChange,
+      weeklyChange: 0,
       season: season,
     });
 
-    console.log(`   AI Score: ${aiAnalysis.performance_score}/100`);
-    console.log(`   Trend: ${aiAnalysis.performance_trend}`);
-    console.log(`   Form: ${aiAnalysis.form_status}`);
+    console.log(`   ✅ AI Score: ${aiAnalysis.performance_score}/100`);
+    console.log(`   📈 Trend: ${aiAnalysis.performance_trend}`);
+    console.log(`   🎯 Form: ${aiAnalysis.form_status}`);
 
-    // Step 4: Calculate new base value
-    const newBaseValue = calculateBaseValue(
+    // Step 4: Calculate new base value using performance-based formula
+    console.log(`\n💰 Calculating new base value...`);
+    const newBaseValue = calculateMidCurrentSeasonValue(
+      previousBaseMist,
       aiAnalysis.performance_score,
-      frontendCurrentValue
+      currentSeasonStats,
+      previousSeasonStats
     );
 
-    console.log(
-      `\n💰 New base value: ${Number(newBaseValue) / 1_000_000_000} SUI`
-    );
     const changePercent =
       Number(previousBaseMist) > 0
         ? ((Number(newBaseValue) - Number(previousBaseMist)) /
             Number(previousBaseMist)) *
           100
         : 0;
+
+    console.log(`\n✅ Value Update Summary:`);
     console.log(
-      `   📈 Change: ${changePercent > 0 ? "+" : ""}${changePercent.toFixed(
-        2
-      )}%`
+      `   Old: ${mistToSui(previousBaseMist).toFixed(
+        4
+      )} SUI (${previousBaseMist} MIST)`
+    );
+    console.log(
+      `   New: ${mistToSui(newBaseValue).toFixed(4)} SUI (${newBaseValue} MIST)`
+    );
+    console.log(
+      `   Change: ${changePercent > 0 ? "+" : ""}${changePercent.toFixed(2)}%`
     );
 
-    // Step 5: Create data hash
-    const timestamp = Date.now();
+    // Step 5: Create rating for contract
     const rating = Math.round(
       (aiAnalysis.recent_form?.goals_per_90 || 0) * 100
     );
@@ -325,10 +319,10 @@ async function updatePlayer(
       playerInfo.nationality ?? "Unknown",
       season,
       {
-        goals: seasonStats.goals,
-        assists: seasonStats.assists,
-        minutes_played: seasonStats.minutesPlayed,
-        matches_played: seasonStats.matchesPlayed,
+        goals: currentSeasonStats.goals,
+        assists: currentSeasonStats.assists,
+        minutes_played: currentSeasonStats.minutesPlayed,
+        matches_played: currentSeasonStats.matchesPlayed,
         rating: aiAnalysis.recent_form?.goals_per_90,
         clean_sheets: 0,
       },
@@ -338,25 +332,26 @@ async function updatePlayer(
 
     console.log(`   ✅ Walrus Blob ID: ${blobId}`);
 
-    // Step 7: Update on-chain
+    // Step 7: Update on-chain with season parameter
     console.log("\n⛓️  Updating on Sui blockchain...");
 
     const tx = new Transaction();
     const clockId = await getClockObjectId();
+    const seasonCode = seasonToContractCode(season);
 
-    // UPDATED: Now takes AdminCap and player_id as first arguments
     tx.moveCall({
       target: `${SUI_CONFIG.contracts.packageId}::valor::update_base_value`,
       arguments: [
         tx.object(SUI_CONFIG.contracts.adminCapId), // AdminCap
         tx.object(SUI_CONFIG.contracts.platformObjectId), // Platform
         tx.pure.address(playerObjId), // player_id (ID)
+        tx.pure.u8(seasonCode), // season (1 = mid, 2 = current)
         tx.pure.u64(newBaseValue), // new_base_value
         tx.pure.u64(aiAnalysis.performance_score), // performance_score
-        tx.pure.u64(seasonStats.goals), // goals
-        tx.pure.u64(seasonStats.assists), // assists
+        tx.pure.u64(currentSeasonStats.goals), // goals
+        tx.pure.u64(currentSeasonStats.assists), // assists
         tx.pure.u64(rating), // rating
-        tx.pure.u64(seasonStats.minutesPlayed), // minutes_played
+        tx.pure.u64(currentSeasonStats.minutesPlayed), // minutes_played
         tx.pure.u64(0), // clean_sheets
         tx.pure.string(blobId), // walrus_blob_id
         tx.object(clockId), // clock
@@ -370,6 +365,9 @@ async function updatePlayer(
     if (result.success) {
       console.log(`   ✅ Update successful!`);
       console.log(`   📝 Digest: ${result.digest}`);
+      console.log(
+        `   🎯 Season updated: ${season.toUpperCase()} (code: ${seasonCode})`
+      );
 
       // Check for circuit breaker
       const circuitBreakerEvent = result.events?.find((e) =>
@@ -396,14 +394,30 @@ async function updatePlayer(
 // ============================================================================
 
 async function main() {
-  console.log("🔄 Valor Base Value Update Script");
+  console.log("🔄 Valor Base Value Update Script (Performance-Based)");
   console.log("=".repeat(70));
 
   const { season, playersToUpdate } = parseArgs();
 
+  // Validate season
+  if (season === "early") {
+    console.error(`\n❌ ERROR: Cannot update early season values!`);
+    console.log(
+      `   Early season values are set once during player registration`
+    );
+    console.log(`   Use: ts-node scripts/registerPlayers.ts --season early`);
+    process.exit(1);
+  }
+
   console.log(`\n📅 Season Period: ${season.toUpperCase()}`);
+  console.log(`   Season Code: ${seasonToContractCode(season)}`);
   console.log(`🌐 Network: ${SUI_CONFIG.network}`);
   console.log(`📦 Package ID: ${SUI_CONFIG.contracts.packageId}`);
+  console.log(`\n💡 Update Formula:`);
+  console.log(`   • AI Score drives base trend (-50% to +50%)`);
+  console.log(`   • Performance delta (goals/assists) adds bonus`);
+  console.log(`   • Consistency factor (matches played) applies multiplier`);
+  console.log(`   • Max change: ±60% per season (safety bounds)`);
 
   // Load admin keypair
   console.log("\n🔑 Loading admin keypair...");
@@ -422,9 +436,9 @@ async function main() {
   }
 
   // Filter players to update
-  let playersToProcess = DUMMY_PLAYERS;
+  let playersToProcess = FOOTBALL_PLAYERS;
   if (playersToUpdate.length > 0) {
-    playersToProcess = DUMMY_PLAYERS.filter((p) =>
+    playersToProcess = FOOTBALL_PLAYERS.filter((p) =>
       playersToUpdate.some(
         (name) =>
           p.name.toLowerCase().includes(name.toLowerCase()) || p.id === name
