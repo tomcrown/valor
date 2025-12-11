@@ -1,4 +1,4 @@
-// src/components/Navbar.tsx
+// src/components/Navbar.tsx - UPDATED with Pulse link
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -10,6 +10,7 @@ import {
   Wallet,
   ChevronDown,
   Chrome,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ import {
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/players", label: "Players" },
+  { href: "/pulse", label: "Pulse", icon: Activity, highlight: true }, // NEW
   { href: "/portfolio", label: "Portfolio" },
 ];
 
@@ -121,11 +123,16 @@ const Navbar = () => {
                   key={link.href}
                   to={link.href}
                   className={cn(
-                    "nav-link text-sm font-medium py-2",
-                    location.pathname === link.href && "nav-link-active"
+                    "nav-link text-sm font-medium py-2 flex items-center gap-1.5",
+                    location.pathname === link.href && "nav-link-active",
+                    link.highlight && "relative"
                   )}
                 >
+                  {link.icon && <link.icon className="w-4 h-4" />}
                   {link.label}
+                  {link.highlight && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full animate-pulse" />
+                  )}
                 </Link>
               ))}
             </div>
@@ -226,14 +233,20 @@ const Navbar = () => {
                     key={link.href}
                     to={link.href}
                     className={cn(
-                      "text-sm font-medium py-2 px-4 rounded-lg transition-colors",
+                      "text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2",
                       location.pathname === link.href
                         ? "bg-muted text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                     onClick={() => setIsOpen(false)}
                   >
+                    {link.icon && <link.icon className="w-4 h-4" />}
                     {link.label}
+                    {link.highlight && (
+                      <span className="ml-auto px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs font-semibold">
+                        NEW
+                      </span>
+                    )}
                   </Link>
                 ))}
 

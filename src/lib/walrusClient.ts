@@ -399,6 +399,141 @@ export class WalrusClient {
 }
 
 // ============================================================================
+// PULSE-SPECIFIC TYPES AND METHODS (Add to existing walrusClient.ts)
+// ============================================================================
+
+export interface PulseVoteRecord {
+  voter_address: string;
+  vote: "yes" | "no";
+  timestamp: string;
+  transaction_digest?: string;
+}
+
+export interface PulseVoteBlob {
+  // Metadata
+  version: string;
+  timestamp: string;
+
+  // Week Information
+  week_number: number;
+  week_start: string;
+  week_end: string;
+
+  // Player Information
+  player_id: string;
+  player_name: string;
+
+  // Vote Summary
+  summary: {
+    yes_count: number;
+    no_count: number;
+    total_votes: number;
+    yes_percentage: number;
+    no_percentage: number;
+  };
+
+  // Detailed Vote Records
+  votes: PulseVoteRecord[];
+
+  // Verification
+  verified: boolean;
+  created_at: string;
+  updated_by: string;
+}
+
+// Add these methods to the WalrusClient class:
+
+/**
+ * Upload pulse vote data to Walrus
+ */
+export async function uploadPulseVotes(
+  walrusClient: WalrusClient,
+  weekNumber: number,
+  weekStart: string,
+  weekEnd: string,
+  playerId: string,
+  playerName: string,
+  votes: PulseVoteRecord[],
+  uploadedBy: string = "admin"
+): Promise<string> {
+  const yesVotes = votes.filter((v) => v.vote === "yes");
+  const noVotes = votes.filter((v) => v.vote === "no");
+  const totalVotes = votes.length;
+
+  const blob: PulseVoteBlob = {
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+
+    week_number: weekNumber,
+    week_start: weekStart,
+    week_end: weekEnd,
+
+    player_id: playerId,
+    player_name: playerName,
+
+    summary: {
+      yes_count: yesVotes.length,
+      no_count: noVotes.length,
+      total_votes: totalVotes,
+      yes_percentage:
+        totalVotes > 0 ? Math.round((yesVotes.length / totalVotes) * 100) : 0,
+      no_percentage:
+        totalVotes > 0 ? Math.round((noVotes.length / totalVotes) * 100) : 0,
+    },
+
+    votes: votes.sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    ),
+
+    verified: true,
+    created_at: new Date().toISOString(),
+    updated_by: uploadedBy,
+  };
+
+  console.log(`\n📊 Uploading Pulse votes for ${playerName}...`);
+  console.log(`   Week: ${weekNumber}`);
+  console.log(`   Total Votes: ${totalVotes}`);
+  console.log(`   YES: ${yesVotes.length} (${blob.summary.yes_percentage}%)`);
+  console.log(`   NO: ${noVotes.length} (${blob.summary.no_percentage}%)`);
+
+  return await walrusClient.uploadJSON(blob);
+}
+
+/**
+ * Download pulse vote data from Walrus
+ */
+export async function downloadPulseVotes(
+  walrusClient: WalrusClient,
+  blobId: string
+): Promise<PulseVoteBlob> {
+  return await walrusClient.downloadJSON<PulseVoteBlob>(blobId);
+}
+
+/**
+ * Create an empty pulse vote blob (for initialization)
+ */
+export async function initializePulseBlob(
+  walrusClient: WalrusClient,
+  weekNumber: number,
+  weekStart: string,
+  weekEnd: string,
+  playerId: string,
+  playerName: string
+): Promise<string> {
+  return await uploadPulseVotes(
+    walrusClient,
+    weekNumber,
+    weekStart,
+    weekEnd,
+    playerId,
+    playerName,
+    [],
+    "system"
+  );
+}
+
+// ============================================================================
 // Singleton Instance
 // ============================================================================
 

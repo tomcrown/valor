@@ -7,6 +7,7 @@ import LandingPage from "./pages/LandingPage";
 import PlayersPage from "./pages/PlayersPage";
 import PlayerDetailPage from "./pages/PlayerDetailPage";
 import PortfolioPage from "./pages/PortfolioPage";
+import PulsePage from "./pages/PulsePage"; // NEW
 import NotFound from "./pages/NotFound";
 import SpaceNetworkBackground from "./components/ThreeBg";
 import AuthCallback from "@/pages/AuthCallback";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/players" element={<PlayersPage />} />
           <Route path="/players/:id" element={<PlayerDetailPage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/pulse" element={<PulsePage />} /> {/* NEW */}
           <Route path="*" element={<NotFound />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/swap/success" element={<SwapSuccessPage />} />

@@ -71,6 +71,7 @@
 export const SUI_CONFIG = {
   network: "testnet" as const,
   rpcUrl: "https://fullnode.testnet.sui.io:443",
+  explorerUrl: "https://suiscan.xyz/testnet",
   graphqlUrl: "https://graphql.testnet.sui.io/graphql",
 
   walrus: {
