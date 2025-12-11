@@ -123,7 +123,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     imageUrl:
       "https://img.a.transfermarkt.technology/portrait/big/418560-1709108116.png?lm=1",
     nftImageUrl:
-      "https://github.com/tomcrown/valor_images/blob/main/haaland.png?raw=true",
+      "https://raw.githubusercontent.com/tomcrown/valor_images/main/haaland.png",
     aiScore: 85,
     seasonalStats: {
       early: {
@@ -155,7 +155,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     imageUrl:
       "https://img.a.transfermarkt.technology/portrait/big/342229-1682683695.jpg?lm=1",
     nftImageUrl:
-      "https://github.com/tomcrown/valor_images/blob/main/mbappe.png?raw=true",
+      "https://raw.githubusercontent.com/tomcrown/valor_images/main/mbappe.png",
     aiScore: 87,
     seasonalStats: {
       early: {
@@ -187,7 +187,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     imageUrl:
       "https://img.a.transfermarkt.technology/portrait/big/177907-1663841733.jpg?lm=1",
     nftImageUrl:
-      "https://github.com/tomcrown/valor_images/blob/main/maguire.png?raw=true",
+      "https://raw.githubusercontent.com/tomcrown/valor_images/main/maguire.png",
     aiScore: 78,
     seasonalStats: {
       early: {
@@ -219,7 +219,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     imageUrl:
       "https://img.a.transfermarkt.technology/portrait/big/148455-1727337594.jpg?lm=1",
     nftImageUrl:
-      "https://github.com/tomcrown/valor_images/blob/main/salah.png?raw=true",
+      "https://raw.githubusercontent.com/tomcrown/valor_images/main/salah.png",
     aiScore: 88,
     seasonalStats: {
       early: {
@@ -251,7 +251,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     imageUrl:
       "https://img.a.transfermarkt.technology/portrait/big/451276-1758715234.jpg?lm=1",
     nftImageUrl:
-      "https://github.com/tomcrown/valor_images/blob/main/dominik.png?raw=true",
+      "https://raw.githubusercontent.com/tomcrown/valor_images/main/dominik.png",
     aiScore: 79,
     seasonalStats: {
       early: {
@@ -283,7 +283,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     imageUrl:
       "https://img.a.transfermarkt.technology/portrait/big/581678-1748102891.jpg?lm=1",
     nftImageUrl:
-      "https://github.com/tomcrown/valor_images/blob/main/valor-bellingham.png?raw=true",
+      "https://raw.githubusercontent.com/tomcrown/valor_images/main/valor-bellingham.png",
     aiScore: 90,
     seasonalStats: {
       early: {
@@ -315,7 +315,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     imageUrl:
       "https://img.a.transfermarkt.technology/portrait/big/262749-1668168018.jpg?lm=1",
     nftImageUrl:
-      "https://github.com/tomcrown/valor_images/blob/main/raya.png?raw=true",
+      "https://raw.githubusercontent.com/tomcrown/valor_images/main/raya.png",
     aiScore: 76,
     seasonalStats: {
       early: {
@@ -347,7 +347,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     imageUrl:
       "https://img.a.transfermarkt.technology/portrait/big/433177-1684155052.jpg?lm=1",
     nftImageUrl:
-      "https://github.com/tomcrown/valor_images/blob/main/saka.png?raw=true",
+      "https://raw.githubusercontent.com/tomcrown/valor_images/main/saka.png",
     aiScore: 76,
     seasonalStats: {
       early: {
