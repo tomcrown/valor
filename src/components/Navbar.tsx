@@ -73,6 +73,7 @@ const Navbar = () => {
     localStorage.removeItem("auth_method");
     localStorage.removeItem("zklogin_address");
     localStorage.removeItem("sui_session");
+    localStorage.removeItem("sui-dapp-kit:wallet-connection-info");
     sessionStorage.removeItem("zkLoginState");
 
     setZkLoginAddress(null);

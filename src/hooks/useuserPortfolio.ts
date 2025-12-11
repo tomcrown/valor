@@ -27,6 +27,7 @@ export interface EnrichedHolding extends UserHolding {
   pnl: number; // P&L percentage
   pnlAmount: number; // P&L in SUI
   imageUrl: string;
+  nftImageUrl: string;
   club: string;
   player?: Player; // Full player data
 }
@@ -71,9 +72,9 @@ export function useUserPortfolio() {
 
     fetchPortfolio();
 
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchPortfolio, 30000);
-    return () => clearInterval(interval);
+    // // Poll for updates every 30 seconds
+    // const interval = setInterval(fetchPortfolio, 30000);
+    // return () => clearInterval(interval);
   }, [currentAccount?.address]);
 
   async function fetchPortfolio() {
@@ -230,6 +231,7 @@ async function enrichHoldingsWithPrices(
           pnl: 0,
           pnlAmount: 0,
           imageUrl: "",
+          nftImageUrl: "",
           club: "Unknown",
         });
         continue;
@@ -252,6 +254,7 @@ async function enrichHoldingsWithPrices(
         pnl,
         pnlAmount,
         imageUrl: footballPlayer.imageUrl,
+        nftImageUrl: footballPlayer.nftImageUrl,
         club: footballPlayer.club,
         player: enrichedPlayer,
       });
@@ -271,6 +274,7 @@ async function enrichHoldingsWithPrices(
         pnl: 0,
         pnlAmount: 0,
         imageUrl: "",
+        nftImageUrl: "",
         club: "Unknown",
       });
     }

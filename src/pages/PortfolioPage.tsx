@@ -187,14 +187,11 @@ const PortfolioPage = () => {
 
         {/* Your Assets Section */}
         <div className="glass-card p-6 mb-8">
-          <h2 className="text-xl font-bold mb-6">Your Assets</h2>
+          <h2 className="text-3xl font-bold mb-6">Wallet Assets</h2>
 
           {/* SUI Balance */}
           <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                <Coins className="w-6 h-6 text-primary" />
-              </div>
               <div>
                 <p className="font-semibold text-lg">SUI Balance</p>
                 <p className="text-sm text-muted-foreground">
@@ -213,9 +210,7 @@ const PortfolioPage = () => {
           {/* Player Shares NFTs */}
           {holdings.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                Player Shares NFTs
-              </h3>
+              <h3 className="text-xl font-bold mb-6">Player Shares NFTs</h3>
 
               {holdings.map((holding, index) => (
                 <div
@@ -228,9 +223,9 @@ const PortfolioPage = () => {
                     <div className="flex items-center gap-3 flex-1 min-w-[200px]">
                       {holding.imageUrl && (
                         <img
-                          src={holding.imageUrl}
+                          src={holding.nftImageUrl}
                           alt={holding.playerName}
-                          className="w-12 h-12 rounded-lg object-cover"
+                          className="w-20 h-20 rounded-lg object-contain"
                         />
                       )}
                       <div>
@@ -388,7 +383,7 @@ const PortfolioPage = () => {
                               <img
                                 src={holding.imageUrl}
                                 alt={holding.playerName}
-                                className="w-10 h-10 rounded-lg object-cover"
+                                className="w-16 h-16 rounded-lg object-cover"
                               />
                             )}
                             <div>
