@@ -2,6 +2,7 @@
 // FILE: hooks/useBuySellShares.ts
 // Custom hook for buying and selling player shares
 // BUY/SELL ALWAYS USES CURRENT SEASON VALUE
+// FIXED: Now supports selling across multiple NFT objects
 // ============================================================================
 
 import { useState } from "react";
@@ -21,8 +22,10 @@ export interface BuySharesParams {
 }
 
 export interface SellSharesParams {
-  nftObjectId: string; // The PlayerSharesNFT object ID
-  sharesToSell: number;
+  operations: Array<{
+    objectId: string; // The PlayerSharesNFT object ID
+    amount: number; // Number of shares to sell from this object
+  }>;
   minPricePerShare: number; // in SUI (ALWAYS CURRENT SEASON PRICE)
   playerName: string;
 }
@@ -171,8 +174,9 @@ export function useBuySellShares() {
   };
 
   /**
-   * Sell player shares
+   * Sell player shares across multiple NFT objects
    * ALWAYS uses CURRENT SEASON base value for pricing
+   * Supports batch selling in a SINGLE transaction
    */
   const sellShares = async (params: SellSharesParams) => {
     if (!account) {
@@ -184,10 +188,10 @@ export function useBuySellShares() {
       return null;
     }
 
-    if (!params.nftObjectId || params.sharesToSell <= 0) {
+    if (!params.operations || params.operations.length === 0) {
       toast({
         title: "Invalid Parameters",
-        description: "Please specify valid shares to sell.",
+        description: "No shares specified to sell.",
         variant: "destructive",
       });
       return null;
@@ -196,32 +200,43 @@ export function useBuySellShares() {
     setIsProcessing(true);
 
     try {
+      const totalShares = params.operations.reduce(
+        (sum, op) => sum + op.amount,
+        0
+      );
+
       console.log("🔵 Starting sell shares transaction:", {
-        nftObjectId: params.nftObjectId,
-        sharesToSell: params.sharesToSell,
+        operations: params.operations,
+        totalShares,
         minPricePerShare: params.minPricePerShare,
       });
 
       const tx = new Transaction();
 
-      // Set gas budget
+      // Set gas budget (higher for batch operations)
       tx.setGasBudget(SUI_CONFIG.gas.budget);
 
-      // Call sell_shares function
-      tx.moveCall({
-        target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
-        arguments: [
-          tx.object(SUI_CONFIG.contracts.platformObjectId), // platform
-          tx.object(params.nftObjectId), // nft (PlayerSharesNFT object)
-          tx.pure.u64(params.sharesToSell), // shares_to_sell
-          tx.pure.u64(suiToMist(params.minPricePerShare)), // min_price_per_share (in MIST)
-          tx.object("0x6"), // clock
-        ],
-      });
+      // Call sell_shares for each operation in a single transaction
+      for (const operation of params.operations) {
+        console.log(
+          `  - Selling ${operation.amount} shares from ${operation.objectId}`
+        );
+
+        tx.moveCall({
+          target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
+          arguments: [
+            tx.object(SUI_CONFIG.contracts.platformObjectId), // platform
+            tx.object(operation.objectId), // nft (PlayerSharesNFT object)
+            tx.pure.u64(operation.amount), // shares_to_sell
+            tx.pure.u64(suiToMist(params.minPricePerShare)), // min_price_per_share (in MIST)
+            tx.object("0x6"), // clock
+          ],
+        });
+      }
 
       toast({
         title: "Transaction Submitted",
-        description: `Selling ${params.sharesToSell} shares of ${params.playerName}...`,
+        description: `Selling ${totalShares} shares of ${params.playerName} across ${params.operations.length} object(s)...`,
       });
 
       console.log("📤 Executing transaction...");
@@ -235,7 +250,7 @@ export function useBuySellShares() {
 
       toast({
         title: "Sale Successful! 💰",
-        description: `Successfully sold ${params.sharesToSell} shares of ${params.playerName}`,
+        description: `Successfully sold ${totalShares} shares of ${params.playerName}`,
       });
 
       return {
