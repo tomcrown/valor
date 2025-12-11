@@ -120,7 +120,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     club: "Manchester City",
     position: "Attacker",
     nationality: "Norway",
-    imageUrl: "https://apiv2.allsportsapi.com/logo/players/68451_e-haaland.jpg",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/big/418560-1709108116.png?lm=1",
     nftImageUrl:
       "https://github.com/tomcrown/valor_images/blob/main/haaland.png?raw=true",
     aiScore: 85,
@@ -151,7 +152,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     club: "Real Madrid",
     position: "Attacker",
     nationality: "France",
-    imageUrl: "https://apiv2.allsportsapi.com/logo/players/51921_k-mbappe.jpg",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/big/342229-1682683695.jpg?lm=1",
     nftImageUrl:
       "https://github.com/tomcrown/valor_images/blob/main/mbappe.png?raw=true",
     aiScore: 87,
@@ -182,7 +184,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     club: "Manchester United",
     position: "Defender",
     nationality: "England",
-    imageUrl: "https://apiv2.allsportsapi.com/logo/players/14381_h-maguire.jpg",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/big/177907-1663841733.jpg?lm=1",
     nftImageUrl:
       "https://github.com/tomcrown/valor_images/blob/main/maguire.png?raw=true",
     aiScore: 78,
@@ -213,7 +216,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     club: "Liverpool",
     position: "Attacker",
     nationality: "Egypt",
-    imageUrl: "https://apiv2.allsportsapi.com/logo/players/5705_m-salah.jpg",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/big/148455-1727337594.jpg?lm=1",
     nftImageUrl:
       "https://github.com/tomcrown/valor_images/blob/main/salah.png?raw=true",
     aiScore: 88,
@@ -245,7 +249,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     position: "Midfielder",
     nationality: "Hungary",
     imageUrl:
-      "https://apiv2.allsportsapi.com/logo/players/75735_d-szoboszlai.jpg",
+      "https://img.a.transfermarkt.technology/portrait/big/451276-1758715234.jpg?lm=1",
     nftImageUrl:
       "https://github.com/tomcrown/valor_images/blob/main/dominik.png?raw=true",
     aiScore: 79,
@@ -277,7 +281,7 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     position: "Midfielder",
     nationality: "England",
     imageUrl:
-      "https://apiv2.allsportsapi.com/logo/players/110036_j-bellingham.jpg",
+      "https://img.a.transfermarkt.technology/portrait/big/581678-1748102891.jpg?lm=1",
     nftImageUrl:
       "https://github.com/tomcrown/valor_images/blob/main/valor-bellingham.png?raw=true",
     aiScore: 90,
@@ -308,7 +312,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     club: "Arsenal FC",
     position: "Goalkeeper",
     nationality: "Spain",
-    imageUrl: "https://apiv2.allsportsapi.com/logo/players/44666_d-raya.jpg",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/big/262749-1668168018.jpg?lm=1",
     nftImageUrl:
       "https://github.com/tomcrown/valor_images/blob/main/raya.png?raw=true",
     aiScore: 76,
@@ -339,7 +344,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
     club: "Arsenal FC",
     position: "Attacker",
     nationality: "England",
-    imageUrl: "https://apiv2.allsportsapi.com/logo/players/86333_b-saka.jpg",
+    imageUrl:
+      "https://img.a.transfermarkt.technology/portrait/big/433177-1684155052.jpg?lm=1",
     nftImageUrl:
       "https://github.com/tomcrown/valor_images/blob/main/saka.png?raw=true",
     aiScore: 76,
