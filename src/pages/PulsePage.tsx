@@ -31,7 +31,7 @@ const REGISTERED_PLAYERS = [
     club: "Manchester City",
     position: "FW",
     imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/big/418560-1694609670.jpg?lm=1",
+      "https://img.a.transfermarkt.technology/portrait/big/418560-1709108116.png?lm=1",
   },
   {
     id: "0x5500cf294534c99136d0b627b8eded2a1a77340c7639a4e5e0a56286f6cf8313",
@@ -39,7 +39,7 @@ const REGISTERED_PLAYERS = [
     club: "Liverpool",
     position: "MF",
     imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/big/451622-1693556881.jpg?lm=1",
+      "https://img.a.transfermarkt.technology/portrait/big/451276-1758715234.jpg?lm=1",
   },
   {
     id: "0x7c231306c09ac01edacc09dcd0217f0fd2826edb30c16f8046316e66a8d50594",
@@ -47,7 +47,7 @@ const REGISTERED_PLAYERS = [
     club: "Real Madrid",
     position: "MF",
     imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/big/581678-1683986883.jpg?lm=1",
+      "https://img.a.transfermarkt.technology/portrait/big/581678-1748102891.jpg?lm=1",
   },
   {
     id: "0xcffd108b75dbfb8884c9f3d9ce6dc9e660b030a6fd66c3b8073cedf87856cb92",
@@ -55,7 +55,7 @@ const REGISTERED_PLAYERS = [
     club: "Manchester United",
     position: "DF",
     imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/big/177907-1729669823.jpg?lm=1",
+      "https://img.a.transfermarkt.technology/portrait/big/177907-1663841733.jpg?lm=1",
   },
   {
     id: "0x495945e002970b3aa7ded30a7fbdecf5126a6841325795c231ceac0d5dda3cc8",
@@ -63,7 +63,7 @@ const REGISTERED_PLAYERS = [
     club: "Liverpool",
     position: "FW",
     imageUrl:
-      "https://img.a.transfermarkt.technology/portrait/big/148455-1667830714.jpg?lm=1",
+      "https://img.a.transfermarkt.technology/portrait/big/148455-1727337594.jpg?lm=1",
   },
   {
     id: "0x89e06ac2673c652605ad6e1a42f313186dfcb8c773c98d29d71c38073b91a125",
