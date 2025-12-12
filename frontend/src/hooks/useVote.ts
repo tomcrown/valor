@@ -1,9 +1,3 @@
-// ============================================================================
-// FILE: hooks/useVote.ts
-// React hook for submitting votes
-// FIXED VERSION - Explorer URL handled properly
-// ============================================================================
-
 import { useState } from "react";
 import {
   useSignAndExecuteTransaction,
@@ -14,7 +8,6 @@ import { PULSE_CONFIG } from "@/config/pulse.config";
 import { SUI_CONFIG } from "@/config/sui.config";
 import { toast } from "sonner";
 
-// FIXED: Helper function to get explorer URL
 function getExplorerUrl(network: string): string {
   switch (network) {
     case "mainnet":
@@ -53,10 +46,8 @@ export function useVote() {
     try {
       const tx = new Transaction();
 
-      // Get clock object
       const clockId = "0x6";
 
-      // Call the appropriate vote function
       const voteFunction = vote === "yes" ? "vote_yes" : "vote_no";
 
       tx.moveCall({
@@ -74,7 +65,6 @@ export function useVote() {
       });
 
       if (result.digest) {
-        // FIXED: Get explorer URL properly
         const explorerUrl = getExplorerUrl(SUI_CONFIG.network);
 
         toast.success(
@@ -95,7 +85,6 @@ export function useVote() {
     } catch (error: any) {
       console.error("Vote failed:", error);
 
-      // Handle specific error cases
       if (error.message?.includes("EAlreadyVoted")) {
         toast.error("You have already voted for this player this week");
       } else if (error.message?.includes("EWeekNotActive")) {

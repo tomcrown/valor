@@ -2,26 +2,24 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { EnokiClient } from "@mysten/enoki";
+import OpenAI from "openai";
 
 dotenv.config();
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-// Initialize Enoki Client with your PRIVATE API key
 const enokiClient = new EnokiClient({
   apiKey: process.env.ENOKI_PRIVATE_API_KEY,
 });
 
-// Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Endpoint to sponsor transactions (if needed for backend operations)
 app.post("/api/sponsor-transaction", async (req, res) => {
   try {
     const {
@@ -53,7 +51,6 @@ app.post("/api/sponsor-transaction", async (req, res) => {
   }
 });
 
-// Endpoint to execute sponsored transaction
 app.post("/api/execute-sponsored", async (req, res) => {
   try {
     const { digest, signature } = req.body;
@@ -76,7 +73,39 @@ app.post("/api/execute-sponsored", async (req, res) => {
   }
 });
 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+app.post("/api/openai", async (req, res) => {
+  try {
+    const { input } = req.body;
+
+    if (!input) {
+      return res.status(400).json({ error: "Missing 'input' field" });
+    }
+
+    const response = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input,
+    });
+
+    res.json({
+      success: true,
+      output: response.output_text,
+      raw: response,
+    });
+  } catch (err) {
+    console.error("OpenAI Error:", err);
+    res.status(500).json({
+      error: "Failed to contact OpenAI",
+      details: err.message,
+    });
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
-  console.log(`Enoki configured: ${!!process.env.ENOKI_PRIVATE_API_KEY}`);
+  console.log(`Backend running → http://localhost:${PORT}`);
+  console.log(`Enoki API key loaded → ${!!process.env.ENOKI_PRIVATE_API_KEY}`);
+  console.log(`OpenAI key loaded → ${!!process.env.OPENAI_API_KEY}`);
 });

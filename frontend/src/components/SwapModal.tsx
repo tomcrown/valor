@@ -559,8 +559,6 @@ export function SwapModal({ open, onOpenChange }) {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* <TxOverlay outcome={txOutcome} onClose={handleCloseTxOverlay} /> */}
     </>
   );
 }

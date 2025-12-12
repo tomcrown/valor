@@ -11,7 +11,7 @@ import {
   getSeasonWalrusBlobId,
   getCurrentSeasonBaseValue,
 } from "@/lib/suiDataFetcher";
-import type { SeasonPeriod } from "@/data/dummyData";
+import type { SeasonPeriod } from "@/data/apiData";
 import {
   ArrowLeft,
   Zap,

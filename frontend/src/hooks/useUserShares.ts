@@ -1,9 +1,3 @@
-// ============================================================================
-// FILE: hooks/useUserShares.ts
-// Fetch user's owned PlayerSharesNFT for a specific player
-// FIXED: Changed struct type from PlayerShares to PlayerSharesNFT
-// ============================================================================
-
 import { useState, useEffect } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { rpcClient } from "@/lib/suiClient";
@@ -13,7 +7,7 @@ export interface PlayerSharesObject {
   objectId: string;
   playerId: string;
   playerName: string;
-  nftImageUrl: string; // Changed from imageUrl to match contract
+  nftImageUrl: string;
   shares: number;
   purchasePrice: number;
   purchaseTimestamp: number;
@@ -44,7 +38,6 @@ export function useUserShares(playerId?: string) {
       console.log("🔍 Fetching shares for user:", account.address);
       console.log("🎯 Looking for player ID:", playerId);
 
-      // FIXED: Changed from PlayerShares to PlayerSharesNFT
       const ownedObjects = await rpcClient.getOwnedObjects({
         owner: account.address,
         filter: {
@@ -74,16 +67,13 @@ export function useUserShares(playerId?: string) {
           shares: fields.shares,
         });
 
-        // Filter by player ID if specified
         if (playerId && fields.player_id !== playerId) {
           console.log("  ⏭️ Skipping (different player)");
           continue;
         }
 
-        // Extract image URL from the Url object
         let imageUrl = "";
         if (fields.nft_image_url) {
-          // The nft_image_url is a Sui Url object with a 'url' field
           imageUrl =
             fields.nft_image_url.fields?.url || fields.nft_image_url.url || "";
         }
@@ -121,7 +111,6 @@ export function useUserShares(playerId?: string) {
     fetchUserShares();
   }, [account?.address, playerId]);
 
-  // Calculate total shares for this player
   const totalShares = shares.reduce((sum, s) => sum + s.shares, 0);
 
   return {

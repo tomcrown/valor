@@ -1,8 +1,3 @@
-// ============================================================================
-// FILE 1: src/components/ValorAIAssistant.tsx
-// Updated with Pulse, Portfolio, and Seasonal Data
-// ============================================================================
-
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import {

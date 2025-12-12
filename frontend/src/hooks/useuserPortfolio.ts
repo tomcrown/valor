@@ -1,45 +1,40 @@
-// ============================================================================
-// FILE: hooks/useUserPortfolio.ts
-// Fetch user's real portfolio from blockchain - ENOKI COMPATIBLE
-// ============================================================================
-
 import { useState, useEffect } from "react";
 import { useCurrentAccount, useCurrentWallet } from "@mysten/dapp-kit";
 import { SuiClient } from "@mysten/sui/client";
 import { SUI_CONFIG, mistToSui } from "@/config/sui.config";
 import { enrichPlayerWithContractData } from "@/lib/suiDataFetcher";
-import { FOOTBALL_PLAYERS } from "@/data/dummyData";
-import type { Player } from "@/data/dummyData";
+import { FOOTBALL_PLAYERS } from "@/data/apiData";
+import type { Player } from "@/data/apiData";
 import { isEnokiWallet } from "@mysten/enoki";
 
 export interface UserHolding {
-  objectId: string; // PlayerSharesNFT object ID
-  playerId: string; // On-chain player ID
+  objectId: string;
+  playerId: string;
   playerName: string;
   quantity: number;
-  entryPrice: number; // Average entry price in SUI
+  entryPrice: number;
   purchaseTimestamp: number;
 }
 
 export interface EnrichedHolding extends UserHolding {
-  currentPrice: number; // Current market price in SUI
-  totalValue: number; // quantity * currentPrice
-  totalCost: number; // quantity * entryPrice
-  pnl: number; // P&L percentage
-  pnlAmount: number; // P&L in SUI
+  currentPrice: number;
+  totalValue: number;
+  totalCost: number;
+  pnl: number;
+  pnlAmount: number;
   imageUrl: string;
   nftImageUrl: string;
   club: string;
-  player?: Player; // Full player data
+  player?: Player;
 }
 
 export interface PortfolioSummary {
-  totalValue: number; // Total portfolio value in SUI
-  totalInvested: number; // Total amount invested in SUI
-  totalPnL: number; // Total P&L percentage
-  totalPnLAmount: number; // Total P&L in SUI
+  totalValue: number;
+  totalInvested: number;
+  totalPnL: number;
+  totalPnLAmount: number;
   positionsCount: number;
-  suiBalance: number; // Wallet SUI balance
+  suiBalance: number;
 }
 
 export function useUserPortfolio() {
@@ -57,7 +52,6 @@ export function useUserPortfolio() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if using Enoki wallet
   const isEnoki = currentWallet && isEnokiWallet(currentWallet);
 
   useEffect(() => {
@@ -94,11 +88,9 @@ export function useUserPortfolio() {
 
       const client = new SuiClient({ url: SUI_CONFIG.rpcUrl });
 
-      // 1. Fetch SUI balance
       const suiBalance = await fetchSuiBalance(client, currentAccount.address);
       console.log("💰 SUI Balance:", suiBalance);
 
-      // 2. Fetch user's PlayerSharesNFT objects with retry logic
       const userHoldings = await fetchUserHoldingsWithRetry(
         client,
         currentAccount.address
@@ -121,11 +113,9 @@ export function useUserPortfolio() {
         return;
       }
 
-      // 3. Fetch current prices for each player
       const enrichedHoldings = await enrichHoldingsWithPrices(userHoldings);
       console.log(`✅ Enriched ${enrichedHoldings.length} holdings`);
 
-      // 4. Calculate portfolio summary
       const portfolioSummary = calculatePortfolioSummary(
         enrichedHoldings,
         suiBalance
@@ -152,10 +142,6 @@ export function useUserPortfolio() {
     isEnokiWallet: isEnoki,
   };
 }
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
 
 async function fetchSuiBalance(
   client: SuiClient,
@@ -190,7 +176,6 @@ async function fetchUserHoldingsWithRetry(
         throw error;
       }
 
-      // Wait before retrying (exponential backoff)
       await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }
   }
@@ -205,7 +190,6 @@ async function fetchUserHoldings(
   try {
     console.log("🔍 Fetching PlayerSharesNFT objects for:", address);
 
-    // Try with cursor-based pagination for better reliability
     const holdings: UserHolding[] = [];
     let hasNextPage = true;
     let cursor: string | null = null;
@@ -221,7 +205,7 @@ async function fetchUserHoldings(
           showType: true,
         },
         cursor,
-        limit: 50, // Fetch in batches
+        limit: 50,
       });
 
       console.log(`📦 Batch found ${response.data.length} objects`);
@@ -289,10 +273,9 @@ async function enrichHoldingsWithPrices(
           `⚠️ Player not found in football data: ${holding.playerName}`
         );
 
-        // Add with default values if player not found
         enrichedHoldings.push({
           ...holding,
-          currentPrice: holding.entryPrice, // Use entry price as fallback
+          currentPrice: holding.entryPrice,
           totalValue: holding.quantity * holding.entryPrice,
           totalCost: holding.quantity * holding.entryPrice,
           pnl: 0,
@@ -304,7 +287,6 @@ async function enrichHoldingsWithPrices(
         continue;
       }
 
-      // Fetch current price from contract
       const enrichedPlayer = await enrichPlayerWithContractData(footballPlayer);
       const currentPrice = enrichedPlayer.currentValue;
 
@@ -334,7 +316,6 @@ async function enrichHoldingsWithPrices(
     } catch (error) {
       console.error(`Failed to enrich ${holding.playerName}:`, error);
 
-      // Add with entry price as fallback
       enrichedHoldings.push({
         ...holding,
         currentPrice: holding.entryPrice,

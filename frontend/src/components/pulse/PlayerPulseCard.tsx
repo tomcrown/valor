@@ -1,8 +1,3 @@
-// ============================================================================
-// FILE: components/pulse/PlayerPulseCard.tsx
-// Individual player voting card for Pulse page
-// ============================================================================
-
 import { useState } from "react";
 import {
   ThumbsUp,

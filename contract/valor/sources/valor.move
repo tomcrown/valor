@@ -40,7 +40,6 @@ module valor::valor {
     const CIRCUIT_BREAKER_COOLDOWN_MS: u64 = 900000;
     const MAX_PURCHASE_PERCENT: u64 = 3000;
     
-    // Season constants
     const SEASON_EARLY: u8 = 0;
     const SEASON_MID: u8 = 1;
     const SEASON_CURRENT: u8 = 2;
@@ -99,7 +98,6 @@ module valor::valor {
         base_value: u64,
     }
 
-    // NFT structure representing player shares
     public struct PlayerSharesNFT has key, store {
         id: UID,
         player_id: ID,
@@ -670,7 +668,6 @@ module valor::valor {
 
         let current_time = clock::timestamp_ms(clock);
         
-        // Mint NFT
         let nft_url = url::new_unsafe(string::to_ascii(player.nft_image_url));
         let nft = PlayerSharesNFT {
             id: object::new(ctx),
@@ -777,7 +774,6 @@ module valor::valor {
 
         let remaining = nft.shares - shares_to_sell;
         if (remaining > 0) {
-            // Split NFT: keep remaining shares
             let nft_url = nft.nft_image_url;
             let remaining_nft = PlayerSharesNFT {
                 id: object::new(ctx),
@@ -789,7 +785,6 @@ module valor::valor {
                 nft_image_url: nft_url,
             };
             
-            // Burn original NFT
             let PlayerSharesNFT { id, player_id: _, player_name: _, shares: _, purchase_price: _, purchase_timestamp: _, nft_image_url: _ } = nft;
             event::emit(NFTBurned {
                 nft_id: object::uid_to_inner(&id),
@@ -801,7 +796,6 @@ module valor::valor {
             
             transfer::public_transfer(remaining_nft, tx_context::sender(ctx));
         } else {
-            // Burn NFT completely
             let PlayerSharesNFT { id, player_id: _, player_name: _, shares: _, purchase_price: _, purchase_timestamp: _, nft_image_url: _ } = nft;
             event::emit(NFTBurned {
                 nft_id: object::uid_to_inner(&id),
@@ -898,7 +892,6 @@ module valor::valor {
         object::delete(id);
     }
 
-    // View functions
     public fun get_market_price(platform: &Platform, player_id: ID): u64 {
         let player = table::borrow(&platform.players, player_id);
         calculate_market_price(
@@ -1064,7 +1057,6 @@ module valor::valor {
         *vector::borrow(&player.performance_history, len - 1)
     }
 
-    // NFT view functions
     public fun get_nft_share_count(nft: &PlayerSharesNFT): u64 {
         nft.shares
     }

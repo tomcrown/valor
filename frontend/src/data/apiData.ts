@@ -1,7 +1,4 @@
-// ==========================================
-// PURE FOOTBALL STATS (No Prices, No Blockchain Data)
 // Stats from AllSportsAPI - Updated: 2025-12-10
-// ==========================================
 
 export interface PurePlayerStats {
   goals: number;
@@ -20,7 +17,6 @@ export interface SeasonalFootballStats {
 
 export type SeasonPeriod = "early" | "mid" | "current";
 
-// Pure football player data - NO PRICES, NO BLOCKCHAIN DATA
 export interface FootballPlayerData {
   id: string;
   name: string;
@@ -28,33 +24,28 @@ export interface FootballPlayerData {
   position: string;
   nationality: string;
   imageUrl: string;
-  nftImageUrl: string; // NEW: NFT image URL
+  nftImageUrl: string;
   seasonalStats: SeasonalFootballStats;
-  // AI score from GPT-4o analysis (0-100)
   aiScore: number;
 }
 
-// Contract data structure (fetched separately)
 export interface ContractPlayerData {
-  earlySeasonPrice: number; // in SUI
-  midSeasonPrice: number; // in SUI
-  currentSeasonPrice: number; // in SUI
+  earlySeasonPrice: number;
+  midSeasonPrice: number;
+  currentSeasonPrice: number;
   earlyWalrusBlobId: string;
   midWalrusBlobId: string;
   currentWalrusBlobId: string;
-  weeklyChange: number; // Market change %
+  weeklyChange: number;
   valueHistory: ValueDataPoint[];
 }
 
-// Merged player data for UI
 export interface Player extends FootballPlayerData {
-  // Contract data merged in
   currentValue: number;
   weeklyChange: number;
   valueHistory: ValueDataPoint[];
   walrusProofId: string;
   seasonalStats: SeasonalFootballStats;
-  // Contract seasonal data
   onChainSeasonData?: {
     early: {
       baseValueSui: number;
@@ -108,10 +99,6 @@ export interface LeaderboardEntry {
   weeklyGrowth: number;
   totalTrades: number;
 }
-
-// ==========================================
-// PURE FOOTBALL DATA - NO PRICES
-// ==========================================
 
 export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
   {
@@ -372,9 +359,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
   },
 ];
 
-// Dummy portfolio and leaderboard (unchanged)
-export const DUMMY_PORTFOLIO: PortfolioPosition[] = [];
-export const DUMMY_LEADERBOARD: LeaderboardEntry[] = [];
+export const API_PORTFOLIO: PortfolioPosition[] = [];
+export const API_LEADERBOARD: LeaderboardEntry[] = [];
 
 export const PLATFORM_STATS = {
   totalVolume: 24500,
@@ -382,10 +368,6 @@ export const PLATFORM_STATS = {
   activeTraders: 1250,
   avgDailyTrades: 342,
 };
-
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
 
 export const getFootballPlayerById = (
   id: string

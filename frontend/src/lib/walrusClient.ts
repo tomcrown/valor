@@ -6,7 +6,7 @@
 import axios from "axios";
 import { SUI_CONFIG } from "../config/sui.config.ts";
 import type { AIAnalysis } from "./openai.ts";
-import type { SeasonPeriod } from "@/data/dummyData";
+import type { SeasonPeriod } from "@/data/apiData.ts";
 
 // ============================================================================
 // Walrus API Response Types

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import type { ValueDataPoint } from "@/data/dummyData";
+import type { ValueDataPoint } from "@/data/apiData";
 
 interface ChartProps {
   data: ValueDataPoint[];
@@ -9,13 +9,18 @@ interface ChartProps {
   className?: string;
 }
 
-const Chart = ({ data, height = 200, showLabels = true, className }: ChartProps) => {
+const Chart = ({
+  data,
+  height = 200,
+  showLabels = true,
+  className,
+}: ChartProps) => {
   const { points, minValue, maxValue, range } = useMemo(() => {
     const values = data.map((d) => d.value);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const r = max - min || 1;
-    
+
     const pts = data.map((d, i) => {
       const x = (i / (data.length - 1)) * 100;
       const y = ((d.value - min) / r) * 100;
@@ -27,9 +32,9 @@ const Chart = ({ data, height = 200, showLabels = true, className }: ChartProps)
 
   const pathD = useMemo(() => {
     if (points.length < 2) return "";
-    
+
     let d = `M ${points[0].x} ${points[0].y}`;
-    
+
     for (let i = 1; i < points.length; i++) {
       const prev = points[i - 1];
       const curr = points[i];
@@ -37,7 +42,7 @@ const Chart = ({ data, height = 200, showLabels = true, className }: ChartProps)
       const cpx2 = prev.x + (2 * (curr.x - prev.x)) / 3;
       d += ` C ${cpx1} ${prev.y}, ${cpx2} ${curr.y}, ${curr.x} ${curr.y}`;
     }
-    
+
     return d;
   }, [points]);
 
@@ -46,7 +51,8 @@ const Chart = ({ data, height = 200, showLabels = true, className }: ChartProps)
     return `${pathD} L 100 100 L 0 100 Z`;
   }, [pathD, points]);
 
-  const isPositive = data.length >= 2 && data[data.length - 1].value >= data[0].value;
+  const isPositive =
+    data.length >= 2 && data[data.length - 1].value >= data[0].value;
 
   return (
     <div className={cn("relative", className)} style={{ height }}>
@@ -59,12 +65,16 @@ const Chart = ({ data, height = 200, showLabels = true, className }: ChartProps)
           <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop
               offset="0%"
-              stopColor={isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"}
+              stopColor={
+                isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"
+              }
               stopOpacity="0.3"
             />
             <stop
               offset="100%"
-              stopColor={isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"}
+              stopColor={
+                isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"
+              }
               stopOpacity="0"
             />
           </linearGradient>
@@ -143,8 +153,12 @@ const Chart = ({ data, height = 200, showLabels = true, className }: ChartProps)
 
       {/* Y-axis labels */}
       <div className="absolute left-0 top-0 h-full flex flex-col justify-between -translate-x-full pr-2 py-1">
-        <span className="text-xs text-muted-foreground">${maxValue.toLocaleString()}</span>
-        <span className="text-xs text-muted-foreground">${minValue.toLocaleString()}</span>
+        <span className="text-xs text-muted-foreground">
+          ${maxValue.toLocaleString()}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          ${minValue.toLocaleString()}
+        </span>
       </div>
     </div>
   );

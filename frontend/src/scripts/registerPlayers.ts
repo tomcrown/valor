@@ -1,16 +1,7 @@
-#!/usr/bin/env ts-node
-// ============================================================================
-// FILE: scripts/registerPlayers.ts (UPDATED with Decentralized Pricing)
-// Register players on-chain from dummyData.ts
-// Usage:
-//   ts-node scripts/registerPlayers.ts --season early
-//   ts-node scripts/registerPlayers.ts --season early --players "Haaland,Salah"
-//   ts-node scripts/registerPlayers.ts --season early --baseValues "Haaland=0.15" (optional override)
-// ============================================================================
 import dotenv from "dotenv";
 dotenv.config();
 import { Transaction } from "@mysten/sui/transactions";
-import { FOOTBALL_PLAYERS, type SeasonPeriod } from "../data/dummyData.ts";
+import { FOOTBALL_PLAYERS, type SeasonPeriod } from "../data/apiData.ts";
 import { SUI_CONFIG } from "../config/sui.config.ts";
 import {
   rpcClient,

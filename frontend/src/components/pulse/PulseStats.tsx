@@ -1,8 +1,3 @@
-// ============================================================================
-// FILE: components/pulse/PulseStats.tsx
-// Overall statistics display for Pulse page
-// ============================================================================
-
 import { Activity, Users, TrendingUp, Calendar, Clock } from "lucide-react";
 import { formatTimeRemaining } from "@/config/pulse.config";
 import type { PulsePlatformState } from "@/hooks/usePulseData";
