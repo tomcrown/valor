@@ -363,7 +363,7 @@ export const API_PORTFOLIO: PortfolioPosition[] = [];
 export const API_LEADERBOARD: LeaderboardEntry[] = [];
 
 export const PLATFORM_STATS = {
-  totalVolume: 24500,
+  totalVolume: 2450,
   totalPlayers: 8,
   activeTraders: 1250,
   avgDailyTrades: 342,
