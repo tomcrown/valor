@@ -1,15 +1,16 @@
 // ============================================================================
 // FILE: hooks/useUserPortfolio.ts
-// Fetch user's real portfolio from blockchain
+// Fetch user's real portfolio from blockchain - ENOKI COMPATIBLE
 // ============================================================================
 
 import { useState, useEffect } from "react";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount, useCurrentWallet } from "@mysten/dapp-kit";
 import { SuiClient } from "@mysten/sui/client";
 import { SUI_CONFIG, mistToSui } from "@/config/sui.config";
 import { enrichPlayerWithContractData } from "@/lib/suiDataFetcher";
 import { FOOTBALL_PLAYERS } from "@/data/dummyData";
-import type { Player, PortfolioPosition } from "@/data/dummyData";
+import type { Player } from "@/data/dummyData";
+import { isEnokiWallet } from "@mysten/enoki";
 
 export interface UserHolding {
   objectId: string; // PlayerSharesNFT object ID
@@ -43,6 +44,7 @@ export interface PortfolioSummary {
 
 export function useUserPortfolio() {
   const currentAccount = useCurrentAccount();
+  const { currentWallet } = useCurrentWallet();
   const [holdings, setHoldings] = useState<EnrichedHolding[]>([]);
   const [summary, setSummary] = useState<PortfolioSummary>({
     totalValue: 0,
@@ -54,6 +56,9 @@ export function useUserPortfolio() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if using Enoki wallet
+  const isEnoki = currentWallet && isEnokiWallet(currentWallet);
 
   useEffect(() => {
     if (!currentAccount?.address) {
@@ -70,12 +75,17 @@ export function useUserPortfolio() {
       return;
     }
 
+    console.log("📊 Portfolio fetching for:", {
+      address: currentAccount.address,
+      walletType: isEnoki ? "Enoki (zkLogin)" : "Standard Sui Wallet",
+    });
+
     fetchPortfolio();
 
-    // // Poll for updates every 30 seconds
-    // const interval = setInterval(fetchPortfolio, 30000);
-    // return () => clearInterval(interval);
-  }, [currentAccount?.address]);
+    // Poll for updates every 30 seconds
+    const interval = setInterval(fetchPortfolio, 30000);
+    return () => clearInterval(interval);
+  }, [currentAccount?.address, isEnoki]);
 
   async function fetchPortfolio() {
     if (!currentAccount?.address) return;
@@ -84,18 +94,24 @@ export function useUserPortfolio() {
       setIsLoading(true);
       setError(null);
 
+      console.log("🔄 Fetching portfolio for address:", currentAccount.address);
+
       const client = new SuiClient({ url: SUI_CONFIG.rpcUrl });
 
       // 1. Fetch SUI balance
       const suiBalance = await fetchSuiBalance(client, currentAccount.address);
+      console.log("💰 SUI Balance:", suiBalance);
 
-      // 2. Fetch user's PlayerSharesNFT objects
-      const userHoldings = await fetchUserHoldings(
+      // 2. Fetch user's PlayerSharesNFT objects with retry logic
+      const userHoldings = await fetchUserHoldingsWithRetry(
         client,
         currentAccount.address
       );
 
+      console.log(`📦 Found ${userHoldings.length} holdings`);
+
       if (userHoldings.length === 0) {
+        console.log("ℹ️ No holdings found");
         setSummary({
           totalValue: 0,
           totalInvested: 0,
@@ -111,6 +127,7 @@ export function useUserPortfolio() {
 
       // 3. Fetch current prices for each player
       const enrichedHoldings = await enrichHoldingsWithPrices(userHoldings);
+      console.log(`✅ Enriched ${enrichedHoldings.length} holdings`);
 
       // 4. Calculate portfolio summary
       const portfolioSummary = calculatePortfolioSummary(
@@ -118,11 +135,13 @@ export function useUserPortfolio() {
         suiBalance
       );
 
+      console.log("📊 Portfolio Summary:", portfolioSummary);
+
       setHoldings(enrichedHoldings);
       setSummary(portfolioSummary);
       setIsLoading(false);
     } catch (err: any) {
-      console.error("Failed to fetch portfolio:", err);
+      console.error("❌ Failed to fetch portfolio:", err);
       setError(err.message);
       setIsLoading(false);
     }
@@ -134,6 +153,7 @@ export function useUserPortfolio() {
     isLoading,
     error,
     refetch: fetchPortfolio,
+    isEnokiWallet: isEnoki,
   };
 }
 
@@ -158,6 +178,30 @@ async function fetchSuiBalance(
   }
 }
 
+async function fetchUserHoldingsWithRetry(
+  client: SuiClient,
+  address: string,
+  retries = 3
+): Promise<UserHolding[]> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`🔍 Fetching holdings (attempt ${attempt}/${retries})...`);
+      return await fetchUserHoldings(client, address);
+    } catch (error) {
+      console.error(`❌ Attempt ${attempt} failed:`, error);
+
+      if (attempt === retries) {
+        throw error;
+      }
+
+      // Wait before retrying (exponential backoff)
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+
+  return [];
+}
+
 async function fetchUserHoldings(
   client: SuiClient,
   address: string
@@ -165,39 +209,66 @@ async function fetchUserHoldings(
   try {
     console.log("🔍 Fetching PlayerSharesNFT objects for:", address);
 
-    const response = await client.getOwnedObjects({
-      owner: address,
-      filter: {
-        StructType: `${SUI_CONFIG.contracts.packageId}::valor::PlayerSharesNFT`,
-      },
-      options: {
-        showContent: true,
-        showType: true,
-      },
-    });
-
-    console.log(`📦 Found ${response.data.length} NFT objects`);
-
+    // Try with cursor-based pagination for better reliability
     const holdings: UserHolding[] = [];
+    let hasNextPage = true;
+    let cursor: string | null = null;
 
-    for (const obj of response.data) {
-      if (!obj.data?.content || obj.data.content.dataType !== "moveObject") {
-        continue;
+    while (hasNextPage) {
+      const response = await client.getOwnedObjects({
+        owner: address,
+        filter: {
+          StructType: `${SUI_CONFIG.contracts.packageId}::valor::PlayerSharesNFT`,
+        },
+        options: {
+          showContent: true,
+          showType: true,
+        },
+        cursor,
+        limit: 50, // Fetch in batches
+      });
+
+      console.log(`📦 Batch found ${response.data.length} objects`);
+
+      for (const obj of response.data) {
+        if (!obj.data?.content || obj.data.content.dataType !== "moveObject") {
+          console.warn("⚠️ Skipping invalid object:", obj.data?.objectId);
+          continue;
+        }
+
+        try {
+          const fields = (obj.data.content as any).fields;
+
+          const holding: UserHolding = {
+            objectId: obj.data.objectId,
+            playerId: fields.player_id || "",
+            playerName: fields.player_name || "Unknown Player",
+            quantity: parseInt(fields.shares || "0"),
+            entryPrice: mistToSui(BigInt(fields.purchase_price || "0")),
+            purchaseTimestamp: parseInt(fields.purchase_timestamp || "0"),
+          };
+
+          if (holding.quantity > 0) {
+            holdings.push(holding);
+            console.log(
+              `  ✓ ${holding.playerName}: ${holding.quantity} shares`
+            );
+          }
+        } catch (parseError) {
+          console.error("❌ Error parsing object:", parseError);
+          continue;
+        }
       }
 
-      const fields = (obj.data.content as any).fields;
+      hasNextPage = response.hasNextPage;
+      cursor = response.nextCursor ?? null;
 
-      holdings.push({
-        objectId: obj.data.objectId,
-        playerId: fields.player_id,
-        playerName: fields.player_name || "Unknown Player",
-        quantity: parseInt(fields.shares),
-        entryPrice: mistToSui(BigInt(fields.purchase_price || "0")),
-        purchaseTimestamp: parseInt(fields.purchase_timestamp || "0"),
-      });
+      if (hasNextPage) {
+        console.log("📄 Fetching next page...");
+      }
     }
 
-    console.log(`✅ Parsed ${holdings.length} holdings`);
+    console.log(`✅ Total holdings parsed: ${holdings.length}`);
     return holdings;
   } catch (error) {
     console.error("Failed to fetch user holdings:", error);
@@ -260,7 +331,9 @@ async function enrichHoldingsWithPrices(
       });
 
       console.log(
-        `✅ Enriched ${holding.playerName}: ${currentPrice.toFixed(4)} SUI`
+        `✅ Enriched ${holding.playerName}: ${currentPrice.toFixed(4)} SUI (${
+          pnl > 0 ? "+" : ""
+        }${pnl.toFixed(2)}%)`
       );
     } catch (error) {
       console.error(`Failed to enrich ${holding.playerName}:`, error);
