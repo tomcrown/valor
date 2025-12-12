@@ -329,17 +329,7 @@ const PlayerDetailPage = () => {
                         ? "bg-success/10 text-success"
                         : "bg-destructive/10 text-destructive"
                     )}
-                  >
-                    {isPositive ? (
-                      <TrendingUp className="w-5 h-5" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5" />
-                    )}
-                    <span className="text-lg font-semibold">
-                      {isPositive ? "+" : ""}
-                      {mergedPlayer.weeklyChange.toFixed(1)}% this week
-                    </span>
-                  </div>
+                  ></div>
                 </div>
               </div>
             </div>

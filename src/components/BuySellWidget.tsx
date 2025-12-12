@@ -182,10 +182,7 @@ const BuySellWidget = ({
     <div className="glass-card p-6">
       {/* Wallet Type Indicator */}
       {currentAccount && isEnoki && (
-        <div className="mb-4 p-3 rounded-lg bg-info/10 border border-info/20 flex items-center gap-2 text-sm">
-          <Chrome className="w-4 h-4 text-info" />
-          <span className="text-info">Connected with zkLogin (Google)</span>
-        </div>
+        <div className="mb-4 p-3 rounded-lg bg-info/10 border border-info/20 flex items-center gap-2 text-sm"></div>
       )}
 
       <div className="flex bg-muted rounded-xl p-1 mb-6">
@@ -348,7 +345,7 @@ const BuySellWidget = ({
         <div className="w-full">
           <ConnectButton className="w-full py-6 text-lg font-semibold" />
           <p className="text-xs text-muted-foreground text-center mt-3">
-            Connect your wallet to start trading
+            LogIn to start trading
           </p>
         </div>
       )}
@@ -371,10 +368,6 @@ const BuySellWidget = ({
           </div>
         </div>
       )}
-
-      <p className="text-xs text-muted-foreground text-center mt-4">
-        Powered by Sui • Verified by Walrus
-      </p>
     </div>
   );
 };

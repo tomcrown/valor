@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WalletList } from "@/components/WalletList";
 import { Wallet, Chrome, Sparkles, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   useWallets,
 } from "@mysten/dapp-kit";
 import { isEnokiWallet } from "@mysten/enoki";
+import { useNavigate } from "react-router-dom";
 
 interface AuthDialogProps {
   isOpen: boolean;
@@ -30,6 +31,15 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
   // Get Enoki wallets
   const enokiWallets = wallets.filter(isEnokiWallet);
   const googleWallet = enokiWallets.find((w) => w.provider === "google");
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isOpen && currentAccount) {
+      onClose();
+      navigate("/portfolio");
+    }
+  }, [isOpen, currentAccount]);
 
   // Close dialog when account is connected
   if (currentAccount && isOpen) {
@@ -77,7 +87,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
                   className="w-full h-12 bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 font-semibold flex items-center justify-center gap-3"
                 >
                   <Chrome className="w-5 h-5 text-blue-500" />
-                  Continue with Google (zkLogin)
+                  Continue with Google
                 </Button>
 
                 <div className="relative py-2">
@@ -103,7 +113,6 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
               <div className="space-y-3 pt-4">
                 <div className="glass-card p-4">
                   <div className="flex items-start gap-3">
-                    <Sparkles className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium mb-1">
                         No wallet? No problem!
@@ -111,21 +120,6 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
                       <p className="text-xs text-muted-foreground">
                         Use Google to create a Sui address instantly with
                         zkLogin - no seed phrases or extensions needed
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="glass-card p-4">
-                  <div className="flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium mb-1">
-                        Secure & Private
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Your Google identity never touches the blockchain. Keys
-                        stay secure with Enoki.
                       </p>
                     </div>
                   </div>
@@ -139,30 +133,12 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
               <Button
                 variant="ghost"
                 onClick={() => setAuthMethod("select")}
-                className="w-full"
+                className="w-full "
               >
                 ← Back
               </Button>
 
               <WalletList onSelectWallet={connect} />
-
-              <div className="glass-card p-4">
-                <div className="flex items-start gap-3 mb-3">
-                  <Shield className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium mb-2">
-                      Supported Wallets:
-                    </p>
-                    <ul className="text-xs text-muted-foreground space-y-1">
-                      <li>• Sui Wallet (Official)</li>
-                      <li>• Suiet Wallet</li>
-                      <li>• Ethos Wallet</li>
-                      <li>• Martian Wallet</li>
-                      <li>• Glass Wallet</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
         </div>

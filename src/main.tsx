@@ -10,6 +10,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import App from "./App.tsx";
 import "./index.css";
 import "@mysten/dapp-kit/dist/index.css";
+import SpaceNetworkBackground from "./components/ThreeBg.tsx";
 
 const queryClient = new QueryClient();
 

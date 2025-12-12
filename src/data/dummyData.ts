@@ -377,10 +377,10 @@ export const DUMMY_PORTFOLIO: PortfolioPosition[] = [];
 export const DUMMY_LEADERBOARD: LeaderboardEntry[] = [];
 
 export const PLATFORM_STATS = {
-  totalVolume: 2450000,
+  totalVolume: 24500,
   totalPlayers: 8,
-  activeTraders: 12500,
-  avgDailyTrades: 3420,
+  activeTraders: 1250,
+  avgDailyTrades: 342,
 };
 
 // ==========================================

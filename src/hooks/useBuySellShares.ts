@@ -39,7 +39,7 @@ export function useBuySellShares() {
     if (!currentAccount) {
       toast({
         title: "Not Connected",
-        description: "Please connect your wallet to buy shares.",
+        description: "Please log in to buy shares.",
         variant: "destructive",
       });
       return null;
@@ -165,7 +165,7 @@ export function useBuySellShares() {
     if (!currentAccount) {
       toast({
         title: "Not Connected",
-        description: "Please connect your wallet to sell shares.",
+        description: "Please login to sell shares.",
         variant: "destructive",
       });
       return null;

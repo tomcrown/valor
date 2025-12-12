@@ -237,7 +237,7 @@ export function SwapModal({ open, onOpenChange }) {
     if (!currentAccount) {
       setTxOutcome({
         status: "failure",
-        message: "Please connect your wallet to swap.",
+        message: "Please login to swap.",
       });
       return;
     }
@@ -440,7 +440,7 @@ export function SwapModal({ open, onOpenChange }) {
             <div className="bg-warning/10 border border-warning/20 rounded-xl p-4 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
               <p className="text-sm text-muted-foreground">
-                Please connect your wallet to start swapping tokens.
+                Please login to start swapping tokens.
               </p>
             </div>
           )}
@@ -549,7 +549,7 @@ export function SwapModal({ open, onOpenChange }) {
                   Swapping...
                 </>
               ) : !currentAccount ? (
-                "Connect Wallet"
+                "Log In"
               ) : routeError ? (
                 "No Route Available"
               ) : (

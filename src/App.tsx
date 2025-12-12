@@ -18,7 +18,6 @@ import PlayerDetailPage from "./pages/PlayerDetailPage";
 import PortfolioPage from "./pages/PortfolioPage";
 import PulsePage from "./pages/PulsePage";
 import NotFound from "./pages/NotFound";
-import SpaceNetworkBackground from "./components/ThreeBg";
 import SwapSuccessPage from "./pages/swap/success/page";
 import SwapFailedPage from "./pages/swap/fail/page";
 import "@mysten/dapp-kit/dist/index.css";
@@ -28,7 +27,6 @@ const queryClient = new QueryClient();
 // Configure Sui networks
 const { networkConfig } = createNetworkConfig({
   testnet: { url: getFullnodeUrl("testnet") },
-  mainnet: { url: getFullnodeUrl("mainnet") },
 });
 
 // Component to register Enoki wallets
@@ -72,7 +70,6 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <SpaceNetworkBackground />
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/players" element={<PlayersPage />} />
