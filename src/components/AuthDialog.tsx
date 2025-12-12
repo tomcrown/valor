@@ -1,7 +1,6 @@
-// src/components/AuthDialog.tsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { WalletList } from "@/components/WalletList";
-import { Wallet, Chrome, Sparkles, Shield, Loader2 } from "lucide-react";
+import { Wallet, Chrome, Sparkles, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,118 +9,43 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useConnectWallet, useCurrentAccount } from "@mysten/dapp-kit";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import {
-  generateNonce,
-  generateRandomness,
-  getExtendedEphemeralPublicKey,
-} from "@mysten/sui/zklogin";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+  useConnectWallet,
+  useCurrentAccount,
+  useWallets,
+} from "@mysten/dapp-kit";
+import { isEnokiWallet } from "@mysten/enoki";
 
 interface AuthDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-// Vite environment variables - works in browser
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const REDIRECT_URI =
-  import.meta.env.VITE_REDIRECT_URI ||
-  `${window.location.origin}/auth/callback`;
-
 export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
-  const [authMethod, setAuthMethod] = useState<"select" | "wallet" | "google">(
-    "select"
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [authMethod, setAuthMethod] = useState<"select" | "wallet">("select");
   const { mutate: connect } = useConnectWallet();
   const currentAccount = useCurrentAccount();
+  const wallets = useWallets();
 
-  // Handle Google zkLogin
-  const handleGoogleZkLogin = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  // Get Enoki wallets
+  const enokiWallets = wallets.filter(isEnokiWallet);
+  const googleWallet = enokiWallets.find((w) => w.provider === "google");
 
-      // Validate environment variables
-      if (!GOOGLE_CLIENT_ID) {
-        throw new Error(
-          "Google Client ID is not configured. Please add VITE_GOOGLE_CLIENT_ID to your .env file"
-        );
-      }
+  // Close dialog when account is connected
+  if (currentAccount && isOpen) {
+    setTimeout(() => onClose(), 500);
+  }
 
-      // Fetch current epoch
-      const suiClient = new SuiClient({ url: getFullnodeUrl("testnet") });
-      const { epoch } = await suiClient.getLatestSuiSystemState();
-
-      // Generate ephemeral keypair
-      const keypair = new Ed25519Keypair();
-      const randomness = generateRandomness();
-      const ephemeralPrivateKey = keypair.getSecretKey();
-      const ephemeralPublicKey = getExtendedEphemeralPublicKey(
-        keypair.getPublicKey()
-      );
-
-      const maxEpoch = Number(epoch) + 2; // Valid for 2 epochs (~24 hours)
-
-      // Store ephemeral data in sessionStorage
-      sessionStorage.setItem(
-        "zkLoginState",
-        JSON.stringify({
-          ephemeralPublicKey,
-          ephemeralPrivateKey: Array.from(ephemeralPrivateKey), // Convert to array for storage
-          randomness,
-          maxEpoch,
-          status: "Awaiting JWT",
-        })
-      );
-
-      // Generate nonce
-      const nonce = generateNonce(keypair.getPublicKey(), maxEpoch, randomness);
-
-      // Construct Google OAuth URL
-      const params = new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID,
-        redirect_uri: REDIRECT_URI,
-        response_type: "id_token",
-        scope: "openid email",
-        nonce: nonce,
-      });
-
-      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-
-      // Redirect to Google
-      window.location.href = googleAuthUrl;
-    } catch (err) {
-      console.error("zkLogin initiation error:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to initiate Google login. Please try again."
-      );
-      setIsLoading(false);
+  const handleGoogleLogin = () => {
+    if (!googleWallet) {
+      console.error("Google wallet not found");
+      return;
     }
+    connect({ wallet: googleWallet });
   };
-
-  // Close dialog when wallet is connected
-  useEffect(() => {
-    if (currentAccount && authMethod === "wallet") {
-      localStorage.setItem("auth_method", "wallet");
-      localStorage.setItem(
-        "sui_session",
-        JSON.stringify({
-          address: currentAccount.address,
-        })
-      );
-      setTimeout(() => onClose(), 500);
-    }
-  }, [currentAccount, authMethod, onClose]);
 
   const handleClose = () => {
     setAuthMethod("select");
-    setError(null);
     onClose();
   };
 
@@ -144,32 +68,16 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
-          {/* SELECTION SCREEN */}
           {authMethod === "select" && (
             <>
-              {error && (
-                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
-                  {error}
-                </div>
-              )}
-
               <div className="space-y-3">
                 <Button
-                  onClick={handleGoogleZkLogin}
-                  disabled={isLoading}
+                  onClick={handleGoogleLogin}
+                  disabled={!googleWallet}
                   className="w-full h-12 bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 font-semibold flex items-center justify-center gap-3"
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <Chrome className="w-5 h-5 text-blue-500" />
-                      Continue with Google (zkLogin)
-                    </>
-                  )}
+                  <Chrome className="w-5 h-5 text-blue-500" />
+                  Continue with Google (zkLogin)
                 </Button>
 
                 <div className="relative py-2">
@@ -217,7 +125,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Your Google identity never touches the blockchain. Keys
-                        stay in your browser.
+                        stay secure with Enoki.
                       </p>
                     </div>
                   </div>
@@ -226,7 +134,6 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
             </>
           )}
 
-          {/* WALLET CONNECTION SCREEN */}
           {authMethod === "wallet" && (
             <div className="space-y-4">
               <Button

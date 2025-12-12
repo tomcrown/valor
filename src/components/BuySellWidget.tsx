@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { SwapModal } from "@/components/SwapModal";
+import { useState, useEffect } from "react";
 import {
   Minus,
   Plus,
@@ -8,14 +7,20 @@ import {
   Loader2,
   Wallet,
   Package,
+  Chrome,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useBuySellShares } from "@/hooks/useBuySellShares";
 import { useUserShares } from "@/hooks/useUserShares";
-import { useCurrentAccount } from "@mysten/dapp-kit";
-import { ConnectButton } from "@mysten/dapp-kit";
+import {
+  useCurrentAccount,
+  ConnectButton,
+  useCurrentWallet,
+} from "@mysten/dapp-kit";
 import { toast } from "@/hooks/use-toast";
+import { isEnokiWallet } from "@mysten/enoki";
 
 interface BuySellWidgetProps {
   playerId: string;
@@ -32,13 +37,17 @@ const BuySellWidget = ({
   currentPrice,
   onTransactionComplete,
 }: BuySellWidgetProps) => {
-  const account = useCurrentAccount();
+  const currentAccount = useCurrentAccount();
+  const { currentWallet } = useCurrentWallet();
   const [mode, setMode] = useState<"buy" | "sell">("buy");
   const [quantity, setQuantity] = useState(1);
-  const [selectedSharesObject, setSelectedSharesObject] = useState<string>("");
-  const { buyShares, sellShares, isProcessing } = useBuySellShares();
+  const {
+    buyShares,
+    sellShares,
+    isProcessing,
+    isEnokiWallet: isEnoki,
+  } = useBuySellShares();
 
-  // Use onChainPlayerId for fetching shares, not the football playerId
   const {
     shares,
     totalShares,
@@ -48,6 +57,21 @@ const BuySellWidget = ({
 
   const totalValue = quantity * currentPrice;
   const networkFee = 0.001;
+
+  // Debug logging
+  useEffect(() => {
+    if (currentAccount) {
+      console.log("🔍 BuySellWidget Debug:", {
+        address: currentAccount.address,
+        walletType: isEnoki ? "Enoki (zkLogin)" : "Standard Sui Wallet",
+        onChainPlayerId,
+        playerName,
+        currentPrice,
+        totalShares,
+        sharesCount: shares.length,
+      });
+    }
+  }, [currentAccount, isEnoki, onChainPlayerId, totalShares, shares]);
 
   const handleQuantityChange = (delta: number) => {
     const maxSellable = mode === "sell" ? totalShares : Infinity;
@@ -64,6 +88,14 @@ const BuySellWidget = ({
       return;
     }
 
+    console.log("🛒 Attempting to buy shares:", {
+      playerId: onChainPlayerId,
+      playerName,
+      shares: quantity,
+      maxPricePerShare: currentPrice * 1.05,
+      walletType: isEnoki ? "Enoki" : "Standard",
+    });
+
     const result = await buyShares({
       playerId: onChainPlayerId,
       playerName,
@@ -72,18 +104,27 @@ const BuySellWidget = ({
     });
 
     if (result?.success) {
+      console.log("✅ Buy successful, refreshing data...");
       setQuantity(1);
-      refetchShares();
-      onTransactionComplete?.();
+
+      // Wait a bit for blockchain to update
+      setTimeout(() => {
+        refetchShares();
+        onTransactionComplete?.();
+      }, 2000);
     }
   };
 
   const handleSell = async () => {
     if (shares.length === 0) {
+      toast({
+        title: "No Shares",
+        description: "You don't have any shares to sell.",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Calculate which objects to sell from
     let remainingToSell = quantity;
     const sortedShares = [...shares].sort((a, b) => b.shares - a.shares);
     const sellOperations: Array<{ objectId: string; amount: number }> = [];
@@ -104,9 +145,12 @@ const BuySellWidget = ({
       remainingToSell -= sharesToSellFromThisObject;
     }
 
-    console.log(
-      `Selling ${quantity} shares across ${sellOperations.length} objects in ONE transaction`
-    );
+    console.log("💰 Attempting to sell shares:", {
+      operations: sellOperations,
+      minPricePerShare: currentPrice * 0.95,
+      playerName,
+      walletType: isEnoki ? "Enoki" : "Standard",
+    });
 
     const result = await sellShares({
       operations: sellOperations,
@@ -115,9 +159,14 @@ const BuySellWidget = ({
     });
 
     if (result?.success) {
+      console.log("✅ Sell successful, refreshing data...");
       setQuantity(1);
-      refetchShares();
-      onTransactionComplete?.();
+
+      // Wait a bit for blockchain to update
+      setTimeout(() => {
+        refetchShares();
+        onTransactionComplete?.();
+      }, 2000);
     }
   };
 
@@ -131,6 +180,14 @@ const BuySellWidget = ({
 
   return (
     <div className="glass-card p-6">
+      {/* Wallet Type Indicator */}
+      {currentAccount && isEnoki && (
+        <div className="mb-4 p-3 rounded-lg bg-info/10 border border-info/20 flex items-center gap-2 text-sm">
+          <Chrome className="w-4 h-4 text-info" />
+          <span className="text-info">Connected with zkLogin (Google)</span>
+        </div>
+      )}
+
       <div className="flex bg-muted rounded-xl p-1 mb-6">
         <button
           onClick={() => setMode("buy")}
@@ -228,7 +285,7 @@ const BuySellWidget = ({
         </div>
       </div>
 
-      {account ? (
+      {currentAccount ? (
         <>
           {mode === "sell" && totalShares === 0 ? (
             <div className="w-full py-6 px-4 rounded-xl bg-muted/50 text-center">
@@ -247,7 +304,7 @@ const BuySellWidget = ({
             </div>
           ) : !onChainPlayerId && mode === "buy" ? (
             <div className="w-full py-6 px-4 rounded-xl bg-muted/50 text-center">
-              <Package className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+              <AlertCircle className="w-8 h-8 mx-auto mb-2 text-warning" />
               <p className="text-sm text-muted-foreground">
                 {playerName} is not registered on-chain yet
               </p>
@@ -296,13 +353,21 @@ const BuySellWidget = ({
         </div>
       )}
 
-      {account && (
+      {currentAccount && (
         <div className="mt-4 p-3 rounded-lg bg-muted/30 text-xs">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Wallet className="w-3 h-3" />
+            {isEnoki ? (
+              <Chrome className="w-3 h-3 text-blue-500" />
+            ) : (
+              <Wallet className="w-3 h-3" />
+            )}
             <span className="font-mono">
-              {account.address.slice(0, 6)}...{account.address.slice(-4)}
+              {currentAccount.address.slice(0, 6)}...
+              {currentAccount.address.slice(-4)}
             </span>
+            {isEnoki && (
+              <span className="ml-auto text-[10px] text-blue-500">zkLogin</span>
+            )}
           </div>
         </div>
       )}

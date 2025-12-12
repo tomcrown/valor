@@ -72,11 +72,11 @@ module valor::valor {
         team: String,
         position: String,
         image_url: String,
-        nft_image_url: String, // NFT image for this player
+        nft_image_url: String, 
         base_value: u64, 
-        early_season_base_value: u64, // Set once at registration
-        mid_season_base_value: u64,   // Updated via update function
-        current_season_base_value: u64, // Updated via update function
+        early_season_base_value: u64, 
+        mid_season_base_value: u64,   
+        current_season_base_value: u64, 
         total_shares: u64,      
         circulating_shares: u64,
         performance_history: vector<PerformanceRecord>,
@@ -554,7 +554,6 @@ module valor::valor {
             return
         };
 
-        // Update the appropriate season value
         if (season == SEASON_MID) {
             player.mid_season_base_value = new_base_value;
         } else if (season == SEASON_CURRENT) {

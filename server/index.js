@@ -1,7 +1,7 @@
-// server/index.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { EnokiClient } from "@mysten/enoki";
 
 dotenv.config();
 
@@ -11,100 +11,72 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-const ENOKI_API_KEY = process.env.ENOKI_API_KEY;
-const ENOKI_BASE_URL = "https://api.enoki.mystenlabs.com/v1";
+// Initialize Enoki Client with your PRIVATE API key
+const enokiClient = new EnokiClient({
+  apiKey: process.env.ENOKI_PRIVATE_API_KEY,
+});
 
-async function callEnokiApi(endpoint, options) {
-  const response = await fetch(`${ENOKI_BASE_URL}${endpoint}`, options);
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Enoki API error: ${response.statusText} - ${error}`);
-  }
-
-  return response.json();
-}
-
-app.post("/api/zklogin", async (req, res) => {
+// Endpoint to sponsor transactions (if needed for backend operations)
+app.post("/api/sponsor-transaction", async (req, res) => {
   try {
-    const { jwt, ephemeralPublicKey, maxEpoch, randomness } = req.body;
+    const {
+      transactionKindBytes,
+      sender,
+      allowedMoveCallTargets,
+      allowedAddresses,
+    } = req.body;
 
-    if (!jwt || !ephemeralPublicKey || !maxEpoch || !randomness) {
-      return res.status(400).json({
-        error: "Missing required parameters",
-      });
-    }
-
-    if (!ENOKI_API_KEY) {
-      return res.status(500).json({
-        error: "Enoki API key not configured",
-      });
-    }
-
-    const commonHeaders = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${ENOKI_API_KEY}`,
-    };
-
-    console.log("Requesting zkLogin address...");
-
-    // Step 1: Get the zkLogin address
-    const addressData = await callEnokiApi("/zklogin", {
-      method: "GET",
-      headers: {
-        ...commonHeaders,
-        "zklogin-jwt": jwt,
-      },
+    const sponsored = await enokiClient.createSponsoredTransaction({
+      network: "testnet",
+      transactionKindBytes,
+      sender,
+      allowedMoveCallTargets,
+      allowedAddresses,
     });
-
-    const { address } = addressData.data;
-    console.log("Got address:", address);
-
-    console.log("Generating ZK proof...");
-
-    // Step 2: Request ZK proof generation
-    const zkpData = await callEnokiApi("/zklogin/zkp", {
-      method: "POST",
-      headers: {
-        ...commonHeaders,
-        "zklogin-jwt": jwt,
-      },
-      body: JSON.stringify({
-        ephemeralPublicKey,
-        maxEpoch,
-        randomness,
-        network: "testnet",
-      }),
-    });
-
-    console.log("ZK proof generated successfully");
 
     res.json({
       success: true,
-      suiAddress: address,
-      zkProof: {
-        proofPoints: zkpData.data.proofPoints,
-        issBase64Details: zkpData.data.issBase64Details,
-        headerBase64: zkpData.data.headerBase64,
-      },
-      token: jwt,
+      digest: sponsored.digest,
+      bytes: sponsored.bytes,
     });
   } catch (error) {
-    console.error("zkLogin API error:", error);
+    console.error("Sponsor transaction error:", error);
     res.status(500).json({
-      error: "Failed to process zkLogin request",
+      error: "Failed to sponsor transaction",
       details: error.message,
     });
   }
 });
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+// Endpoint to execute sponsored transaction
+app.post("/api/execute-sponsored", async (req, res) => {
+  try {
+    const { digest, signature } = req.body;
+
+    const result = await enokiClient.executeSponsoredTransaction({
+      digest,
+      signature,
+    });
+
+    res.json({
+      success: true,
+      digest: result.digest,
+    });
+  } catch (error) {
+    console.error("Execute transaction error:", error);
+    res.status(500).json({
+      error: "Failed to execute transaction",
+      details: error.message,
+    });
+  }
 });
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
-  console.log(
-    `Enoki API Key: ${ENOKI_API_KEY ? "Configured" : "NOT CONFIGURED"}`
-  );
+  console.log(`Enoki configured: ${!!process.env.ENOKI_PRIVATE_API_KEY}`);
 });

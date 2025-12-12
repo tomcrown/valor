@@ -1,48 +1,44 @@
-// ============================================================================
-// FILE: hooks/useBuySellShares.ts
-// Custom hook for buying and selling player shares
-// BUY/SELL ALWAYS USES CURRENT SEASON VALUE
-// FIXED: Now supports selling across multiple NFT objects
-// ============================================================================
-
 import { useState } from "react";
 import {
   useCurrentAccount,
   useSignAndExecuteTransaction,
+  useCurrentWallet,
 } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_CONFIG, suiToMist } from "@/config/sui.config";
 import { toast } from "@/hooks/use-toast";
+import { isEnokiWallet } from "@mysten/enoki";
 
 export interface BuySharesParams {
-  playerId: string; // On-chain player ID (NOT football player ID)
+  playerId: string;
   playerName: string;
   shares: number;
-  maxPricePerShare: number; // in SUI (ALWAYS CURRENT SEASON PRICE)
+  maxPricePerShare: number;
 }
 
 export interface SellSharesParams {
   operations: Array<{
-    objectId: string; // The PlayerSharesNFT object ID
-    amount: number; // Number of shares to sell from this object
+    objectId: string;
+    amount: number;
   }>;
-  minPricePerShare: number; // in SUI (ALWAYS CURRENT SEASON PRICE)
+  minPricePerShare: number;
   playerName: string;
 }
 
 export function useBuySellShares() {
-  const account = useCurrentAccount();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const currentAccount = useCurrentAccount();
+  const { currentWallet } = useCurrentWallet();
+  const { mutateAsync: signAndExecuteTransaction } =
+    useSignAndExecuteTransaction();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  /**
-   * Buy player shares
-   * ALWAYS uses CURRENT SEASON base value for pricing
-   */
+  // Check if using Enoki wallet
+  const isEnoki = currentWallet && isEnokiWallet(currentWallet);
+
   const buyShares = async (params: BuySharesParams) => {
-    if (!account) {
+    if (!currentAccount) {
       toast({
-        title: "Wallet Not Connected",
+        title: "Not Connected",
         description: "Please connect your wallet to buy shares.",
         variant: "destructive",
       });
@@ -53,42 +49,46 @@ export function useBuySellShares() {
 
     try {
       console.log("🔵 Starting buy shares transaction:", {
-        playerId: params.playerId,
-        shares: params.shares,
-        maxPricePerShare: params.maxPricePerShare,
-        packageId: SUI_CONFIG.contracts.packageId,
-        platformObjectId: SUI_CONFIG.contracts.platformObjectId,
+        ...params,
+        walletType: isEnoki ? "Enoki (zkLogin)" : "Standard Sui Wallet",
+        address: currentAccount.address,
       });
 
       const tx = new Transaction();
 
-      // Set gas budget
-      tx.setGasBudget(SUI_CONFIG.gas.budget);
+      // Set gas budget - Enoki wallets might need higher budget
+      // const gasBudget = isEnoki
+      //   ? SUI_CONFIG.gas.budget * 1.5
+      //   : SUI_CONFIG.gas.budget;
 
-      // Calculate payment amount (add 20% buffer for slippage and bonding curve)
-      const estimatedCost = params.shares * params.maxPricePerShare * 1.2;
+      // tx.setGasBudget(gasBudget);
+
+      // Calculate payment amount with buffer
+      const estimatedCost = params.shares * params.maxPricePerShare;
+      console.log("Estimated cost (with buffer):", estimatedCost);
       const paymentAmount = suiToMist(estimatedCost);
 
       console.log("💰 Payment calculation:", {
-        estimatedCost: estimatedCost.toFixed(4),
-        paymentAmountMist: paymentAmount.toString(),
         shares: params.shares,
         maxPricePerShare: params.maxPricePerShare,
+        estimatedCost,
+        paymentAmount: paymentAmount.toString(),
       });
 
-      // Split coin for payment
+      // Split coins for payment
       const [paymentCoin] = tx.splitCoins(tx.gas, [paymentAmount]);
+      console.log("🪙 Payment coin prepared:", paymentAmount);
 
       // Call buy_shares function
       tx.moveCall({
         target: `${SUI_CONFIG.contracts.packageId}::valor::buy_shares`,
         arguments: [
-          tx.object(SUI_CONFIG.contracts.platformObjectId), // platform
-          tx.pure.address(params.playerId), // player_id (on-chain ID)
-          tx.pure.u64(params.shares), // shares
-          tx.pure.u64(suiToMist(params.maxPricePerShare)), // max_price_per_share (in MIST)
-          paymentCoin, // payment
-          tx.object("0x6"), // clock
+          tx.object(SUI_CONFIG.contracts.platformObjectId),
+          tx.pure.address(params.playerId),
+          tx.pure.u64(params.shares),
+          tx.pure.u64(suiToMist(params.maxPricePerShare)),
+          paymentCoin,
+          tx.object("0x6"), // Clock object
         ],
       });
 
@@ -97,14 +97,25 @@ export function useBuySellShares() {
         description: `Buying ${params.shares} shares of ${params.playerName}...`,
       });
 
-      console.log("📤 Executing transaction...");
+      // Execute transaction with proper options
+      const result = await signAndExecuteTransaction(
+        {
+          transaction: tx,
+        },
+        {
+          onSuccess: (result) => {
+            console.log("✅ Transaction successful:", result.digest);
+          },
+          onError: (error) => {
+            console.error("❌ Transaction failed:", error);
+          },
+        }
+      );
 
-      const result = await signAndExecute({
-        transaction: tx,
-      });
+      console.log("✅ Buy transaction result:", result);
 
-      console.log("📥 Transaction result:", result);
-      console.log("✅ Transaction successful!");
+      // Wait a bit for blockchain to process
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       toast({
         title: "Purchase Successful! 🎉",
@@ -117,12 +128,6 @@ export function useBuySellShares() {
       };
     } catch (error: any) {
       console.error("❌ Buy shares error:", error);
-      console.error("Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        cause: error.cause,
-      });
 
       let errorMessage = "Failed to buy shares. Please try again.";
 
@@ -138,27 +143,10 @@ export function useBuySellShares() {
         errorMessage = "Insufficient SUI for purchase. Please add more SUI.";
       } else if (errorStr.includes("EPriceSlippage")) {
         errorMessage = "Price changed too much. Please try again.";
-      } else if (errorStr.includes("EInsufficientShares")) {
-        errorMessage = "Not enough shares available for purchase.";
-      } else if (errorStr.includes("EMaxPurchaseExceeded")) {
-        errorMessage =
-          "Purchase amount exceeds maximum allowed (30% of total shares).";
-      } else if (errorStr.includes("EPlayerNotFound")) {
-        errorMessage =
-          "Player not found on-chain. They may need to be registered first.";
-      } else if (
-        errorStr.includes("object") &&
-        errorStr.includes("not found")
-      ) {
-        errorMessage =
-          "Contract object not found. Please check the configuration.";
-      } else if (
-        errorStr.includes("rejected") ||
-        errorStr.includes("User rejected")
-      ) {
+      } else if (errorStr.includes("rejected") || errorStr.includes("denied")) {
         errorMessage = "Transaction was rejected.";
-      } else if (error.message && error.message !== "Transaction failed") {
-        errorMessage = `Transaction failed: ${error.message}`;
+      } else if (errorStr.includes("Enoki")) {
+        errorMessage = "zkLogin wallet error. Please try reconnecting.";
       }
 
       toast({
@@ -173,15 +161,10 @@ export function useBuySellShares() {
     }
   };
 
-  /**
-   * Sell player shares across multiple NFT objects
-   * ALWAYS uses CURRENT SEASON base value for pricing
-   * Supports batch selling in a SINGLE transaction
-   */
   const sellShares = async (params: SellSharesParams) => {
-    if (!account) {
+    if (!currentAccount) {
       toast({
-        title: "Wallet Not Connected",
+        title: "Not Connected",
         description: "Please connect your wallet to sell shares.",
         variant: "destructive",
       });
@@ -208,45 +191,54 @@ export function useBuySellShares() {
       console.log("🔵 Starting sell shares transaction:", {
         operations: params.operations,
         totalShares,
-        minPricePerShare: params.minPricePerShare,
+        walletType: isEnoki ? "Enoki (zkLogin)" : "Standard Sui Wallet",
+        address: currentAccount.address,
       });
 
       const tx = new Transaction();
 
-      // Set gas budget (higher for batch operations)
-      tx.setGasBudget(SUI_CONFIG.gas.budget);
-
-      // Call sell_shares for each operation in a single transaction
+      // Add all sell operations
       for (const operation of params.operations) {
         console.log(
-          `  - Selling ${operation.amount} shares from ${operation.objectId}`
+          `📤 Selling ${operation.amount} shares from ${operation.objectId}`
         );
 
         tx.moveCall({
           target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
           arguments: [
-            tx.object(SUI_CONFIG.contracts.platformObjectId), // platform
-            tx.object(operation.objectId), // nft (PlayerSharesNFT object)
-            tx.pure.u64(operation.amount), // shares_to_sell
-            tx.pure.u64(suiToMist(params.minPricePerShare)), // min_price_per_share (in MIST)
-            tx.object("0x6"), // clock
+            tx.object(SUI_CONFIG.contracts.platformObjectId),
+            tx.object(operation.objectId),
+            tx.pure.u64(operation.amount),
+            tx.pure.u64(suiToMist(params.minPricePerShare)),
+            tx.object("0x6"), // Clock object
           ],
         });
       }
 
       toast({
         title: "Transaction Submitted",
-        description: `Selling ${totalShares} shares of ${params.playerName} across ${params.operations.length} object(s)...`,
+        description: `Selling ${totalShares} shares of ${params.playerName}...`,
       });
 
-      console.log("📤 Executing transaction...");
+      // Execute transaction
+      const result = await signAndExecuteTransaction(
+        {
+          transaction: tx,
+        },
+        {
+          onSuccess: (result) => {
+            console.log("✅ Transaction successful:", result.digest);
+          },
+          onError: (error) => {
+            console.error("❌ Transaction failed:", error);
+          },
+        }
+      );
 
-      const result = await signAndExecute({
-        transaction: tx,
-      });
+      console.log("✅ Sell transaction result:", result);
 
-      console.log("📥 Transaction result:", result);
-      console.log("✅ Transaction successful!");
+      // Wait a bit for blockchain to process
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       toast({
         title: "Sale Successful! 💰",
@@ -259,12 +251,6 @@ export function useBuySellShares() {
       };
     } catch (error: any) {
       console.error("❌ Sell shares error:", error);
-      console.error("Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        cause: error.cause,
-      });
 
       let errorMessage = "Failed to sell shares. Please try again.";
 
@@ -274,16 +260,10 @@ export function useBuySellShares() {
         errorMessage = "You don't have enough shares to sell.";
       } else if (errorStr.includes("EPriceSlippage")) {
         errorMessage = "Price changed too much. Please try again.";
-      } else if (errorStr.includes("EInsufficientLiquidity")) {
-        errorMessage =
-          "Not enough liquidity in the pool. Try selling fewer shares.";
-      } else if (
-        errorStr.includes("rejected") ||
-        errorStr.includes("User rejected")
-      ) {
+      } else if (errorStr.includes("rejected") || errorStr.includes("denied")) {
         errorMessage = "Transaction was rejected.";
-      } else if (error.message && error.message !== "Transaction failed") {
-        errorMessage = `Transaction failed: ${error.message}`;
+      } else if (errorStr.includes("Enoki")) {
+        errorMessage = "zkLogin wallet error. Please try reconnecting.";
       }
 
       toast({
@@ -302,7 +282,8 @@ export function useBuySellShares() {
     buyShares,
     sellShares,
     isProcessing,
-    isConnected: !!account,
-    address: account?.address,
+    isConnected: !!currentAccount,
+    address: currentAccount?.address,
+    isEnokiWallet: isEnoki,
   };
 }

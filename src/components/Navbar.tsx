@@ -1,5 +1,4 @@
-// src/components/Navbar.tsx - UPDATED with Pulse link
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Menu,
@@ -11,11 +10,17 @@ import {
   ChevronDown,
   Chrome,
   Activity,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AuthDialog } from "@/components/AuthDialog";
-import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
+import {
+  useCurrentAccount,
+  useDisconnectWallet,
+  useCurrentWallet,
+} from "@mysten/dapp-kit";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,80 +28,56 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "@/hooks/use-toast";
+import { isEnokiWallet } from "@mysten/enoki";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/players", label: "Players" },
-  { href: "/pulse", label: "Pulse", icon: Activity, highlight: true }, // NEW
+  { href: "/pulse", label: "Pulse", icon: Activity, highlight: true },
   { href: "/portfolio", label: "Portfolio" },
 ];
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [zkLoginAddress, setZkLoginAddress] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const location = useLocation();
 
   const currentAccount = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
+  const { currentWallet } = useCurrentWallet();
 
-  const authMethod = localStorage.getItem("auth_method");
-  const isAuthenticated = currentAccount || authMethod === "zklogin";
-
-  // Load zkLogin address on mount
-  useEffect(() => {
-    if (authMethod === "zklogin") {
-      const address = localStorage.getItem("zklogin_address");
-      setZkLoginAddress(address);
-    }
-  }, [authMethod]);
-
-  // Save wallet session when account changes
-  useEffect(() => {
-    if (currentAccount && authMethod === "wallet") {
-      localStorage.setItem(
-        "sui_session",
-        JSON.stringify({
-          address: currentAccount.address,
-          method: "wallet",
-        })
-      );
-    }
-  }, [currentAccount, authMethod]);
+  const isEnoki = currentWallet && isEnokiWallet(currentWallet);
 
   const handleLogout = () => {
-    if (authMethod === "wallet") {
-      disconnect();
-    }
-
-    // Clear all auth-related storage
-    localStorage.removeItem("auth_method");
-    localStorage.removeItem("zklogin_address");
-    localStorage.removeItem("sui_session");
-    localStorage.removeItem("sui-dapp-kit:wallet-connection-info");
-    sessionStorage.removeItem("zkLoginState");
-
-    setZkLoginAddress(null);
-
-    // Reload page to reset state
+    disconnect();
     window.location.href = "/";
+  };
+
+  const handleCopyAddress = async () => {
+    if (!currentAccount?.address) return;
+
+    try {
+      await navigator.clipboard.writeText(currentAccount.address);
+      setCopied(true);
+      toast({
+        title: "Address Copied!",
+        description: "Wallet address copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy address to clipboard",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
-
-  const getDisplayAddress = () => {
-    if (authMethod === "wallet" && currentAccount) {
-      return currentAccount.address;
-    }
-    if (authMethod === "zklogin" && zkLoginAddress) {
-      return zkLoginAddress;
-    }
-    return null;
-  };
-
-  const displayAddress = getDisplayAddress();
 
   return (
     <>
@@ -140,7 +121,7 @@ const Navbar = () => {
 
             {/* Auth Section */}
             <div className="hidden md:flex items-center gap-4">
-              {!isAuthenticated ? (
+              {!currentAccount ? (
                 <Button
                   onClick={() => setIsAuthOpen(true)}
                   className="btn-gradient text-primary-foreground font-semibold px-6"
@@ -156,22 +137,18 @@ const Navbar = () => {
                       className="gap-2 min-w-[160px] justify-between"
                     >
                       <div className="flex items-center gap-2">
-                        {authMethod === "wallet" ? (
+                        {isEnoki ? (
                           <>
-                            <Wallet className="w-4 h-4" />
+                            <Chrome className="w-4 h-4 text-blue-500" />
                             <span className="font-mono text-sm">
-                              {displayAddress
-                                ? formatAddress(displayAddress)
-                                : "Wallet"}
+                              {formatAddress(currentAccount.address)}
                             </span>
                           </>
                         ) : (
                           <>
-                            <Chrome className="w-4 h-4 text-blue-500" />
+                            <Wallet className="w-4 h-4" />
                             <span className="font-mono text-sm">
-                              {displayAddress
-                                ? formatAddress(displayAddress)
-                                : "zkLogin"}
+                              {formatAddress(currentAccount.address)}
                             </span>
                           </>
                         )}
@@ -182,16 +159,29 @@ const Navbar = () => {
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="px-2 py-1.5">
                       <p className="text-sm font-medium">
-                        {authMethod === "wallet"
-                          ? "Connected Wallet"
-                          : "zkLogin Account"}
+                        {isEnoki ? "zkLogin Account" : "Connected Wallet"}
                       </p>
                       <p className="text-xs text-muted-foreground font-mono">
-                        {displayAddress
-                          ? formatAddress(displayAddress)
-                          : "Loading..."}
+                        {formatAddress(currentAccount.address)}
                       </p>
                     </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleCopyAddress}
+                      className="cursor-pointer"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4 mr-2 text-success" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Address
+                        </>
+                      )}
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/portfolio" className="cursor-pointer">
@@ -251,7 +241,7 @@ const Navbar = () => {
                   </Link>
                 ))}
 
-                {!isAuthenticated ? (
+                {!currentAccount ? (
                   <Button
                     onClick={() => {
                       setIsAuthOpen(true);
@@ -266,14 +256,29 @@ const Navbar = () => {
                   <div className="space-y-2 mt-2">
                     <div className="px-4 py-2 bg-muted rounded-lg">
                       <p className="text-xs text-muted-foreground mb-1">
-                        {authMethod === "wallet" ? "Wallet" : "zkLogin"} Account
+                        {isEnoki ? "zkLogin" : "Wallet"} Account
                       </p>
                       <p className="text-xs font-mono">
-                        {displayAddress
-                          ? formatAddress(displayAddress)
-                          : "Loading..."}
+                        {formatAddress(currentAccount.address)}
                       </p>
                     </div>
+                    <Button
+                      onClick={handleCopyAddress}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4 mr-2 text-success" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Address
+                        </>
+                      )}
+                    </Button>
                     <Button
                       onClick={handleLogout}
                       variant="outline"
