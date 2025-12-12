@@ -1,3 +1,4 @@
+// SpaceNetworkBackground.tsx
 import { useRef, useEffect } from "react";
 import * as THREE from "three";
 
@@ -24,14 +25,14 @@ export default function SpaceNetworkBackground() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     mount.appendChild(renderer.domElement);
 
-    /** 🌌 Star Field **/
+    /** 🌌 Star Field (small white points) **/
     const starGeometry = new THREE.BufferGeometry();
-    const starCount = 200;
+    const starCount = 2000;
     const starPositions = [];
     for (let i = 0; i < starCount; i++) {
       starPositions.push(
         (Math.random() - 0.5) * 2000,
-        (Math.random() - 0.5) * 200,
+        (Math.random() - 0.5) * 2000,
         (Math.random() - 0.5) * 2000
       );
     }
@@ -48,11 +49,11 @@ export default function SpaceNetworkBackground() {
     const starField = new THREE.Points(starGeometry, starMaterial);
     scene.add(starField);
 
-    /** ✨ Galaxy Clusters **/
+    /** ✨ Galaxy Clusters (colored glowing points) **/
     const galaxyGeometry = new THREE.BufferGeometry();
-    const galaxyCount = 200;
-    const galaxyPositions: number[] = [];
-    const galaxyColors: number[] = [];
+    const galaxyCount = 300;
+    const galaxyPositions = [];
+    const galaxyColors = [];
     const color = new THREE.Color();
 
     for (let i = 0; i < galaxyCount; i++) {
@@ -61,10 +62,9 @@ export default function SpaceNetworkBackground() {
         (Math.random() - 0.5) * 800,
         (Math.random() - 0.5) * 800
       );
-      color.setHSL(Math.random(), 1, 0.6);
+      color.setHSL(Math.random(), 1, 0.6); // random bright neon colors
       galaxyColors.push(color.r, color.g, color.b);
     }
-
     galaxyGeometry.setAttribute(
       "position",
       new THREE.Float32BufferAttribute(galaxyPositions, 3)
@@ -84,7 +84,7 @@ export default function SpaceNetworkBackground() {
     const galaxies = new THREE.Points(galaxyGeometry, galaxyMaterial);
     scene.add(galaxies);
 
-    /** 🌐 Sci-Fi Lines **/
+    /** 🌐 Sci-Fi Lines (between nearby galaxy points) **/
     const lineMaterial = new THREE.LineBasicMaterial({
       color: 0x00ffff,
       transparent: true,
@@ -101,15 +101,17 @@ export default function SpaceNetworkBackground() {
     scene.add(lines);
 
     /** 🎥 Animation **/
-    let frameId: number;
     function animate() {
-      frameId = requestAnimationFrame(animate);
+      requestAnimationFrame(animate);
 
+      // Rotate scene slowly for parallax effect
       scene.rotation.y += 0.0005;
       scene.rotation.x += 0.0002;
 
+      // Twinkle stars
       starMaterial.size = 1 + Math.sin(Date.now() * 0.002) * 0.3;
 
+      // Connect galaxy points if close
       const gPos = galaxyGeometry.attributes.position.array;
       let vertexpos = 0;
       for (let i = 0; i < galaxyCount; i++) {
@@ -139,7 +141,7 @@ export default function SpaceNetworkBackground() {
     }
     animate();
 
-    /** Handle resize **/
+    /** 📏 Handle resize **/
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -147,12 +149,9 @@ export default function SpaceNetworkBackground() {
     };
     window.addEventListener("resize", handleResize);
 
-    /** Cleanup on unmount **/
     return () => {
-      cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleResize);
       mount.removeChild(renderer.domElement);
-      renderer.dispose();
     };
   }, []);
 
@@ -164,9 +163,9 @@ export default function SpaceNetworkBackground() {
         top: 0,
         left: 0,
         zIndex: -1,
-        width: "100vw",
-        height: "100vh",
-        background: "radial-gradient(circle at 50% 50%, #000010, #000000)",
+        width: "100%",
+        height: "100%",
+        // background: "radial-gradient(circle at 50% 50%, #000010, #000000)",
       }}
     />
   );

@@ -15,8 +15,6 @@ import type { SeasonPeriod } from "@/data/dummyData";
 import {
   ArrowLeft,
   Zap,
-  TrendingUp,
-  TrendingDown,
   Shield,
   Clock,
   Target,
@@ -170,7 +168,7 @@ const PlayerDetailPage = () => {
 
         {/* Contract Error Warning */}
         {mergedPlayer.onChainError && (
-          <div className="mb-6 p-4 rounded-lg bg-warning/10 border border-warning/20 text-warning text-sm">
+          <div className="mb-6 p-4 rounded-2xl bg-warning/10 border border-warning/20 text-warning text-sm">
             ⚠️ Contract data unavailable: {mergedPlayer.onChainError}
             <br />
             Showing football stats with default prices.
@@ -183,7 +181,9 @@ const PlayerDetailPage = () => {
             <Calendar className="w-5 h-5 text-accent" />
             <h3 className="font-semibold">Select Season Period</h3>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+
+          {/* Responsive grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {(["early", "mid", "current"] as SeasonPeriod[]).map((season) => {
               const seasonValue = getSeasonBaseValue(
                 mergedPlayer as any,
@@ -231,7 +231,7 @@ const PlayerDetailPage = () => {
 
           {/* Important Notice */}
           {selectedSeason !== "current" && (
-            <div className="mt-4 p-3 rounded-lg bg-info/10 border border-info/20 flex items-start gap-2 text-sm">
+            <div className="mt-4 p-3 rounded-2xl bg-info/10 border border-info/20 flex items-start gap-2 text-sm">
               <AlertCircle className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-info font-semibold mb-1">
@@ -258,32 +258,40 @@ const PlayerDetailPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Player Header */}
             <div className="glass-card overflow-hidden">
-              <div className="relative h-64 md:h-80">
+              <div className="relative h-56 sm:h-64 md:h-80">
+                {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent z-10" />
+
+                {/* Player Image */}
                 <img
                   src={mergedPlayer.imageUrl}
                   alt={mergedPlayer.name}
                   className="w-full h-full object-contain"
                 />
-                <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+
+                {/* Player Info + AI Score */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 z-20">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
+                    {/* Player Details */}
+                    <div className="flex flex-col">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="px-2 py-1 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-semibold">
                           {mergedPlayer.position}
                         </span>
-                        <span className="text-muted-foreground">
+                        <span className="text-muted-foreground text-xs sm:text-sm">
                           {mergedPlayer.nationality}
                         </span>
                       </div>
-                      <h1 className="text-3xl md:text-4xl font-bold mb-1">
+                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">
                         {mergedPlayer.name}
                       </h1>
-                      <p className="text-lg text-muted-foreground">
+                      <p className="text-sm sm:text-lg text-muted-foreground">
                         {mergedPlayer.club}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50">
+
+                    {/* AI Score */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 text-sm sm:text-base">
                       {isAnalyzing || isLoadingContract ? (
                         <Loader2 className="w-4 h-4 text-accent animate-spin" />
                       ) : (
@@ -305,15 +313,17 @@ const PlayerDetailPage = () => {
                 </div>
               </div>
 
-              <div className="p-6 border-t border-border/50">
-                <div className="flex flex-wrap items-center gap-6">
+              {/* Bottom Stats */}
+              <div className="p-4 sm:p-6 border-t border-border/50">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  {/* Price Info */}
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-1">
                       {selectedSeason === "current"
                         ? "Current Trading Price"
                         : `${SEASON_LABELS[selectedSeason]} Price`}
                     </p>
-                    <p className="text-3xl font-bold gradient-text">
+                    <p className="text-2xl sm:text-3xl font-bold gradient-text">
                       {displayBaseValueSui.toFixed(4)} SUI
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -322,9 +332,11 @@ const PlayerDetailPage = () => {
                         : `📊 ${selectedSeason}`}
                     </p>
                   </div>
+
+                  {/* Positive/Negative Indicator */}
                   <div
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-xl",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm",
                       isPositive
                         ? "bg-success/10 text-success"
                         : "bg-destructive/10 text-destructive"
@@ -384,7 +396,7 @@ const PlayerDetailPage = () => {
 
               <div className="mt-4 pt-4 border-t border-border/50">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-muted/30 rounded-lg p-3">
+                  <div className="bg-muted/30 rounded-2xl p-3">
                     <p className="text-sm text-muted-foreground mb-1">
                       Goals per Match
                     </p>
@@ -395,7 +407,7 @@ const PlayerDetailPage = () => {
                       ).toFixed(2)}
                     </p>
                   </div>
-                  <div className="bg-muted/30 rounded-lg p-3">
+                  <div className="bg-muted/30 rounded-2xl p-3">
                     <p className="text-sm text-muted-foreground mb-1">
                       Minutes per Goal
                     </p>
@@ -459,7 +471,7 @@ const PlayerDetailPage = () => {
                     cryptographically verified and stored on Walrus
                     decentralized storage.
                   </p>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted font-mono text-xs break-all">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-muted font-mono text-xs break-all">
                     <span className="text-muted-foreground">Blob ID:</span>
                     <span className="text-accent">
                       {seasonWalrusBlobId ||

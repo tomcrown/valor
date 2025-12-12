@@ -36,7 +36,7 @@ export function WalletList({ onSelectWallet }: WalletListProps) {
           key={wallet.name}
           onClick={() => onSelectWallet({ wallet })}
           variant="outline"
-          className="w-full h-12 justify-start gap-3 hover:bg-primary/20 hover:text-white"
+          className="w-full h-12 justify-start gap-3 hover:bg-primary hover:text-white"
         >
           {wallet.icon && (
             <img

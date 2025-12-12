@@ -3,7 +3,8 @@
 // Updated with Pulse, Portfolio, and Seasonal Data
 // ============================================================================
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import {
   MessageCircle,
   X,
@@ -153,6 +154,8 @@ export function ValorAIAssistant() {
   const [displayedAnswer, setDisplayedAnswer] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
 
+  const typingInterval = useRef<number | null>(null);
+
   const handleQuestionClick = (question: Question) => {
     const answer =
       typeof question.answer === "function"
@@ -163,16 +166,27 @@ export function ValorAIAssistant() {
     setDisplayedAnswer("");
     setIsTyping(true);
 
+    if (typingInterval.current) {
+      clearInterval(typingInterval.current);
+    }
+
     let index = 0;
-    const interval = setInterval(() => {
+    typingInterval.current = window.setInterval(() => {
       setDisplayedAnswer((prev) => prev + answer.charAt(index));
       index++;
       if (index >= answer.length) {
-        clearInterval(interval);
+        if (typingInterval.current) clearInterval(typingInterval.current);
+        typingInterval.current = null;
         setIsTyping(false);
       }
     }, 20);
   };
+
+  useEffect(() => {
+    return () => {
+      if (typingInterval.current) clearInterval(typingInterval.current);
+    };
+  }, []);
 
   const handleBack = () => {
     setCurrentAnswer(null);
@@ -222,7 +236,7 @@ export function ValorAIAssistant() {
           align="end"
           side="top"
         >
-          <div className="p-4 border-b border-border bg-primary/10">
+          <div className="p-4 border-b border-border bg-primary/80">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
@@ -238,15 +252,14 @@ export function ValorAIAssistant() {
             </div>
           </div>
 
-          <ScrollArea className="h-[500px]">
+          <ScrollArea className="h-[500px] bg-white">
             {currentAnswer ? (
               <div className="p-6">
                 <Button onClick={handleBack} className="mb-4">
                   ← Back to Questions
                 </Button>
                 <div className="glass-card p-6 whitespace-pre-line text-sm leading-relaxed">
-                  {displayedAnswer}
-                  {isTyping && <span className="animate-pulse">|</span>}
+                  <ReactMarkdown>{displayedAnswer}</ReactMarkdown>
                 </div>
               </div>
             ) : (
@@ -267,7 +280,7 @@ export function ValorAIAssistant() {
                       <button
                         key={q.id}
                         onClick={() => handleQuestionClick(q)}
-                        className="w-full text-left text-sm p-3 rounded-lg bg-card hover:bg-primary/20 hover:border-primary/80 transition-all border border-border/50 group"
+                        className="w-full text-left text-sm p-3 rounded-2xl bg-card hover:bg-primary/20 hover:border-primary/80 transition-all border border-border/50 group"
                       >
                         <span className="transition-colors">{q.question}</span>
                       </button>
@@ -285,7 +298,7 @@ export function ValorAIAssistant() {
                         <button
                           key={q.id}
                           onClick={() => handleQuestionClick(q)}
-                          className="w-full text-left text-sm p-3 rounded-lg bg-card hover:bg-primary/20 hover:border-primary/80 transition-all border border-border/50 group"
+                          className="w-full text-left text-sm p-3 rounded-2xl bg-card hover:bg-primary/20 hover:border-primary/80 transition-all border border-border/50 group"
                         >
                           <span className="transition-colors">
                             {q.question}
@@ -298,7 +311,7 @@ export function ValorAIAssistant() {
 
                 <button
                   onClick={() => setShowMoreQuestions(!showMoreQuestions)}
-                  className="w-full text-sm p-3 rounded-lg bg-primary/10 hover:bg-primary/20 transition-all font-semibold text-primary flex items-center justify-center gap-2 border border-primary/80"
+                  className="w-full text-sm p-3 rounded-2xl bg-primary/10 hover:bg-primary/20 transition-all font-semibold text-primary flex items-center justify-center gap-2 border border-primary/80"
                 >
                   {showMoreQuestions ? (
                     <>

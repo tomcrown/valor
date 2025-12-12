@@ -89,7 +89,7 @@ function TokenSelect({ value, onChange, disabled }) {
       </button>
 
       {open && (
-        <div className="z-10 absolute bg-card shadow-xl mt-2 border border-border rounded-xl max-h-48 overflow-y-auto w-full">
+        <div className="z-10 absolute bg-white shadow-xl mt-2 border border-border rounded-xl max-h-48 overflow-y-auto w-full">
           {tokens.map((token) => (
             <div
               key={token.symbol}
@@ -429,7 +429,7 @@ export function SwapModal({ open, onOpenChange }) {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="z-50 max-w-md">
+        <DialogContent className="z-50 max-w-md bg-white">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold gradient-text">
               Swap Tokens
@@ -511,7 +511,7 @@ export function SwapModal({ open, onOpenChange }) {
                   </span>
                 )}
               </label>
-              <div className="glass-card p-4 rounded-xl space-y-3">
+              <div className="glass-card p-4 rounded-xl space-y-3 ">
                 <TokenSelect
                   value={toToken}
                   onChange={setToToken}
@@ -519,7 +519,7 @@ export function SwapModal({ open, onOpenChange }) {
                 />
                 <input
                   type="text"
-                  className="bg-transparent px-0 py-2 w-full text-2xl font-bold focus:outline-none"
+                  className="bg-transparent px-0 py-2 w-full text-2xl font-bold focus:outline"
                   value={toAmount}
                   readOnly
                   placeholder="0.00"

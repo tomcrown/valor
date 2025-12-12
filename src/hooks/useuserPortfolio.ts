@@ -81,10 +81,6 @@ export function useUserPortfolio() {
     });
 
     fetchPortfolio();
-
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchPortfolio, 30000);
-    return () => clearInterval(interval);
   }, [currentAccount?.address, isEnoki]);
 
   async function fetchPortfolio() {

@@ -264,11 +264,11 @@ const LandingPage = () => {
 
       {/* Tech Stack Section */}
       <section className="py-24 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-secondary/50 to-transparent" />
+        <div className="absolute top-0 left-0 w-full h-px " />
+        <div className="absolute bottom-0 left-0 w-full h-px " />
 
-        <div className="container mx-auto px-4">
-          <div className="glass-card p-8 md:p-12 relative overflow-hidden">
+        <div className="container mx-auto px-4r">
+          <div className="glass-card p-8 md:p-12 relative overflow-hidden bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 animate-gradient">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px]" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary/10 rounded-full blur-[100px]" />
 
@@ -295,7 +295,7 @@ const LandingPage = () => {
                   </p>
                 </div>
                 <div className="text-center p-6">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-accent to-primary mx-auto mb-4 flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-2xl bg-green-200 mx-auto mb-4 flex items-center justify-center">
                     <img src="/walrus.png" alt="" />
                   </div>
                   <h3 className="font-bold text-xl mb-2">Walrus</h3>

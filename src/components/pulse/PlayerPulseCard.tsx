@@ -106,7 +106,7 @@ export function PlayerPulseCard({
         </div>
 
         {/* Question */}
-        <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+        <div className="p-3 rounded-2xl bg-muted/30 border border-border/50">
           <p className="text-sm font-medium text-center">
             {getPlayerQuestion(player.name)}
           </p>
@@ -119,9 +119,9 @@ export function PlayerPulseCard({
               onClick={() => handleVote("yes")}
               disabled={isVoting || !currentAccount}
               className={cn(
-                "relative h-auto py-4 flex-col gap-2",
-                selectedVote === "yes" && "ring-2 ring-success",
-                "bg-success/10 hover:bg-success/20 text-success border border-success/30"
+                "relative h-auto py-1 flex-col gap-2",
+                selectedVote === "yes" && "ring-2 ring-green-500",
+                "bg-green/10 hover:bg-green-500/20 text-green-500 border border-green-500/30"
               )}
             >
               <ThumbsUp className="w-5 h-5" />
@@ -132,9 +132,9 @@ export function PlayerPulseCard({
               onClick={() => handleVote("no")}
               disabled={isVoting || !currentAccount}
               className={cn(
-                "relative h-auto py-4 flex-col gap-2",
+                "relative h-auto py-1 flex-col gap-2",
                 selectedVote === "no" && "ring-2 ring-destructive",
-                "bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30"
+                "bg-red/10 hover:bg-red-400/20 text-red-400 border border-red-400/30"
               )}
             >
               <ThumbsDown className="w-5 h-5" />
@@ -142,7 +142,7 @@ export function PlayerPulseCard({
             </Button>
           </div>
         ) : hasVoted ? (
-          <div className="p-3 rounded-lg bg-success/10 border border-success/30 text-center">
+          <div className="p-3 rounded-2xl bg-success/10 border border-success/30 text-center h-full">
             <div className="flex items-center justify-center gap-2 text-success mb-1">
               <CheckCircle2 className="w-4 h-4" />
               <span className="font-semibold">
@@ -154,7 +154,7 @@ export function PlayerPulseCard({
             </p>
           </div>
         ) : (
-          <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-center">
+          <div className="p-3 rounded-2xl bg-muted/30 border border-border/50 text-center">
             <p className="text-sm text-muted-foreground">Voting closed</p>
           </div>
         )}
@@ -177,7 +177,7 @@ export function PlayerPulseCard({
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-success to-success/80 transition-all duration-500"
+                    className="h-full bg-green-300 transition-all duration-500"
                     style={{ width: `${yesPercentage}%` }}
                   />
                 </div>
@@ -186,7 +186,7 @@ export function PlayerPulseCard({
               {/* NO Bar */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-destructive">
+                  <div className="flex items-center gap-1.5 text-red-400">
                     <TrendingDown className="w-3.5 h-3.5" />
                     <span className="font-semibold">NO</span>
                   </div>
@@ -196,7 +196,7 @@ export function PlayerPulseCard({
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-destructive to-destructive/80 transition-all duration-500"
+                    className="h-full bg-red-300 transition-all duration-500"
                     style={{ width: `${noPercentage}%` }}
                   />
                 </div>
@@ -218,20 +218,6 @@ export function PlayerPulseCard({
                   </span>
                 </div>
               )}
-            </div>
-
-            {/* Sentiment Indicator */}
-            <div
-              className={cn(
-                "p-2 rounded-lg text-center text-xs font-semibold",
-                isYesMajority
-                  ? "bg-success/10 text-success border border-success/30"
-                  : "bg-destructive/10 text-destructive border border-destructive/30"
-              )}
-            >
-              {isYesMajority
-                ? "🔥 Community is BULLISH"
-                : "📉 Community is BEARISH"}
             </div>
           </div>
         )}
