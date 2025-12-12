@@ -79,7 +79,7 @@ export function AIAnalysisPanel({
         </p>
       </div>
       {/* Summary */}
-      <div className="bg-accent/5 border-l-4 border-accent rounded-lg p-4">
+      <div className="bg-accent/5 border-l-4 border-accent rounded-2xl p-4">
         <p className="text-sm leading-relaxed font-medium">
           {analysis.short_summary}
         </p>
@@ -91,7 +91,7 @@ export function AIAnalysisPanel({
           <Zap className="w-4 h-4 text-primary" />
           Market Prediction
         </h3>
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4">
           <p className="text-sm leading-relaxed">{analysis.prediction}</p>
         </div>
       </div>

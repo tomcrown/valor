@@ -1,16 +1,5 @@
-// ============================================================================
 // FILE 2: src/lib/valorKnowledge.ts
 // Updated Knowledge Base with Pulse, Portfolio, NFTs, and Seasonal Data
-// ============================================================================
-
-import {
-  getTopPerformers,
-  getRisingPlayers,
-  getFallingPlayers,
-  getHighPerformers,
-  getUndervaluedPlayers,
-  PLATFORM_STATS,
-} from "@/data/dummyData";
 
 export const VALOR_KNOWLEDGE = {
   platform: {
@@ -20,9 +9,7 @@ export const VALOR_KNOWLEDGE = {
     tagline: "Trade Football Players Like Stocks",
   },
 
-  // ============================================================================
   // ESSENTIAL QUESTIONS - Getting Started & Core Features
-  // ============================================================================
 
   gettingStarted: `To get started on Valor:
 
@@ -156,9 +143,7 @@ You profit when your players perform well and their value increases! 📈`,
 
 Player prices adjust based on BOTH AI scores AND market demand! 🔄`,
 
-  // ============================================================================
   // NEW FEATURES - Valor Pulse & Seasonal Data
-  // ============================================================================
 
   valorPulse: `Valor Pulse is our community sentiment voting feature! 🗳️
 
@@ -236,9 +221,7 @@ When viewing player details, you can switch between seasons to see historical da
 
 Example: You view "Mid Season" to see Haaland had 8 goals by match 6, but if you buy shares, you pay the Current Season price (reflects all 15 matches played).`,
 
-  // ============================================================================
   // PORTFOLIO & NFT FEATURES
-  // ============================================================================
 
   portfolioView: `Your portfolio is your command center! 📊
 
@@ -331,9 +314,7 @@ You can always switch to a traditional wallet later if you want more control ove
 
 Get started in seconds! ⚡`,
 
-  // ============================================================================
   // EXISTING FEATURES - Updated
-  // ============================================================================
 
   depositSwap: `To get SUI tokens for trading:
 

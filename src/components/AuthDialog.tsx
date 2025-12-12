@@ -61,10 +61,10 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader>
           <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl  flex items-center justify-center">
               <img src="/valor.png" alt="VALOR" className="w-16 h-16" />
             </div>
           </div>

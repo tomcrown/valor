@@ -10,8 +10,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <SpaceNetworkBackground />
+    <div className="min-h-screen flex flex-col relative z-10">
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />

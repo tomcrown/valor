@@ -224,7 +224,7 @@ const PortfolioPage = () => {
                         <img
                           src={holding.nftImageUrl}
                           alt={holding.playerName}
-                          className="w-20 h-20 rounded-lg object-contain"
+                          className="w-20 h-20 rounded-2xl object-contain"
                         />
                       )}
                       <div>
@@ -382,7 +382,7 @@ const PortfolioPage = () => {
                               <img
                                 src={holding.imageUrl}
                                 alt={holding.playerName}
-                                className="w-16 h-16 rounded-lg object-cover"
+                                className="w-16 h-16 rounded-2xl object-cover"
                               />
                             )}
                             <div>
@@ -410,7 +410,7 @@ const PortfolioPage = () => {
                         <td className="p-4 text-right">
                           <div
                             className={cn(
-                              "inline-flex items-center gap-1 px-2 py-1 rounded-lg",
+                              "inline-flex items-center gap-1 px-2 py-1 rounded-2xl",
                               positionPositive
                                 ? "bg-success/10 text-success"
                                 : "bg-destructive/10 text-destructive"

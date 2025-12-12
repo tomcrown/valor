@@ -12,6 +12,7 @@ import {
   Activity,
   Copy,
   Check,
+  Droplet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -93,7 +94,7 @@ const Navbar = () => {
                   alt="VALOR"
                 />
               </div>
-              <span className="font-bold text-4xl hidden sm:block">
+              <span className="font-bold text-4xl sm:block">
                 <h1 className="text-foreground">VALOR</h1>
               </span>
             </Link>
@@ -121,6 +122,16 @@ const Navbar = () => {
 
             {/* Auth Section */}
             <div className="hidden md:flex items-center gap-4">
+              {/* Faucet Button */}
+              <a
+                href="https://faucet.testnet.sui.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-2 rounded-2xl  text-black font-medium transition-colors"
+                title="Get Test SUI from Faucet"
+              >
+                <Droplet className="w-4 h-4 text-black" /> Faucet
+              </a>
               {!currentAccount ? (
                 <Button
                   onClick={() => setIsAuthOpen(true)}
@@ -172,7 +183,7 @@ const Navbar = () => {
                     >
                       {copied ? (
                         <>
-                          <Check className="w-4 h-4 mr-2 text-success" />
+                          <Check className="w-4 h-4 mr-2 text-green-500" />
                           Copied!
                         </>
                       ) : (
@@ -192,7 +203,7 @@ const Navbar = () => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="text-destructive cursor-pointer"
+                      className="text-red-400 cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Log Out
@@ -224,7 +235,7 @@ const Navbar = () => {
                     key={link.href}
                     to={link.href}
                     className={cn(
-                      "text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2",
+                      "text-sm font-medium py-2 px-4 rounded-2xl transition-colors flex items-center gap-2",
                       location.pathname === link.href
                         ? "bg-muted text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -240,6 +251,14 @@ const Navbar = () => {
                     )}
                   </Link>
                 ))}
+                <a
+                  href="https://faucet.testnet.sui.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-2xl btn-gradientmr-2 text-black font-medium"
+                >
+                  <Droplet className="w-4 h-4" /> Faucet
+                </a>
 
                 {!currentAccount ? (
                   <Button
@@ -254,7 +273,7 @@ const Navbar = () => {
                   </Button>
                 ) : (
                   <div className="space-y-2 mt-2">
-                    <div className="px-4 py-2 bg-muted rounded-lg">
+                    <div className="px-4 py-2 bg-muted rounded-2xl">
                       <p className="text-xs text-muted-foreground mb-1">
                         {isEnoki ? "zkLogin" : "Wallet"} Account
                       </p>

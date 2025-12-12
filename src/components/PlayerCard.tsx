@@ -108,9 +108,9 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
             className={cn(
               "absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm border transition-all",
               aiAnalysis
-                ? "bg-accent/80 border-accent"
+                ? "bg-black/80 border-accent"
                 : isAnalyzing
-                ? "bg-card/80 border-accent/50 animate-pulse"
+                ? "bg-card/80 border-primary/50 animate-pulse"
                 : "bg-card/80 border-border/50"
             )}
           >
@@ -138,7 +138,7 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
           </div>
 
           {/* Position Badge */}
-          <div className="absolute bottom-14 left-3 z-20 px-2.5 py-1 rounded-full bg-primary/80 backdrop-blur-sm">
+          <div className="absolute bottom-14 left-3 z-20 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-sm">
             <span className="text-xs font-semibold text-primary-foreground">
               {player.position}
             </span>
@@ -185,14 +185,6 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
                 </p>
               )}
             </div>
-            <div
-              className={cn(
-                "flex items-center gap-1 px-2.5 py-1.5 rounded-lg",
-                isPositive
-                  ? "bg-success/10 text-success"
-                  : "bg-destructive/10 text-destructive"
-              )}
-            ></div>
           </div>
 
           <div className="space-y-2">

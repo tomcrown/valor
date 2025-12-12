@@ -182,17 +182,17 @@ const BuySellWidget = ({
     <div className="glass-card p-6">
       {/* Wallet Type Indicator */}
       {currentAccount && isEnoki && (
-        <div className="mb-4 p-3 rounded-lg bg-info/10 border border-info/20 flex items-center gap-2 text-sm"></div>
+        <div className="mb-4 p-3 rounded-2xl bg-info/10 border border-info/20 flex items-center gap-2 text-sm"></div>
       )}
 
       <div className="flex bg-muted rounded-xl p-1 mb-6">
         <button
           onClick={() => setMode("buy")}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all",
+            "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all",
             mode === "buy"
-              ? "bg-success text-success-foreground shadow-lg"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-green-500 text-white shadow-lg"
+              : "text-gray-500 hover:text-foreground"
           )}
         >
           <ArrowUpRight className="w-4 h-4" />
@@ -201,10 +201,10 @@ const BuySellWidget = ({
         <button
           onClick={() => setMode("sell")}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all",
+            "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all",
             mode === "sell"
-              ? "bg-destructive text-destructive-foreground shadow-lg"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-red-400 text-white shadow-lg"
+              : "text-gray-500 hover:text-foreground"
           )}
         >
           <ArrowDownRight className="w-4 h-4" />
@@ -318,8 +318,8 @@ const BuySellWidget = ({
               className={cn(
                 "w-full py-6 text-lg font-semibold transition-all",
                 mode === "buy"
-                  ? "bg-success hover:bg-success/90 text-success-foreground"
-                  : "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                  ? "bg-green-500 hover:bg-green/90 text-white"
+                  : "bg-red-400 hover:bg-red/90 text-white"
               )}
             >
               {isProcessing ? (
@@ -347,25 +347,6 @@ const BuySellWidget = ({
           <p className="text-xs text-muted-foreground text-center mt-3">
             LogIn to start trading
           </p>
-        </div>
-      )}
-
-      {currentAccount && (
-        <div className="mt-4 p-3 rounded-lg bg-muted/30 text-xs">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            {isEnoki ? (
-              <Chrome className="w-3 h-3 text-blue-500" />
-            ) : (
-              <Wallet className="w-3 h-3" />
-            )}
-            <span className="font-mono">
-              {currentAccount.address.slice(0, 6)}...
-              {currentAccount.address.slice(-4)}
-            </span>
-            {isEnoki && (
-              <span className="ml-auto text-[10px] text-blue-500">zkLogin</span>
-            )}
-          </div>
         </div>
       )}
     </div>

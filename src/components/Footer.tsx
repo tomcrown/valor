@@ -15,7 +15,7 @@ const Footer = () => {
                   src="/valor.png"
                 />{" "}
               </div>
-              <span className="font-bold text-4xl hidden sm:block">
+              <span className="font-bold text-4xl  sm:block">
                 <h1 className="text-foreground">VALOR</h1>
               </span>
             </Link>

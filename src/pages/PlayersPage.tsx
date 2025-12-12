@@ -165,7 +165,7 @@ const PlayersPage = () => {
           )}
 
           {error && (
-            <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            <div className="mt-4 p-3 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
               Failed to fetch contract data. Using football stats with default
               prices.
             </div>
@@ -178,7 +178,7 @@ const PlayersPage = () => {
             <Calendar className="w-5 h-5 text-accent" />
             <h3 className="font-semibold">Season Period</h3>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {seasonOptions.map((season) => (
               <button
                 key={season.id}
