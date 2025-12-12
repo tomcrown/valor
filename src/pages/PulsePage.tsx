@@ -157,13 +157,10 @@ const PulsePage = () => {
           <div className="glass-card p-6 mb-8 border-accent/30">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center">
-                  <LogIn className="w-6 h-6 text-accent" />
-                </div>
                 <div>
                   <h3 className="font-semibold mb-1">Connect to Vote</h3>
                   <p className="text-sm text-muted-foreground">
-                    Sign in to cast your vote and influence community sentiment
+                    Log in to cast your vote and influence community sentiment
                   </p>
                 </div>
               </div>
@@ -172,7 +169,7 @@ const PulsePage = () => {
                 className="btn-gradient whitespace-nowrap"
               >
                 <LogIn className="w-4 h-4 mr-2" />
-                Connect Wallet
+                Log In
               </Button>
             </div>
           </div>
@@ -228,7 +225,7 @@ const PulsePage = () => {
           <div className="grid md:grid-cols-3 gap-6 text-sm text-muted-foreground">
             <div>
               <p className="font-semibold text-foreground mb-2">
-                📊 Weekly Predictions
+                Weekly Predictions
               </p>
               <p>
                 Every week, vote on whether each player will perform well in
@@ -237,7 +234,7 @@ const PulsePage = () => {
             </div>
             <div>
               <p className="font-semibold text-foreground mb-2">
-                🔒 One Vote Per Player
+                One Vote Per Player
               </p>
               <p>
                 You can vote once per player per week. Your vote is recorded
@@ -246,7 +243,7 @@ const PulsePage = () => {
             </div>
             <div>
               <p className="font-semibold text-foreground mb-2">
-                🎯 Community Insights
+                Community Insights
               </p>
               <p>
                 See real-time sentiment to help inform your trading decisions on
@@ -255,18 +252,6 @@ const PulsePage = () => {
             </div>
           </div>
         </div>
-
-        {/* Debug info in development */}
-        {process.env.NODE_ENV === "development" && (
-          <div className="mt-8 glass-card p-4 text-xs font-mono">
-            <p className="font-bold mb-2">Debug Info:</p>
-            <p>Current Week: {platformState.currentWeek}</p>
-            <p>Active: {platformState.active ? "Yes" : "No"}</p>
-            <p>Sentiments Loaded: {sentiments.length}</p>
-            <p>Total Votes: {platformState.totalVotes}</p>
-            <p>Connected: {currentAccount ? "Yes" : "No"}</p>
-          </div>
-        )}
       </div>
 
       <AuthDialog isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />

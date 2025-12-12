@@ -25,17 +25,7 @@ export function PulseStats({
 
   return (
     <div className="glass-card p-6 mb-8">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-accent/50 flex items-center justify-center">
-          <Activity className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold">Valor Pulse</h2>
-          <p className="text-sm text-muted-foreground">
-            Community Sentiment Tracker
-          </p>
-        </div>
-      </div>
+      <div className="flex items-center gap-3 mb-6"></div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -51,14 +41,14 @@ export function PulseStats({
         </div>
 
         {/* Total Votes */}
-        <div className="p-4 rounded-xl bg-gradient-to-br from-success/10 to-success/5 border border-success/20">
+        <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-success" />
+            <TrendingUp className="w-4 h-4 text-primary" />
             <span className="text-xs font-semibold text-muted-foreground uppercase">
               Total Votes
             </span>
           </div>
-          <p className="text-2xl font-bold text-success">{totalVotes}</p>
+          <p className="text-2xl font-bold text-primary">{totalVotes}</p>
         </div>
 
         {/* Active Voters */}
@@ -83,33 +73,6 @@ export function PulseStats({
           <p className="text-lg font-bold text-warning">
             {active ? formatTimeRemaining(weekEndTime) : "Closed"}
           </p>
-        </div>
-      </div>
-
-      {/* Status Banner */}
-      <div
-        className={`mt-6 p-4 rounded-xl border-2 ${
-          active
-            ? "bg-success/5 border-success/30"
-            : "bg-muted/30 border-border/50"
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold mb-1">
-              {active ? "🟢 Voting is ACTIVE" : "🔴 Voting Closed"}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {active
-                ? "Cast your votes to shape community sentiment"
-                : "Wait for the next voting round to open"}
-            </p>
-          </div>
-          {active && (
-            <div className="hidden md:block px-4 py-2 rounded-lg bg-success/10 text-success font-mono text-sm font-semibold">
-              {formatTimeRemaining(weekEndTime)}
-            </div>
-          )}
         </div>
       </div>
     </div>

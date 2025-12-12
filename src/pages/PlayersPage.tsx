@@ -25,20 +25,20 @@ import { toast } from "@/hooks/use-toast";
 
 type FilterType = "all" | "top" | "rising" | "undervalued";
 
-const filters: { id: FilterType; label: string; icon: React.ReactNode }[] = [
-  { id: "all", label: "All Players", icon: <Filter className="w-4 h-4" /> },
-  {
-    id: "top",
-    label: "Top Performers",
-    icon: <TrendingUp className="w-4 h-4" />,
-  },
-  { id: "rising", label: "Rising Stars", icon: <Zap className="w-4 h-4" /> },
-  {
-    id: "undervalued",
-    label: "Undervalued",
-    icon: <AlertCircle className="w-4 h-4" />,
-  },
-];
+// const filters: { id: FilterType; label: string; icon: React.ReactNode }[] = [
+//   { id: "all", label: "All Players", icon: <Filter className="w-4 h-4" /> },
+//   {
+//     id: "top",
+//     label: "Top Performers",
+//     icon: <TrendingUp className="w-4 h-4" />,
+//   },
+//   { id: "rising", label: "Rising Stars", icon: <Zap className="w-4 h-4" /> },
+//   {
+//     id: "undervalued",
+//     label: "Undervalued",
+//     icon: <AlertCircle className="w-4 h-4" />,
+//   },
+// ];
 
 const seasonOptions: {
   id: SeasonPeriod;
@@ -161,11 +161,6 @@ const PlayersPage = () => {
               <p className="text-xs text-muted-foreground">
                 Last updated: {lastFetched.toLocaleTimeString()}
               </p>
-              {stats.enriched > 0 && (
-                <p className="text-xs text-success">
-                  ✓ {stats.enriched}/{stats.total} players with contract data
-                </p>
-              )}
             </div>
           )}
 
@@ -217,7 +212,7 @@ const PlayersPage = () => {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          {/* <div className="flex flex-wrap gap-2">
             {filters.map((filter) => (
               <Button
                 key={filter.id}
@@ -234,7 +229,7 @@ const PlayersPage = () => {
                 <span className="ml-2">{filter.label}</span>
               </Button>
             ))}
-          </div>
+          </div> */}
         </div>
 
         {/* Results Count */}

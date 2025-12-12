@@ -13,14 +13,16 @@ interface WalletListProps {
 export function WalletList({ onSelectWallet }: WalletListProps) {
   const wallets = useWallets();
 
-  if (!wallets || wallets.length === 0) {
+  const slushWallets = wallets.filter((w) => w.name.includes("Slush"));
+
+  if (!slushWallets || slushWallets.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-sm text-muted-foreground mb-4">
-          No Sui wallets detected
+          Slush Wallet not found
         </p>
         <p className="text-xs text-muted-foreground">
-          Please install a Sui wallet extension
+          Please install the Slush wallet extension
         </p>
       </div>
     );
@@ -29,12 +31,12 @@ export function WalletList({ onSelectWallet }: WalletListProps) {
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium mb-3">Select a wallet to connect:</p>
-      {wallets.map((wallet) => (
+      {slushWallets.map((wallet) => (
         <Button
           key={wallet.name}
           onClick={() => onSelectWallet({ wallet })}
           variant="outline"
-          className="w-full h-12 justify-start gap-3 hover:bg-accent/10"
+          className="w-full h-12 justify-start gap-3 hover:bg-primary/20 hover:text-white"
         >
           {wallet.icon && (
             <img

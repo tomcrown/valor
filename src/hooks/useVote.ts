@@ -39,7 +39,7 @@ export function useVote() {
     playerName: string
   ): Promise<boolean> {
     if (!currentAccount) {
-      toast.error("Please connect your wallet first");
+      toast.error("Please login first");
       return false;
     }
 

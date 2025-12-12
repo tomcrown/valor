@@ -1,6 +1,6 @@
 // ============================================================================
-// FILE 2: src/components/ValorAIAssistant.tsx
-// Simplified - Click Questions Only
+// FILE 1: src/components/ValorAIAssistant.tsx
+// Updated with Pulse, Portfolio, and Seasonal Data
 // ============================================================================
 
 import { useState } from "react";
@@ -20,13 +20,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import {
-  VALOR_KNOWLEDGE,
-  getTopPerformerInfo,
-  getRisingPlayersInfo,
-  getFallingPlayersInfo,
-  getPlatformStats,
-} from "@/lib/valorKnowledge";
+import { VALOR_KNOWLEDGE } from "@/lib/valorKnowledge";
 
 interface Question {
   id: string;
@@ -55,10 +49,16 @@ const ESSENTIAL_QUESTIONS: Question[] = [
     question: "How does the weekly update system work?",
     answer: VALOR_KNOWLEDGE.weeklyUpdate,
   },
+
   {
-    id: "top-performer",
-    question: "Who is the top performer this week?",
-    answer: getTopPerformerInfo,
+    id: "valor-pulse",
+    question: "What is Valor Pulse?",
+    answer: VALOR_KNOWLEDGE.valorPulse,
+  },
+  {
+    id: "seasonal-data",
+    question: "What are the seasonal periods and why do they matter?",
+    answer: VALOR_KNOWLEDGE.seasonalData,
   },
 ];
 
@@ -69,9 +69,29 @@ const MORE_QUESTIONS: Question[] = [
     answer: VALOR_KNOWLEDGE.depositSwap,
   },
   {
+    id: "google-login",
+    question: "Can I use Valor without a crypto wallet?",
+    answer: VALOR_KNOWLEDGE.googleLogin,
+  },
+  {
+    id: "portfolio-view",
+    question: "How do I view my portfolio and holdings?",
+    answer: VALOR_KNOWLEDGE.portfolioView,
+  },
+  {
     id: "sell-share",
     question: "How do I sell a player share?",
     answer: VALOR_KNOWLEDGE.sellShare,
+  },
+  {
+    id: "nft-shares",
+    question: "What happens when I buy shares?",
+    answer: VALOR_KNOWLEDGE.nftShares,
+  },
+  {
+    id: "pulse-voting",
+    question: "How does Pulse voting work?",
+    answer: VALOR_KNOWLEDGE.pulseVoting,
   },
   {
     id: "player-shares",
@@ -88,26 +108,7 @@ const MORE_QUESTIONS: Question[] = [
     question: "What is the AI scoring system?",
     answer: VALOR_KNOWLEDGE.aiScoring,
   },
-  {
-    id: "platform-stats",
-    question: "How many players are currently on the platform?",
-    answer: getPlatformStats,
-  },
-  {
-    id: "why-top-performer",
-    question: "Why is this player the top performer?",
-    answer: getTopPerformerInfo,
-  },
-  {
-    id: "rising-players",
-    question: "Which players are rising in value?",
-    answer: getRisingPlayersInfo,
-  },
-  {
-    id: "falling-players",
-    question: "Which players are dropping in value?",
-    answer: getFallingPlayersInfo,
-  },
+
   {
     id: "price-calculation",
     question: "How is a player's price calculated?",
@@ -149,7 +150,7 @@ export function ValorAIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [showMoreQuestions, setShowMoreQuestions] = useState(false);
   const [currentAnswer, setCurrentAnswer] = useState<string | null>(null);
-  const [displayedAnswer, setDisplayedAnswer] = useState<string>(""); // what the user sees
+  const [displayedAnswer, setDisplayedAnswer] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
 
   const handleQuestionClick = (question: Question) => {
@@ -158,8 +159,8 @@ export function ValorAIAssistant() {
         ? question.answer()
         : question.answer;
 
-    setCurrentAnswer(answer); // full answer stored
-    setDisplayedAnswer(""); // start empty
+    setCurrentAnswer(answer);
+    setDisplayedAnswer("");
     setIsTyping(true);
 
     let index = 0;
@@ -170,7 +171,7 @@ export function ValorAIAssistant() {
         clearInterval(interval);
         setIsTyping(false);
       }
-    }, 20); // 20ms per character (~50 wpm), adjust for speed
+    }, 20);
   };
 
   const handleBack = () => {
@@ -183,7 +184,7 @@ export function ValorAIAssistant() {
         <PopoverTrigger asChild>
           <Button
             className={cn(
-              "w-14 h-14 rounded-full shadow-lg  hover:scale-110 transition-transform",
+              "w-14 h-14 rounded-full shadow-lg hover:scale-110 transition-transform",
               isOpen && "scale-110"
             )}
           >
@@ -191,7 +192,6 @@ export function ValorAIAssistant() {
               <X className="w-7 h-7 text-primary-foreground" />
             ) : (
               <div className="relative flex items-center justify-center w-16 h-16">
-                {/* Pulsating Ring */}
                 <motion.span
                   className="absolute rounded-full border-2 border-primary/40 w-20 h-20"
                   animate={{ scale: [1, 1.5, 1] }}
@@ -201,8 +201,6 @@ export function ValorAIAssistant() {
                     ease: "easeInOut",
                   }}
                 />
-
-                {/* Floating Icon */}
                 <motion.div
                   animate={{ y: [0, -4, 0] }}
                   transition={{
@@ -224,7 +222,6 @@ export function ValorAIAssistant() {
           align="end"
           side="top"
         >
-          {/* Header */}
           <div className="p-4 border-b border-border bg-primary/10">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
@@ -241,22 +238,18 @@ export function ValorAIAssistant() {
             </div>
           </div>
 
-          {/* Content */}
           <ScrollArea className="h-[500px]">
             {currentAnswer ? (
-              // Show Answer
               <div className="p-6">
                 <Button onClick={handleBack} className="mb-4">
                   ← Back to Questions
                 </Button>
                 <div className="glass-card p-6 whitespace-pre-line text-sm leading-relaxed">
                   {displayedAnswer}
-                  {isTyping && <span className="animate-pulse">|</span>}{" "}
-                  {/* blinking cursor */}
+                  {isTyping && <span className="animate-pulse">|</span>}
                 </div>
               </div>
             ) : (
-              // Show Questions
               <div className="p-4">
                 <div className="mb-6 p-4 glass-card">
                   <p className="text-sm text-muted-foreground">
@@ -265,7 +258,6 @@ export function ValorAIAssistant() {
                   </p>
                 </div>
 
-                {/* Essential Questions */}
                 <div className="mb-4">
                   <p className="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">
                     Essential Questions
@@ -283,7 +275,6 @@ export function ValorAIAssistant() {
                   </div>
                 </div>
 
-                {/* More Questions */}
                 {showMoreQuestions && (
                   <div className="mb-4">
                     <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
@@ -296,7 +287,7 @@ export function ValorAIAssistant() {
                           onClick={() => handleQuestionClick(q)}
                           className="w-full text-left text-sm p-3 rounded-lg bg-card hover:bg-primary/20 hover:border-primary/80 transition-all border border-border/50 group"
                         >
-                          <span className=" transition-colors">
+                          <span className="transition-colors">
                             {q.question}
                           </span>
                         </button>
@@ -305,7 +296,6 @@ export function ValorAIAssistant() {
                   </div>
                 )}
 
-                {/* Show More Toggle */}
                 <button
                   onClick={() => setShowMoreQuestions(!showMoreQuestions)}
                   className="w-full text-sm p-3 rounded-lg bg-primary/10 hover:bg-primary/20 transition-all font-semibold text-primary flex items-center justify-center gap-2 border border-primary/80"
