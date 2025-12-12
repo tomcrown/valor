@@ -32,7 +32,6 @@ export function useBuySellShares() {
     useSignAndExecuteTransaction();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Check if using Enoki wallet
   const isEnoki = currentWallet && isEnokiWallet(currentWallet);
 
   const buyShares = async (params: BuySharesParams) => {
@@ -56,14 +55,6 @@ export function useBuySellShares() {
 
       const tx = new Transaction();
 
-      // Set gas budget - Enoki wallets might need higher budget
-      // const gasBudget = isEnoki
-      //   ? SUI_CONFIG.gas.budget * 1.5
-      //   : SUI_CONFIG.gas.budget;
-
-      // tx.setGasBudget(gasBudget);
-
-      // Calculate payment amount with buffer
       const estimatedCost = params.shares * params.maxPricePerShare;
       console.log("Estimated cost (with buffer):", estimatedCost);
       const paymentAmount = suiToMist(estimatedCost);
@@ -75,11 +66,9 @@ export function useBuySellShares() {
         paymentAmount: paymentAmount.toString(),
       });
 
-      // Split coins for payment
       const [paymentCoin] = tx.splitCoins(tx.gas, [paymentAmount]);
       console.log("🪙 Payment coin prepared:", paymentAmount);
 
-      // Call buy_shares function
       tx.moveCall({
         target: `${SUI_CONFIG.contracts.packageId}::valor::buy_shares`,
         arguments: [
@@ -88,7 +77,7 @@ export function useBuySellShares() {
           tx.pure.u64(params.shares),
           tx.pure.u64(suiToMist(params.maxPricePerShare)),
           paymentCoin,
-          tx.object("0x6"), // Clock object
+          tx.object("0x6"),
         ],
       });
 
@@ -97,7 +86,6 @@ export function useBuySellShares() {
         description: `Buying ${params.shares} shares of ${params.playerName}...`,
       });
 
-      // Execute transaction with proper options
       const result = await signAndExecuteTransaction(
         {
           transaction: tx,
@@ -114,7 +102,6 @@ export function useBuySellShares() {
 
       console.log("✅ Buy transaction result:", result);
 
-      // Wait a bit for blockchain to process
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       toast({
@@ -197,7 +184,6 @@ export function useBuySellShares() {
 
       const tx = new Transaction();
 
-      // Add all sell operations
       for (const operation of params.operations) {
         console.log(
           `📤 Selling ${operation.amount} shares from ${operation.objectId}`
@@ -210,7 +196,7 @@ export function useBuySellShares() {
             tx.object(operation.objectId),
             tx.pure.u64(operation.amount),
             tx.pure.u64(suiToMist(params.minPricePerShare)),
-            tx.object("0x6"), // Clock object
+            tx.object("0x6"),
           ],
         });
       }
@@ -220,7 +206,6 @@ export function useBuySellShares() {
         description: `Selling ${totalShares} shares of ${params.playerName}...`,
       });
 
-      // Execute transaction
       const result = await signAndExecuteTransaction(
         {
           transaction: tx,
@@ -237,7 +222,6 @@ export function useBuySellShares() {
 
       console.log("✅ Sell transaction result:", result);
 
-      // Wait a bit for blockchain to process
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       toast({

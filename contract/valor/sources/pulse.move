@@ -1,26 +1,20 @@
+
 #[allow(lint(public_entry))]
 module valor::pulse {
     use sui::table::{Self, Table};
     use sui::event;
     use std::string::{Self, String};
     use sui::clock::{Self, Clock};
-    use valor::valor::AdminCap; // Import AdminCap from main module
 
-    // ============================================================================
-    // Error Codes
-    // ============================================================================
     
     const EAlreadyVoted: u64 = 1;
     const EInvalidWeek: u64 = 2;
-    const EAdminRequired: u64 = 3;
-    const EInvalidVote: u64 = 4;
-    const EWeekNotActive: u64 = 5;
+    const EWeekNotActive: u64 = 3;
 
-    // ============================================================================
-    // Structs
-    // ============================================================================
+    public struct PulseAdminCap has key, store {
+        id: UID,
+    }
 
-    /// Main platform state for Pulse voting
     public struct PulsePlatform has key {
         id: UID,
         admin: address,
@@ -31,40 +25,32 @@ module valor::pulse {
         total_votes: u64,
     }
 
-    /// Sentiment data for a specific player in a specific week
     public struct PlayerSentiment has key {
         id: UID,
-        player_id: ID,           // Reference to main contract player
+        player_id: ID,
         player_name: String,
         week: u64,
         yes_count: u64,
         no_count: u64,
-        walrus_blob_id: String,  // Detailed votes stored on Walrus
+        walrus_blob_id: String,
         created_at: u64,
         updated_at: u64,
     }
 
-    /// Receipt proving a user has voted for a specific player in a specific week
     public struct VoteReceipt has key {
         id: UID,
         voter: address,
         player_id: ID,
         player_name: String,
         week: u64,
-        vote: bool,              // true = yes, false = no
+        vote: bool,
         timestamp: u64,
     }
 
-    /// Lookup table for checking if user has voted
     public struct VoteRegistry has key {
         id: UID,
-        // Maps: player_id + week -> voter address -> bool (voted or not)
-        votes: Table<String, Table<address, bool>>,
+         votes: Table<ID, Table<u64, Table<address, bool>>>,
     }
-
-    // ============================================================================
-    // Events
-    // ============================================================================
 
     public struct WeeklyRoundCreated has copy, drop {
         week: u64,
@@ -74,12 +60,21 @@ module valor::pulse {
         timestamp: u64,
     }
 
+    public struct SentimentCreated has copy, drop {
+        sentiment_id: ID,        
+        player_id: ID,
+        player_name: String,
+        week: u64,
+        timestamp: u64,
+    }
+
     public struct VoteSubmitted has copy, drop {
+        sentiment_id: ID,        
         voter: address,
         player_id: ID,
         player_name: String,
         week: u64,
-        vote: bool,              // true = yes, false = no
+        vote: bool,
         yes_count: u64,
         no_count: u64,
         yes_percentage: u64,
@@ -88,6 +83,7 @@ module valor::pulse {
     }
 
     public struct SentimentUpdated has copy, drop {
+        sentiment_id: ID,        
         player_id: ID,
         player_name: String,
         week: u64,
@@ -108,14 +104,13 @@ module valor::pulse {
         timestamp: u64,
     }
 
-    // ============================================================================
-    // Init Function
-    // ============================================================================
-
     fun init(ctx: &mut TxContext) {
         let admin_address = tx_context::sender(ctx);
+        
+        let admin_cap = PulseAdminCap {
+            id: object::new(ctx),
+        };
 
-        // Create platform state
         let platform = PulsePlatform {
             id: object::new(ctx),
             admin: admin_address,
@@ -126,32 +121,25 @@ module valor::pulse {
             total_votes: 0,
         };
 
-        // Create vote registry
         let registry = VoteRegistry {
             id: object::new(ctx),
             votes: table::new(ctx),
         };
 
+        transfer::transfer(admin_cap, admin_address);
         transfer::share_object(platform);
         transfer::share_object(registry);
     }
 
-    // ============================================================================
-    // Admin Functions (Now using shared AdminCap from valor module)
-    // ============================================================================
 
-    /// Create a new weekly voting round
     public entry fun create_weekly_round(
-        _: &AdminCap,  // Using AdminCap from valor module
+        _: &PulseAdminCap,
         platform: &mut PulsePlatform,
         week_number: u64,
         duration_days: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        // Security check: verify caller is the platform admin
-        assert!(tx_context::sender(ctx) == platform.admin, EAdminRequired);
-        
         let current_time = clock::timestamp_ms(clock);
         let duration_ms = duration_days * 24 * 60 * 60 * 1000;
         
@@ -170,25 +158,23 @@ module valor::pulse {
         });
     }
 
-    /// Initialize sentiment tracking for a player in the current week
     public entry fun init_player_sentiment(
-        _: &AdminCap,  // Using AdminCap from valor module
+        _: &PulseAdminCap,
         platform: &PulsePlatform,
         player_id: ID,
         player_name: vector<u8>,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        // Security check: verify caller is the platform admin
-        assert!(tx_context::sender(ctx) == platform.admin, EAdminRequired);
         assert!(platform.active, EWeekNotActive);
         
         let current_time = clock::timestamp_ms(clock);
+        let player_name_str = string::utf8(player_name);
         
         let sentiment = PlayerSentiment {
             id: object::new(ctx),
             player_id,
-            player_name: string::utf8(player_name),
+            player_name: player_name_str,
             week: platform.current_week,
             yes_count: 0,
             no_count: 0,
@@ -197,21 +183,26 @@ module valor::pulse {
             updated_at: current_time,
         };
 
+        let sentiment_id = object::id(&sentiment);
+
+        event::emit(SentimentCreated {
+            sentiment_id,
+            player_id,
+            player_name: player_name_str,
+            week: platform.current_week,
+            timestamp: current_time,
+        });
+
         transfer::share_object(sentiment);
     }
 
-    /// Close the current weekly round
     public entry fun close_weekly_round(
-        _: &AdminCap,  // Using AdminCap from valor module
+        _: &PulseAdminCap,
         platform: &mut PulsePlatform,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        // Security check: verify caller is the platform admin
-        assert!(tx_context::sender(ctx) == platform.admin, EAdminRequired);
-        
         let current_time = clock::timestamp_ms(clock);
-        
         platform.active = false;
 
         event::emit(WeekClosed {
@@ -223,25 +214,16 @@ module valor::pulse {
         });
     }
 
-    /// Update Walrus blob ID for a player's sentiment
     public entry fun update_walrus_blob(
-        _: &AdminCap,  // Using AdminCap from valor module
+        _: &PulseAdminCap,
         sentiment: &mut PlayerSentiment,
         walrus_blob_id: vector<u8>,
         clock: &Clock,
     ) {
-        // Security check: verify admin access (you can add platform check if needed)
-        // Note: AdminCap holder is already verified by function signature
-        
         sentiment.walrus_blob_id = string::utf8(walrus_blob_id);
         sentiment.updated_at = clock::timestamp_ms(clock);
     }
 
-    // ============================================================================
-    // Voting Functions
-    // ============================================================================
-
-    /// Vote YES for a player's performance prediction
     public entry fun vote_yes(
         platform: &mut PulsePlatform,
         registry: &mut VoteRegistry,
@@ -249,12 +231,9 @@ module valor::pulse {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        // Security check: validate vote type
-        assert!(true == true, EInvalidVote); // YES vote is valid
         vote_internal(platform, registry, sentiment, true, clock, ctx);
     }
 
-    /// Vote NO for a player's performance prediction
     public entry fun vote_no(
         platform: &mut PulsePlatform,
         registry: &mut VoteRegistry,
@@ -262,13 +241,10 @@ module valor::pulse {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        // Security check: validate vote type
-        assert!(false == false, EInvalidVote); // NO vote is valid
         vote_internal(platform, registry, sentiment, false, clock, ctx);
     }
 
-    /// Internal voting logic
-    fun vote_internal(
+        fun vote_internal(
         platform: &mut PulsePlatform,
         registry: &mut VoteRegistry,
         sentiment: &mut PlayerSentiment,
@@ -278,26 +254,31 @@ module valor::pulse {
     ) {
         let voter = tx_context::sender(ctx);
         let current_time = clock::timestamp_ms(clock);
+        let sentiment_id = object::id(sentiment);
 
-        // Check if voting is active
         assert!(platform.active, EWeekNotActive);
         assert!(current_time < platform.week_end_time, EWeekNotActive);
         assert!(sentiment.week == platform.current_week, EInvalidWeek);
 
-        // Check if user has already voted for this player this week
-        let registry_key = make_registry_key(sentiment.player_id, platform.current_week);
-        
-        if (!table::contains(&registry.votes, registry_key)) {
-            table::add(&mut registry.votes, registry_key, table::new(ctx));
+        let player_id = sentiment.player_id;
+        let week = platform.current_week;
+
+        if (!table::contains(&registry.votes, player_id)) {
+            table::add(&mut registry.votes, player_id, table::new(ctx));
         };
 
-        let player_votes = table::borrow_mut(&mut registry.votes, registry_key);
-        assert!(!table::contains(player_votes, voter), EAlreadyVoted);
+        let player_table = table::borrow_mut(&mut registry.votes, player_id);
 
-        // Record the vote
-        table::add(player_votes, voter, true);
+        if (!table::contains(player_table, week)) {
+            table::add(player_table, week, table::new(ctx));
+        };
 
-        // Update sentiment counts
+        let week_table = table::borrow_mut(player_table, week);
+
+        assert!(!table::contains(week_table, voter), EAlreadyVoted);
+
+        table::add(week_table, voter, true);
+
         if (vote) {
             sentiment.yes_count = sentiment.yes_count + 1;
         } else {
@@ -307,12 +288,10 @@ module valor::pulse {
         sentiment.updated_at = current_time;
         platform.total_votes = platform.total_votes + 1;
 
-        // Calculate percentages
         let total = sentiment.yes_count + sentiment.no_count;
         let yes_pct = if (total > 0) { (sentiment.yes_count * 100) / total } else { 0 };
         let no_pct = if (total > 0) { (sentiment.no_count * 100) / total } else { 0 };
 
-        // Mint vote receipt
         let receipt = VoteReceipt {
             id: object::new(ctx),
             voter,
@@ -323,8 +302,8 @@ module valor::pulse {
             timestamp: current_time,
         };
 
-        // Emit events
         event::emit(VoteSubmitted {
+            sentiment_id,
             voter,
             player_id: sentiment.player_id,
             player_name: sentiment.player_name,
@@ -338,6 +317,7 @@ module valor::pulse {
         });
 
         event::emit(SentimentUpdated {
+            sentiment_id,
             player_id: sentiment.player_id,
             player_name: sentiment.player_name,
             week: platform.current_week,
@@ -353,24 +333,19 @@ module valor::pulse {
         transfer::transfer(receipt, voter);
     }
 
-    // ============================================================================
-    // Helper Functions
-    // ============================================================================
-
     fun make_registry_key(player_id: ID, week: u64): String {
         let player_bytes = object::id_to_bytes(&player_id);
         let mut key_bytes = vector::empty<u8>();
         vector::append(&mut key_bytes, player_bytes);
         vector::push_back(&mut key_bytes, b"_"[0]);
         
-        // Convert week number to bytes
         let mut week_val = week;
         let mut week_bytes = vector::empty<u8>();
         if (week_val == 0) {
-            vector::push_back(&mut week_bytes, 48); // ASCII '0'
+            vector::push_back(&mut week_bytes, 48);
         } else {
             while (week_val > 0) {
-                let digit = ((week_val % 10) as u8) + 48; // ASCII '0' to '9'
+                let digit = ((week_val % 10) as u8) + 48;
                 vector::push_back(&mut week_bytes, digit);
                 week_val = week_val / 10;
             };
@@ -380,9 +355,6 @@ module valor::pulse {
         string::utf8(key_bytes)
     }
 
-    // ============================================================================
-    // View Functions
-    // ============================================================================
 
     public fun get_current_week(platform: &PulsePlatform): u64 {
         platform.current_week
@@ -435,7 +407,6 @@ module valor::pulse {
         (yes_pct, no_pct)
     }
 
-    // Vote receipt view functions
     public fun get_receipt_vote(receipt: &VoteReceipt): bool {
         receipt.vote
     }
@@ -450,10 +421,5 @@ module valor::pulse {
 
     public fun get_receipt_timestamp(receipt: &VoteReceipt): u64 {
         receipt.timestamp
-    }
-
-    /// Security check: verify if a player exists in sentiment tracking
-    public fun player_sentiment_exists(sentiment: &PlayerSentiment, player_id: ID): bool {
-        sentiment.player_id == player_id
     }
 }

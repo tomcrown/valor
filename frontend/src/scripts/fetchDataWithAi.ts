@@ -368,7 +368,7 @@ async function fetchPlayerData(
   }
 }
 
-async function generateDummyData() {
+async function generateApiData() {
   console.log("🚀 Starting Real Seasonal Data Fetch with AI Research...\n");
   console.log("=".repeat(70));
 
@@ -409,9 +409,9 @@ async function generateDummyData() {
   }
 
   const fileContent = generateFileContent(players);
-  const outputPath = "/Users/MAC/Documents/valor/src/data/dummyData.ts";
+  const outputPath = "/Users/MAC/Documents/valor/src/data/apiData.ts";
   fs.writeFileSync(outputPath, fileContent);
-  console.log(`📝 Updated dummyData.ts created at ${outputPath}!`);
+  console.log(`📝 Updated apiData.ts created at ${outputPath}!`);
   console.log(
     `\n💡 All seasonal stats researched using OpenAI with web search!`
   );
@@ -493,9 +493,9 @@ export interface LeaderboardEntry {
   totalTrades: number;
 }
 
-export const DUMMY_PLAYERS: Player[] = ${JSON.stringify(players, null, 2)};
+export const API_PLAYERS: Player[] = ${JSON.stringify(players, null, 2)};
 
-export const DUMMY_PORTFOLIO: PortfolioPosition[] = [
+export const API_PORTFOLIO: PortfolioPosition[] = [
   ${
     players[0]
       ? `{
@@ -524,7 +524,7 @@ export const DUMMY_PORTFOLIO: PortfolioPosition[] = [
   },
 ].filter(Boolean);
 
-export const DUMMY_LEADERBOARD: LeaderboardEntry[] = [
+export const API_LEADERBOARD: LeaderboardEntry[] = [
   {
     rank: 1,
     address: "0x7f3a...8c2d",
@@ -544,7 +544,7 @@ export const PLATFORM_STATS = {
 };
 
 export const getPlayerById = (id: string): Player | undefined => {
-  return DUMMY_PLAYERS.find((player) => player.id === id);
+  return API_PLAYERS.find((player) => player.id === id);
 };
 
 export const getPlayerStatsBySeason = (player: Player, season: SeasonPeriod): PlayerStats => {
@@ -552,7 +552,7 @@ export const getPlayerStatsBySeason = (player: Player, season: SeasonPeriod): Pl
 };
 
 export const getTopPerformers = (): Player[] => {
-  return [...DUMMY_PLAYERS]
+  return [...API_PLAYERS]
     .sort((a, b) => {
       const scoreA = a.aiScore;
       const scoreB = b.aiScore;
@@ -563,22 +563,22 @@ export const getTopPerformers = (): Player[] => {
 };
 
 export const getRisingPlayers = (): Player[] => {
-  return DUMMY_PLAYERS.filter(p => p.weeklyChange > 5 && p.aiScore >= 75)
+  return API_PLAYERS.filter(p => p.weeklyChange > 5 && p.aiScore >= 75)
     .sort((a, b) => b.weeklyChange - a.weeklyChange);
 };
 
 export const getUndervaluedPlayers = (): Player[] => {
-  return DUMMY_PLAYERS.filter(p => p.aiScore > 85 && p.weeklyChange < 5)
+  return API_PLAYERS.filter(p => p.aiScore > 85 && p.weeklyChange < 5)
     .sort((a, b) => b.aiScore - a.aiScore);
 };
 
 export const getFallingPlayers = (): Player[] => {
-  return DUMMY_PLAYERS.filter(p => p.weeklyChange < -5)
+  return API_PLAYERS.filter(p => p.weeklyChange < -5)
     .sort((a, b) => a.weeklyChange - b.weeklyChange);
 };
 
 export const getHighPerformers = (): Player[] => {
-  return DUMMY_PLAYERS.filter(p => p.aiScore >= 85)
+  return API_PLAYERS.filter(p => p.aiScore >= 85)
     .sort((a, b) => b.aiScore - a.aiScore);
 };
 
@@ -599,4 +599,4 @@ export const calculateTrend = (weeklyChange: number): "up" | "stable" | "down" =
 };`;
 }
 
-generateDummyData().catch(console.error);
+generateApiData().catch(console.error);

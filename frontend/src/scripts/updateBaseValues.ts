@@ -10,7 +10,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import { Transaction } from "@mysten/sui/transactions";
-import { FOOTBALL_PLAYERS, type SeasonPeriod } from "../data/dummyData.ts";
+import { FOOTBALL_PLAYERS, type SeasonPeriod } from "../data/apiData.ts";
 import { SUI_CONFIG } from "../config/sui.config.ts";
 import {
   rpcClient,

@@ -18,7 +18,7 @@ import {
   getRisingPlayers,
   getUndervaluedPlayers,
   type SeasonPeriod,
-} from "@/data/dummyData";
+} from "@/data/apiData";
 import { useOnChainPlayers } from "@/hooks/useOnChainPlayers";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";

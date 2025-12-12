@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
 import { useAutoAIAnalysis } from "@/hooks/useAutoAIAnalysis";
-import type { Player, SeasonPeriod } from "@/data/dummyData";
+import type { Player, SeasonPeriod } from "@/data/apiData";
 
 interface AIAnalysisDialogProps {
   player: Player;
@@ -31,17 +31,14 @@ export function AIAnalysisDialog({
 }: AIAnalysisDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Use the hook to get/run analysis
   const { analysis, isAnalyzing, runAnalysis } = useAutoAIAnalysis({
     player,
     selectedSeason,
-    autoRun: false, // Don't auto-run in dialog, we'll trigger manually
+    autoRun: false,
   });
 
-  // Get stats for selected season
   const seasonStats = player.seasonalStats[selectedSeason];
 
-  // Run analysis when dialog opens if no cached data
   useEffect(() => {
     if (isOpen && !analysis && !isAnalyzing) {
       runAnalysis();

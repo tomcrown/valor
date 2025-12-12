@@ -107,7 +107,6 @@ const BuySellWidget = ({
       console.log("✅ Buy successful, refreshing data...");
       setQuantity(1);
 
-      // Wait a bit for blockchain to update
       setTimeout(() => {
         refetchShares();
         onTransactionComplete?.();

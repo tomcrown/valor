@@ -1,4 +1,3 @@
-// SpaceNetworkBackground.tsx
 import { useRef, useEffect } from "react";
 import * as THREE from "three";
 
@@ -11,7 +10,6 @@ export default function SpaceNetworkBackground() {
 
     const scene = new THREE.Scene();
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(
       75,
       window.innerWidth / window.innerHeight,
@@ -20,12 +18,10 @@ export default function SpaceNetworkBackground() {
     );
     camera.position.z = 400;
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({ alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     mount.appendChild(renderer.domElement);
 
-    /** 🌌 Star Field (small white points) **/
     const starGeometry = new THREE.BufferGeometry();
     const starCount = 2000;
     const starPositions = [];
@@ -49,7 +45,6 @@ export default function SpaceNetworkBackground() {
     const starField = new THREE.Points(starGeometry, starMaterial);
     scene.add(starField);
 
-    /** ✨ Galaxy Clusters (colored glowing points) **/
     const galaxyGeometry = new THREE.BufferGeometry();
     const galaxyCount = 300;
     const galaxyPositions = [];
@@ -62,7 +57,7 @@ export default function SpaceNetworkBackground() {
         (Math.random() - 0.5) * 800,
         (Math.random() - 0.5) * 800
       );
-      color.setHSL(Math.random(), 1, 0.6); // random bright neon colors
+      color.setHSL(Math.random(), 1, 0.6);
       galaxyColors.push(color.r, color.g, color.b);
     }
     galaxyGeometry.setAttribute(
@@ -84,7 +79,6 @@ export default function SpaceNetworkBackground() {
     const galaxies = new THREE.Points(galaxyGeometry, galaxyMaterial);
     scene.add(galaxies);
 
-    /** 🌐 Sci-Fi Lines (between nearby galaxy points) **/
     const lineMaterial = new THREE.LineBasicMaterial({
       color: 0x00ffff,
       transparent: true,
@@ -104,14 +98,11 @@ export default function SpaceNetworkBackground() {
     function animate() {
       requestAnimationFrame(animate);
 
-      // Rotate scene slowly for parallax effect
       scene.rotation.y += 0.0005;
       scene.rotation.x += 0.0002;
 
-      // Twinkle stars
       starMaterial.size = 1 + Math.sin(Date.now() * 0.002) * 0.3;
 
-      // Connect galaxy points if close
       const gPos = galaxyGeometry.attributes.position.array;
       let vertexpos = 0;
       for (let i = 0; i < galaxyCount; i++) {
@@ -141,7 +132,6 @@ export default function SpaceNetworkBackground() {
     }
     animate();
 
-    /** 📏 Handle resize **/
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -165,7 +155,6 @@ export default function SpaceNetworkBackground() {
         zIndex: -1,
         width: "100%",
         height: "100%",
-        // background: "radial-gradient(circle at 50% 50%, #000010, #000000)",
       }}
     />
   );

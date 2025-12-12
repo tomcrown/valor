@@ -312,7 +312,7 @@ const PortfolioPage = () => {
                           )
                         }
                         disabled={isProcessing}
-                        className="border-border/50 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                        className="border-border/50 bg-primary hover:bg-primary/10 hover:text-destructive hover:border-primary"
                       >
                         {isProcessing ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -432,7 +432,7 @@ const PortfolioPage = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="border-border/50 hover:bg-muted"
+                              className="border-border/50 hover:bg-primary border border-primary"
                             >
                               Trade
                             </Button>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Player, SeasonPeriod } from "@/data/dummyData";
+import type { Player, SeasonPeriod } from "@/data/apiData";
 import type { AIAnalysis } from "@/lib/openai";
 import { analyzePlayer } from "@/lib/openai";
 
@@ -41,7 +41,6 @@ export function AIAnalysisButton({
 
       onAnalysisComplete?.(result);
 
-      // Save to localStorage with season key
       localStorage.setItem(
         `ai-analysis-${player.id}-${selectedSeason}`,
         JSON.stringify(result)

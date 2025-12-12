@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 import StatCard from "@/components/StatCard";
 import FeatureCard from "@/components/FeatureCard";
-import { PLATFORM_STATS } from "@/data/dummyData";
+import { PLATFORM_STATS } from "@/data/apiData";
 
 const LandingPage = () => {
   return (

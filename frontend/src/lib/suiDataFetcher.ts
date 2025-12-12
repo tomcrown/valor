@@ -6,12 +6,8 @@
 import { gqlClient, rpcClient } from "./suiClient";
 import { SUI_CONFIG, mistToSui } from "../config/sui.config";
 import { graphql } from "@mysten/sui/graphql/schemas/latest";
-import type {
-  Player,
-  SeasonPeriod,
-  FootballPlayerData,
-} from "@/data/dummyData";
-import { FOOTBALL_PLAYERS } from "@/data/dummyData";
+import type { Player, SeasonPeriod, FootballPlayerData } from "@/data/apiData";
+import { FOOTBALL_PLAYERS } from "@/data/apiData";
 
 interface SeasonContractData {
   baseValueSui: number; // In SUI, not MIST

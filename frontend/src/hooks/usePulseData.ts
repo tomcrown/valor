@@ -1,9 +1,3 @@
-// ============================================================================
-// FILE: hooks/usePulseData.ts
-// React hook for fetching Pulse voting data
-// FINAL VERSION - Works with improved contract that emits sentiment IDs
-// ============================================================================
-
 import { useState, useEffect } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { SuiClient } from "@mysten/sui/client";
@@ -37,9 +31,6 @@ export interface PulsePlatformState {
   error: string | null;
 }
 
-/**
- * Main hook for fetching all Pulse data
- */
 export function usePulseData() {
   const currentAccount = useCurrentAccount();
   const [platformState, setPlatformState] = useState<PulsePlatformState>({
@@ -67,7 +58,6 @@ export function usePulseData() {
 
     fetchPulseData();
 
-    // Set up polling for live updates
     const interval = setInterval(
       fetchPulseData,
       PULSE_CONFIG.ui.refreshIntervalSeconds * 1000
@@ -80,7 +70,6 @@ export function usePulseData() {
     try {
       const client = new SuiClient({ url: SUI_CONFIG.rpcUrl });
 
-      // 1. Fetch platform state
       const platformObj = await client.getObject({
         id: PULSE_CONFIG.platformObjectId,
         options: { showContent: true },
@@ -103,10 +92,8 @@ export function usePulseData() {
         error: null,
       });
 
-      // 2. Fetch all PlayerSentiment objects for current week
       const sentimentData = await fetchPlayerSentiments(client, currentWeek);
 
-      // 3. If user is connected, check their vote receipts
       let userVotes = new Map<string, "yes" | "no">();
       if (currentAccount?.address) {
         userVotes = await fetchUserVotes(
@@ -116,7 +103,6 @@ export function usePulseData() {
         );
       }
 
-      // 4. Merge sentiment data with user vote data
       const enrichedSentiments = sentimentData.map((sentiment) => ({
         ...sentiment,
         userHasVoted: userVotes.has(sentiment.playerId),
@@ -144,10 +130,6 @@ export function usePulseData() {
   };
 }
 
-/**
- * Fetch all PlayerSentiment objects for the current week
- * Uses SentimentCreated and SentimentUpdated events from improved contract
- */
 async function fetchPlayerSentiments(
   client: SuiClient,
   currentWeek: number
@@ -160,13 +142,11 @@ async function fetchPlayerSentiments(
   try {
     console.log(`📊 Fetching sentiments for week ${currentWeek}...`);
 
-    // Step 1: Get all SentimentCreated events for current week
-    // This gives us the initial sentiment object IDs
     const createdEvents = await client.queryEvents({
       query: {
         MoveEventType: `${PULSE_CONFIG.packageId}::pulse::SentimentCreated`,
       },
-      limit: 100, // Adjust based on expected player count
+      limit: 100,
       order: "descending",
     });
 
@@ -174,7 +154,6 @@ async function fetchPlayerSentiments(
       `📊 Found ${createdEvents.data.length} SentimentCreated events`
     );
 
-    // Extract sentiment IDs for current week
     const sentimentIds: string[] = [];
     const sentimentMetadata = new Map<string, any>();
 
@@ -201,8 +180,6 @@ async function fetchPlayerSentiments(
       return [];
     }
 
-    // Step 2: Get latest vote counts from SentimentUpdated events
-    // This gives us the current yes/no counts without fetching objects
     const updatedEvents = await client.queryEvents({
       query: {
         MoveEventType: `${PULSE_CONFIG.packageId}::pulse::SentimentUpdated`,
@@ -217,13 +194,11 @@ async function fetchPlayerSentiments(
       const data = event.parsedJson as any;
       const sentimentId = data.sentiment_id;
 
-      // Only track latest update for each sentiment
       if (!latestUpdates.has(sentimentId)) {
         latestUpdates.set(sentimentId, data);
       }
     }
 
-    // Step 3: Combine metadata with latest updates
     const sentiments: Omit<PlayerSentiment, "userHasVoted" | "userVote">[] = [];
 
     for (const sentimentId of sentimentIds) {
@@ -232,7 +207,6 @@ async function fetchPlayerSentiments(
 
       if (!metadata) continue;
 
-      // Use update data if available, otherwise use defaults
       const yesCount = update ? parseInt(update.yes_count) : 0;
       const noCount = update ? parseInt(update.no_count) : 0;
       const totalVotes = yesCount + noCount;
@@ -263,10 +237,6 @@ async function fetchPlayerSentiments(
   }
 }
 
-/**
- * Alternative: Fetch sentiments by directly querying objects (if you have IDs)
- * This is more reliable but requires knowing the object IDs upfront
- */
 async function fetchPlayerSentimentsByIds(
   client: SuiClient,
   sentimentObjectIds: string[],
@@ -321,9 +291,6 @@ async function fetchPlayerSentimentsByIds(
   return sentiments;
 }
 
-/**
- * Fetch user's vote receipts to determine what they've voted on
- */
 async function fetchUserVotes(
   client: SuiClient,
   userAddress: string,
@@ -377,9 +344,6 @@ async function fetchUserVotes(
   }
 }
 
-/**
- * Hook for fetching a single player's sentiment
- */
 export function usePlayerSentiment(sentimentObjectId?: string) {
   const [sentiment, setSentiment] = useState<PlayerSentiment | null>(null);
   const [isLoading, setIsLoading] = useState(true);

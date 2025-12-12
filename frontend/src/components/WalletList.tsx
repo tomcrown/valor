@@ -1,8 +1,3 @@
-// ============================================================================
-// FILE 3: src/components/WalletList.tsx
-// Wallet selection list
-// ============================================================================
-
 import { useWallets } from "@mysten/dapp-kit";
 import { Button } from "@/components/ui/button";
 

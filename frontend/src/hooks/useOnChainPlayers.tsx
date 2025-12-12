@@ -1,15 +1,10 @@
-// ============================================================================
-// FILE: hooks/useOnChainPlayers.tsx
-// React hook to merge football stats with contract data
-// ============================================================================
-
 import { useState, useEffect } from "react";
-import type { Player } from "@/data/dummyData";
+import type { Player } from "@/data/apiData";
 import {
   enrichAllPlayersWithContractData,
   enrichPlayerWithContractData,
 } from "@/lib/suiDataFetcher";
-import { FOOTBALL_PLAYERS, getFootballPlayerById } from "@/data/dummyData";
+import { FOOTBALL_PLAYERS, getFootballPlayerById } from "@/data/apiData";
 
 interface UseOnChainPlayersOptions {
   autoFetch?: boolean;

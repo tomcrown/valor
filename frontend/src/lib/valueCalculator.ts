@@ -3,7 +3,7 @@
 // Decentralized, transparent value calculation system
 // ============================================================================
 
-import type { PurePlayerStats } from "../data/dummyData.js";
+import type { PurePlayerStats } from "../data/apiData.js";
 import { SUI_CONFIG } from "../config/sui.config.ts";
 
 // ============================================================================

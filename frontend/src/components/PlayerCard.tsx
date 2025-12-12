@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { AIAnalysisDialog } from "@/components/AiAnalysisDialog";
 import { useAutoAIAnalysis } from "@/hooks/useAutoAIAnalysis";
 import { getSeasonBaseValue } from "@/lib/suiDataFetcher";
-import type { Player, SeasonPeriod } from "@/data/dummyData";
+import type { Player, SeasonPeriod } from "@/data/apiData";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
 interface PlayerCardProps {
@@ -84,7 +84,6 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
 
   return (
     <div className="space-y-4">
-      {/* <Link to={`/players/${player.id}`} state={{ selectedSeason }}> */}
       <div className="player-card group">
         {/* Image Section */}
         <div className="relative h-48 overflow-hidden">
@@ -144,7 +143,7 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
             </span>
           </div>
 
-          {/* Trend Indicator - Now shows performance trend */}
+          {/* Trend Indicator */}
           {displayTrend !== "stable" && (
             <div
               className={cn(
@@ -202,7 +201,6 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
           </div>
         </div>
       </div>
-      {/* </Link> */}
     </div>
   );
 };
