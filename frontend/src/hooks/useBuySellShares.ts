@@ -47,27 +47,12 @@ export function useBuySellShares() {
     setIsProcessing(true);
 
     try {
-      console.log("🔵 Starting buy shares transaction:", {
-        ...params,
-        walletType: isEnoki ? "Enoki (zkLogin)" : "Standard Sui Wallet",
-        address: currentAccount.address,
-      });
-
       const tx = new Transaction();
 
       const estimatedCost = params.shares * params.maxPricePerShare;
-      console.log("Estimated cost (with buffer):", estimatedCost);
       const paymentAmount = suiToMist(estimatedCost);
 
-      console.log("💰 Payment calculation:", {
-        shares: params.shares,
-        maxPricePerShare: params.maxPricePerShare,
-        estimatedCost,
-        paymentAmount: paymentAmount.toString(),
-      });
-
       const [paymentCoin] = tx.splitCoins(tx.gas, [paymentAmount]);
-      console.log("🪙 Payment coin prepared:", paymentAmount);
 
       tx.moveCall({
         target: `${SUI_CONFIG.contracts.packageId}::valor::buy_shares`,
@@ -91,21 +76,17 @@ export function useBuySellShares() {
           transaction: tx,
         },
         {
-          onSuccess: (result) => {
-            console.log("✅ Transaction successful:", result.digest);
-          },
+          onSuccess: (result) => {},
           onError: (error) => {
             console.error("❌ Transaction failed:", error);
           },
         }
       );
 
-      console.log("✅ Buy transaction result:", result);
-
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       toast({
-        title: "Purchase Successful! 🎉",
+        title: "Purchase Successful! ",
         description: `You now own ${params.shares} shares of ${params.playerName}`,
       });
 
@@ -114,8 +95,6 @@ export function useBuySellShares() {
         digest: result.digest,
       };
     } catch (error: any) {
-      console.error("❌ Buy shares error:", error);
-
       let errorMessage = "Failed to buy shares. Please try again.";
 
       const errorStr = error.message || error.toString();
@@ -175,20 +154,9 @@ export function useBuySellShares() {
         0
       );
 
-      console.log("🔵 Starting sell shares transaction:", {
-        operations: params.operations,
-        totalShares,
-        walletType: isEnoki ? "Enoki (zkLogin)" : "Standard Sui Wallet",
-        address: currentAccount.address,
-      });
-
       const tx = new Transaction();
 
       for (const operation of params.operations) {
-        console.log(
-          `📤 Selling ${operation.amount} shares from ${operation.objectId}`
-        );
-
         tx.moveCall({
           target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
           arguments: [
@@ -211,21 +179,17 @@ export function useBuySellShares() {
           transaction: tx,
         },
         {
-          onSuccess: (result) => {
-            console.log("✅ Transaction successful:", result.digest);
-          },
+          onSuccess: (result) => {},
           onError: (error) => {
             console.error("❌ Transaction failed:", error);
           },
         }
       );
 
-      console.log("✅ Sell transaction result:", result);
-
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       toast({
-        title: "Sale Successful! 💰",
+        title: "Sale Successful! ",
         description: `Successfully sold ${totalShares} shares of ${params.playerName}`,
       });
 

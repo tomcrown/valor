@@ -69,11 +69,6 @@ export function useUserPortfolio() {
       return;
     }
 
-    console.log("📊 Portfolio fetching for:", {
-      address: currentAccount.address,
-      walletType: isEnoki ? "Enoki (zkLogin)" : "Standard Sui Wallet",
-    });
-
     fetchPortfolio();
   }, [currentAccount?.address, isEnoki]);
 
@@ -84,22 +79,16 @@ export function useUserPortfolio() {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔄 Fetching portfolio for address:", currentAccount.address);
-
       const client = new SuiClient({ url: SUI_CONFIG.rpcUrl });
 
       const suiBalance = await fetchSuiBalance(client, currentAccount.address);
-      console.log("💰 SUI Balance:", suiBalance);
 
       const userHoldings = await fetchUserHoldingsWithRetry(
         client,
         currentAccount.address
       );
 
-      console.log(`📦 Found ${userHoldings.length} holdings`);
-
       if (userHoldings.length === 0) {
-        console.log("ℹ️ No holdings found");
         setSummary({
           totalValue: 0,
           totalInvested: 0,
@@ -114,14 +103,11 @@ export function useUserPortfolio() {
       }
 
       const enrichedHoldings = await enrichHoldingsWithPrices(userHoldings);
-      console.log(`✅ Enriched ${enrichedHoldings.length} holdings`);
 
       const portfolioSummary = calculatePortfolioSummary(
         enrichedHoldings,
         suiBalance
       );
-
-      console.log("📊 Portfolio Summary:", portfolioSummary);
 
       setHoldings(enrichedHoldings);
       setSummary(portfolioSummary);
@@ -167,7 +153,6 @@ async function fetchUserHoldingsWithRetry(
 ): Promise<UserHolding[]> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`🔍 Fetching holdings (attempt ${attempt}/${retries})...`);
       return await fetchUserHoldings(client, address);
     } catch (error) {
       console.error(`❌ Attempt ${attempt} failed:`, error);
@@ -188,8 +173,6 @@ async function fetchUserHoldings(
   address: string
 ): Promise<UserHolding[]> {
   try {
-    console.log("🔍 Fetching PlayerSharesNFT objects for:", address);
-
     const holdings: UserHolding[] = [];
     let hasNextPage = true;
     let cursor: string | null = null;
@@ -207,8 +190,6 @@ async function fetchUserHoldings(
         cursor,
         limit: 50,
       });
-
-      console.log(`📦 Batch found ${response.data.length} objects`);
 
       for (const obj of response.data) {
         if (!obj.data?.content || obj.data.content.dataType !== "moveObject") {
@@ -230,9 +211,6 @@ async function fetchUserHoldings(
 
           if (holding.quantity > 0) {
             holdings.push(holding);
-            console.log(
-              `  ✓ ${holding.playerName}: ${holding.quantity} shares`
-            );
           }
         } catch (parseError) {
           console.error("❌ Error parsing object:", parseError);
@@ -244,11 +222,9 @@ async function fetchUserHoldings(
       cursor = response.nextCursor ?? null;
 
       if (hasNextPage) {
-        console.log("📄 Fetching next page...");
       }
     }
 
-    console.log(`✅ Total holdings parsed: ${holdings.length}`);
     return holdings;
   } catch (error) {
     console.error("Failed to fetch user holdings:", error);
@@ -263,16 +239,11 @@ async function enrichHoldingsWithPrices(
 
   for (const holding of holdings) {
     try {
-      // Find matching football player by name
       const footballPlayer = FOOTBALL_PLAYERS.find(
         (p) => p.name.toLowerCase() === holding.playerName.toLowerCase()
       );
 
       if (!footballPlayer) {
-        console.warn(
-          `⚠️ Player not found in football data: ${holding.playerName}`
-        );
-
         enrichedHoldings.push({
           ...holding,
           currentPrice: holding.entryPrice,
@@ -307,12 +278,6 @@ async function enrichHoldingsWithPrices(
         club: footballPlayer.club,
         player: enrichedPlayer,
       });
-
-      console.log(
-        `✅ Enriched ${holding.playerName}: ${currentPrice.toFixed(4)} SUI (${
-          pnl > 0 ? "+" : ""
-        }${pnl.toFixed(2)}%)`
-      );
     } catch (error) {
       console.error(`Failed to enrich ${holding.playerName}:`, error);
 

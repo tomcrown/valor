@@ -46,8 +46,6 @@ function RegisterEnokiWallets() {
         },
       },
     });
-
-    console.log("✅ Enoki wallets registered for network:", network);
   }, [client, network]);
 
   return null;

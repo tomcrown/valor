@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import PlayersPage from "./pages/PlayersPage";
@@ -16,7 +15,7 @@ const App = () => (
   <BrowserRouter>
     <SpaceNetworkBackground />
     <Toaster />
-    <Sonner />
+
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/players" element={<PlayersPage />} />

@@ -12,7 +12,6 @@ export function toast(props: ToastProps) {
   if (toastCallback) {
     toastCallback(props);
   } else {
-    console.log(`[Toast] ${props.title}`, props.description);
   }
 }
 

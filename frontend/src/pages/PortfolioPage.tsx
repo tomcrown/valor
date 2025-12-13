@@ -208,7 +208,7 @@ const PortfolioPage = () => {
                   className="p-4 bg-muted/30 rounded-xl opacity-0 animate-fade-in"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     {/* Player Info */}
                     <div className="flex items-center gap-3 flex-1 min-w-[200px]">
                       {holding.imageUrl && (
@@ -274,7 +274,7 @@ const PortfolioPage = () => {
                     </div>
 
                     {/* Action - Sell Button */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full sm:w-auto items-center gap-2 sm:justify-end">
                       <input
                         type="number"
                         min="1"
@@ -288,7 +288,7 @@ const PortfolioPage = () => {
                             [holding.objectId]: parseInt(e.target.value) || 0,
                           }))
                         }
-                        className="w-16 px-2 py-1 text-sm rounded border border-border bg-background text-center"
+                        className="w-full sm:w-16 px-2 py-1 text-sm rounded border border-border bg-background text-center"
                         disabled={isProcessing}
                       />
                       <Button
@@ -503,6 +503,20 @@ const PortfolioPage = () => {
                           </span>
                         </div>
                       </div>
+                    </div>
+                    <div className="mt-4 flex justify-end">
+                      <Link
+                        to={`/players/${holding.player?.id || ""}`}
+                        className="w-full"
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border border-primary bg-transparent text-primary hover:bg-primary/10"
+                        >
+                          Trade
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 );

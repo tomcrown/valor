@@ -36,16 +36,10 @@ export function useOnChainPlayers({
     setLoadingProgress({ current: 0, total: FOOTBALL_PLAYERS.length });
 
     try {
-      console.log(
-        `🔄 Merging football stats with contract data for ${FOOTBALL_PLAYERS.length} players...`
-      );
-
       const enriched = await enrichAllPlayersWithContractData();
 
       const successful = enriched.filter((p) => !p.onChainError).length;
       const failed = enriched.filter((p) => p.onChainError).length;
-
-      console.log(`✅ Successfully enriched ${successful} players`);
 
       if (failed > 0) {
         console.warn(
@@ -61,7 +55,6 @@ export function useOnChainPlayers({
       setEnrichedPlayers(enriched);
       setLastFetched(new Date());
     } catch (err) {
-      console.error("❌ Failed to fetch contract data:", err);
       setError(err as Error);
 
       const fallbackPlayers = FOOTBALL_PLAYERS.map((player) => ({
@@ -90,7 +83,6 @@ export function useOnChainPlayers({
     if (!refetchInterval) return;
 
     const interval = setInterval(() => {
-      console.log("🔄 Auto-refreshing player data...");
       fetchPlayers();
     }, refetchInterval);
 
@@ -152,14 +144,11 @@ export function useOnChainPlayer({
     setError(null);
 
     try {
-      console.log(`🔄 Fetching contract data for ${footballPlayer.name}...`);
-
       const enriched = await enrichPlayerWithContractData(footballPlayer);
 
       if (enriched.onChainError) {
         console.warn(`⚠️ ${footballPlayer.name}: ${enriched.onChainError}`);
       } else {
-        console.log(`✅ Successfully enriched ${footballPlayer.name}`);
       }
 
       setEnrichedPlayer(enriched);

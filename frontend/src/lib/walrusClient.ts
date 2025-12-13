@@ -81,21 +81,12 @@ export class WalrusClient {
     this.publisherUrl = SUI_CONFIG.walrus.publisherUrl;
     this.aggregatorUrl = SUI_CONFIG.walrus.aggregatorUrl;
     this.epochs = SUI_CONFIG.walrus.epochs;
-
-    console.log("🐋 Walrus Client Initialized");
-    console.log(`   Publisher: ${this.publisherUrl}`);
-    console.log(`   Aggregator: ${this.aggregatorUrl}`);
-    console.log(`   Storage epochs: ${this.epochs}`);
   }
 
   async uploadJSON(data: any): Promise<string> {
     try {
       const jsonData = JSON.stringify(data, null, 2);
       const jsonSize = new Blob([jsonData]).size;
-
-      console.log(`\n📦 Uploading to Walrus...`);
-      console.log(`   Size: ${(jsonSize / 1024).toFixed(2)} KB`);
-      console.log(`   Storage: ${this.epochs} epochs`);
 
       const response = await axios.put(
         `${this.publisherUrl}/v1/blobs`,
@@ -122,26 +113,8 @@ export class WalrusClient {
       }
 
       if (result.newlyCreated) {
-        console.log(`   ✅ Newly created blob`);
-        console.log(
-          `   📊 Stored epoch: ${result.newlyCreated.blobObject.storedEpoch}`
-        );
-        console.log(
-          `   📊 End epoch: ${result.newlyCreated.blobObject.storage.endEpoch}`
-        );
-        console.log(`   💰 Cost: ${result.newlyCreated.cost} MIST`);
-      } else if (result.alreadyCertified) {
-        console.log(`   ♻️  Already certified (reused blob)`);
-        console.log(`   📊 End epoch: ${result.alreadyCertified.endEpoch}`);
-      }
-
-      console.log(`   🆔 Blob ID: ${blobId}`);
-      console.log(`   🔗 View URL: ${this.getBlobUrl(blobId)}`);
-
-      return blobId;
+      } else if (result.alreadyCertified) return blobId;
     } catch (error: any) {
-      console.error("\n❌ Walrus upload failed");
-
       if (error.response) {
         console.error(
           `   HTTP ${error.response.status}: ${error.response.statusText}`
@@ -160,9 +133,6 @@ export class WalrusClient {
 
   async downloadJSON<T = any>(blobId: string): Promise<T> {
     try {
-      console.log(`\n🔍 Downloading from Walrus...`);
-      console.log(`   Blob ID: ${blobId}`);
-
       const response = await axios.get(`${this.aggregatorUrl}/v1/${blobId}`, {
         timeout: 30000,
         headers: {
@@ -171,17 +141,10 @@ export class WalrusClient {
       });
 
       const dataSize = JSON.stringify(response.data).length;
-      console.log(`   ✅ Downloaded successfully`);
-      console.log(`   📊 Size: ${(dataSize / 1024).toFixed(2)} KB`);
 
       return response.data as T;
     } catch (error: any) {
-      console.error("\n❌ Walrus download failed");
-
       if (error.response?.status === 404) {
-        console.error(
-          "   Blob not found. It may have expired or the ID is incorrect."
-        );
       } else if (error.response) {
         console.error(
           `   HTTP ${error.response.status}: ${error.response.statusText}`
@@ -271,12 +234,6 @@ export class WalrusClient {
       created_at: new Date().toISOString(),
       uploaded_by: uploadedBy,
     };
-
-    console.log(`\n📊 Uploading ${playerName} performance data...`);
-    console.log(`   Season: ${seasonLabels[seasonPeriod]}`);
-    console.log(`   Goals: ${stats.goals}, Assists: ${stats.assists}`);
-    console.log(`   AI Score: ${aiAnalysis.performance_score}/100`);
-    console.log(`   Base Value: ${blob.valuation.base_value_sui} SUI`);
 
     return await this.uploadJSON(blob);
   }
@@ -401,12 +358,6 @@ export async function uploadPulseVotes(
     created_at: new Date().toISOString(),
     updated_by: uploadedBy,
   };
-
-  console.log(`\n📊 Uploading Pulse votes for ${playerName}...`);
-  console.log(`   Week: ${weekNumber}`);
-  console.log(`   Total Votes: ${totalVotes}`);
-  console.log(`   YES: ${yesVotes.length} (${blob.summary.yes_percentage}%)`);
-  console.log(`   NO: ${noVotes.length} (${blob.summary.no_percentage}%)`);
 
   return await walrusClient.uploadJSON(blob);
 }

@@ -27,15 +27,6 @@ export function calculateEarlySeasonBaseValue(
 
   finalValue = Math.max(MIN_BASE, Math.min(finalValue, MAX_BASE));
 
-  console.log(`\n📊 Early Season Calculation for ${position}:`);
-  console.log(`   Position baseline: ${baseline} SUI`);
-  console.log(
-    `   AI Score: ${aiScore} → Multiplier: ${scoreMultiplier.toFixed(2)}x`
-  );
-  console.log(`   Stats: ${seasonStats.goals}G, ${seasonStats.assists}A`);
-  console.log(`   Performance bonus: +${performanceBonus.toFixed(4)} SUI`);
-  console.log(`   Final value: ${finalValue.toFixed(4)} SUI`);
-
   return BigInt(Math.floor(finalValue * 1_000_000_000));
 }
 
@@ -47,32 +38,16 @@ export function calculateMidCurrentSeasonValue(
 ): bigint {
   const previousInSui = Number(previousBaseValue) / 1_000_000_000;
 
-  console.log(`\n📊 Mid/Current Season Calculation:`);
-  console.log(`   Previous base: ${previousInSui.toFixed(4)} SUI`);
-  console.log(`   AI Score: ${aiScore}`);
-
   const aiChangePercent = (aiScore - 50) / 100;
-  console.log(`   AI change factor: ${(aiChangePercent * 100).toFixed(1)}%`);
 
   const goalDelta = currentStats.goals - previousStats.goals;
   const assistDelta = currentStats.assists - previousStats.assists;
 
   const performanceChange = goalDelta * 0.02 + assistDelta * 0.01;
-  console.log(
-    `   Performance Δ: ${goalDelta}G, ${assistDelta}A → ${(
-      performanceChange * 100
-    ).toFixed(1)}%`
-  );
 
   const prevMatches = previousStats.matchesPlayed || 1;
   const matchRatio = currentStats.matchesPlayed / prevMatches;
   const consistencyFactor = Math.min(matchRatio, 1.2);
-  console.log(
-    `   Consistency: ${currentStats.matchesPlayed}/${prevMatches} matches → ${(
-      consistencyFactor * 100 -
-      100
-    ).toFixed(1)}% factor`
-  );
 
   let totalMultiplier = 1 + aiChangePercent + performanceChange;
   totalMultiplier *= consistencyFactor;
@@ -84,7 +59,6 @@ export function calculateMidCurrentSeasonValue(
     MIN_MULTIPLIER,
     Math.min(totalMultiplier, MAX_MULTIPLIER)
   );
-  console.log(`   Total multiplier: ${totalMultiplier.toFixed(3)}x (capped)`);
 
   let newValue = previousInSui * totalMultiplier;
 
@@ -92,10 +66,6 @@ export function calculateMidCurrentSeasonValue(
   const MAX_BASE = 0.5;
 
   newValue = Math.max(MIN_BASE, Math.min(newValue, MAX_BASE));
-  console.log(`   New base value: ${newValue.toFixed(4)} SUI`);
-  console.log(
-    `   Change: ${((newValue / previousInSui - 1) * 100).toFixed(2)}%`
-  );
 
   return BigInt(Math.floor(newValue * 1_000_000_000));
 }
