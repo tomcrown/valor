@@ -10,16 +10,11 @@ export async function findSentimentForPlayer(
     const client = new SuiClient({ url: SUI_CONFIG.rpcUrl });
 
     if (!PULSE_CONFIG.packageId) {
-      console.error("Pulse package ID not configured");
       return null;
     }
 
-    console.warn(
-      "This function requires platform object access - use getAllActiveSentiments instead"
-    );
     return null;
   } catch (error) {
-    console.error("Error finding sentiment:", error);
     return null;
   }
 }
@@ -45,7 +40,6 @@ export async function getAllActiveSentiments(currentWeek: number) {
 
     return sentiments;
   } catch (error) {
-    console.error("Error fetching active sentiments:", error);
     return [];
   }
 }
@@ -86,7 +80,6 @@ export async function hasUserVoted(
 
     return false;
   } catch (error) {
-    console.error("Error checking vote status:", error);
     return false;
   }
 }
@@ -127,7 +120,6 @@ export async function getUserVote(
 
     return null;
   } catch (error) {
-    console.error("Error fetching user vote:", error);
     return null;
   }
 }
@@ -161,7 +153,6 @@ export async function getWeekVotingStats(week: number) {
       avgYesPercentage: Math.round(avgYesPercentage),
     };
   } catch (error) {
-    console.error("Error calculating week stats:", error);
     return {
       week,
       totalPlayers: 0,

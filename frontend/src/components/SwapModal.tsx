@@ -162,9 +162,7 @@ export function SwapModal({ open, onOpenChange }) {
 
       setBalances(newBalances);
       setActualBalances(newActualBalances);
-    } catch (error) {
-      console.error("Failed to fetch balances:", error);
-    }
+    } catch (error) {}
   }, [currentAccount, suiClient]);
 
   useEffect(() => {
@@ -221,7 +219,6 @@ export function SwapModal({ open, onOpenChange }) {
           setRouteError("No route available");
         }
       } catch (error) {
-        console.error("Failed to fetch route:", error);
         setToAmount("");
         setRouteError("Failed to fetch route");
       } finally {
@@ -387,8 +384,6 @@ export function SwapModal({ open, onOpenChange }) {
 
       return;
     } catch (error) {
-      console.error("Swap failed:", error);
-
       const reason = encodeURIComponent(error.message || "Swap failed");
       window.location.href = `/swap/fail?reason=${reason}&playerId=${playerId}`;
       return;

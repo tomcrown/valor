@@ -71,7 +71,6 @@ export async function POST(req: NextRequest) {
       token: jwt,
     });
   } catch (error) {
-    console.error("zkLogin API error:", error);
     return NextResponse.json(
       {
         error: "Failed to process zkLogin request",

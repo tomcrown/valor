@@ -48,7 +48,6 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
 
   const handleGoogleLogin = () => {
     if (!googleWallet) {
-      console.error("Google wallet not found");
       return;
     }
     connect({ wallet: googleWallet });

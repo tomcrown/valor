@@ -323,7 +323,6 @@ Make it impressive. Make it unique. Make it useful.`,
       season_context: seasonLabel,
     } as AIAnalysis;
   } catch (error) {
-    console.error("OpenAI analysis error:", error);
     throw new Error("Failed to analyze player");
   }
 }

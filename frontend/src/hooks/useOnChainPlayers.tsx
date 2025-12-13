@@ -42,12 +42,8 @@ export function useOnChainPlayers({
       const failed = enriched.filter((p) => p.onChainError).length;
 
       if (failed > 0) {
-        console.warn(
-          `⚠️ Failed to fetch contract data for ${failed} players (using defaults)`
-        );
         enriched.forEach((p) => {
           if (p.onChainError) {
-            console.warn(`  - ${p.name}: ${p.onChainError}`);
           }
         });
       }
@@ -147,17 +143,12 @@ export function useOnChainPlayer({
       const enriched = await enrichPlayerWithContractData(footballPlayer);
 
       if (enriched.onChainError) {
-        console.warn(`⚠️ ${footballPlayer.name}: ${enriched.onChainError}`);
       } else {
       }
 
       setEnrichedPlayer(enriched);
       setLastFetched(new Date());
     } catch (err) {
-      console.error(
-        `❌ Failed to fetch contract data for ${footballPlayer.name}:`,
-        err
-      );
       setError(err as Error);
 
       setEnrichedPlayer({

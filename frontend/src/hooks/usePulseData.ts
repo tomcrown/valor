@@ -112,7 +112,6 @@ export function usePulseData() {
       setSentiments(enrichedSentiments);
       setIsLoading(false);
     } catch (error: any) {
-      console.error("Failed to fetch pulse data:", error);
       setPlatformState((prev) => ({
         ...prev,
         isLoading: false,
@@ -135,7 +134,6 @@ async function fetchPlayerSentiments(
   currentWeek: number
 ): Promise<Omit<PlayerSentiment, "userHasVoted" | "userVote">[]> {
   if (!PULSE_CONFIG.packageId) {
-    console.warn("Pulse package ID not configured");
     return [];
   }
 
@@ -221,7 +219,6 @@ async function fetchPlayerSentiments(
 
     return sentiments;
   } catch (error) {
-    console.error("Failed to fetch sentiments:", error);
     return [];
   }
 }
@@ -272,7 +269,6 @@ async function fetchPlayerSentimentsByIds(
         updatedAt: parseInt(fields.updated_at),
       });
     } catch (err) {
-      console.error(`Error fetching sentiment ${objectId}:`, err);
       continue;
     }
   }
@@ -322,7 +318,6 @@ async function fetchUserVotes(
 
     return votes;
   } catch (error) {
-    console.error("Failed to fetch user votes:", error);
     return new Map();
   }
 }
@@ -399,7 +394,6 @@ export function usePlayerSentiment(sentimentObjectId?: string) {
 
       setIsLoading(false);
     } catch (err: any) {
-      console.error("Failed to fetch sentiment:", err);
       setError(err.message);
       setIsLoading(false);
     }

@@ -43,7 +43,6 @@ app.post("/api/sponsor-transaction", async (req, res) => {
       bytes: sponsored.bytes,
     });
   } catch (error) {
-    console.error("Sponsor transaction error:", error);
     res.status(500).json({
       error: "Failed to sponsor transaction",
       details: error.message,
@@ -65,7 +64,6 @@ app.post("/api/execute-sponsored", async (req, res) => {
       digest: result.digest,
     });
   } catch (error) {
-    console.error("Execute transaction error:", error);
     res.status(500).json({
       error: "Failed to execute transaction",
       details: error.message,
@@ -96,7 +94,6 @@ app.post("/api/openai", async (req, res) => {
       raw: response,
     });
   } catch (err) {
-    console.error("OpenAI Error:", err);
     res.status(500).json({
       error: "Failed to contact OpenAI",
       details: err.message,
