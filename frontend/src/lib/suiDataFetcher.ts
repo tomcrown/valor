@@ -91,7 +91,6 @@ async function fetchPlatformData(): Promise<any> {
 
     return platformDataCache;
   } catch (error) {
-    console.error("Failed to fetch platform data:", error);
     throw new Error(`Platform data fetch failed: ${error.message}`);
   }
 }
@@ -107,14 +106,12 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
     const playerNamesTable = platformData.player_names;
 
     if (!playerNamesTable) {
-      console.error("❌ player_names table not found");
       throw new Error("player_names table not found in platform data");
     }
 
     const tableId = playerNamesTable.id;
 
     if (!tableId) {
-      console.error("❌ Table ID not found in player_names");
       throw new Error("Table ID not found in player_names structure");
     }
 
@@ -123,7 +120,6 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
     });
 
     if (fields.data.length === 0) {
-      console.warn(`⚠️ No players registered in contract`);
       return null;
     }
 
@@ -132,7 +128,6 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
     );
 
     if (!matchingField) {
-      console.warn(`⚠️ Player not found in contract: ${playerName}`);
       return null;
     }
 
@@ -146,7 +141,6 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
       const playerId = fieldContent?.fields?.value || fieldContent?.value;
 
       if (!playerId) {
-        console.error("❌ Player ID not found in field object");
         return null;
       }
 
@@ -155,10 +149,6 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
 
     return null;
   } catch (error) {
-    console.error(
-      `❌ Error getting player ID for ${playerName}:`,
-      error.message
-    );
     throw error;
   }
 }
@@ -176,7 +166,6 @@ async function fetchPlayerContractData(
     const playersTable = platformData.players;
 
     if (!playersTable) {
-      console.error("❌ players table not found");
       throw new Error("players table not found in platform data");
     }
 
@@ -195,7 +184,6 @@ async function fetchPlayerContractData(
     });
 
     if (!playerField?.data?.content) {
-      console.error(`❌ Player data not found for ID: ${playerId}`);
       return null;
     }
 
@@ -209,16 +197,11 @@ async function fetchPlayerContractData(
       content?.fields;
 
     if (!playerData) {
-      console.error("❌ Could not find player data");
       return null;
     }
 
     return playerData;
   } catch (error) {
-    console.error(
-      `❌ Error fetching player data for ${playerId}:`,
-      error.message
-    );
     throw error;
   }
 }
@@ -379,11 +362,6 @@ export async function enrichPlayerWithContractData(
       onChainPlayerId: playerId,
     };
   } catch (error) {
-    console.error(
-      `❌ Error enriching player ${footballPlayer.name}:`,
-      error.message
-    );
-
     const defaultValue = 0.001;
     const valueHistory = generateValueHistory(defaultValue);
 
@@ -413,11 +391,6 @@ export async function enrichAllPlayersWithContractData(): Promise<
     if (result.status === "fulfilled") {
       return result.value;
     } else {
-      console.error(
-        `Failed to enrich player ${FOOTBALL_PLAYERS[index].name}:`,
-        result.reason
-      );
-
       const defaultValue = 0.001;
       const valueHistory = generateValueHistory(defaultValue);
 

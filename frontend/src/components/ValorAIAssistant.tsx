@@ -231,14 +231,16 @@ export function ValorAIAssistant() {
           align="end"
           side="top"
         >
-          <div className="p-4 border-b border-border bg-primary/80">
+          <div className="p-4 border-b border-border bg-primary/100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">Valor AI Assistant</h3>
-                <p className="text-xs text-muted-foreground">
+                <h3 className="font-bold text-lg text-white">
+                  Valor AI Assistant
+                </h3>
+                <p className="text-xs text-muted-foregroun text-white">
                   {currentAnswer
                     ? "Scroll to read answer"
                     : "Click any question below"}

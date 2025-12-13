@@ -116,15 +116,8 @@ export class WalrusClient {
       } else if (result.alreadyCertified) return blobId;
     } catch (error: any) {
       if (error.response) {
-        console.error(
-          `   HTTP ${error.response.status}: ${error.response.statusText}`
-        );
-        console.error("   Response data:", error.response.data);
       } else if (error.request) {
-        console.error("   No response received from Walrus");
-        console.error("   Is the Walrus network accessible?");
       } else {
-        console.error("   Error:", error.message);
       }
 
       throw new Error(`Walrus upload failed: ${error.message}`);
@@ -146,11 +139,7 @@ export class WalrusClient {
     } catch (error: any) {
       if (error.response?.status === 404) {
       } else if (error.response) {
-        console.error(
-          `   HTTP ${error.response.status}: ${error.response.statusText}`
-        );
       } else {
-        console.error("   Error:", error.message);
       }
 
       throw new Error(`Walrus download failed: ${error.message}`);

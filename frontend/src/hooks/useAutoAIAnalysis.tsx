@@ -51,7 +51,6 @@ export function useAutoAIAnalysis({
         JSON.stringify(result)
       );
     } catch (err) {
-      console.error("AI analysis failed:", err);
       setError("AI analysis failed. Please try again.");
     } finally {
       setIsAnalyzing(false);
@@ -74,9 +73,7 @@ export function useAutoAIAnalysis({
         setAnalysis(parsed);
         onAnalysisComplete?.(parsed);
         return;
-      } catch {
-        console.error("Failed to parse cached analysis");
-      }
+      } catch {}
     }
 
     if (autoRun && !hasRunRef.current && !isAnalyzing) {

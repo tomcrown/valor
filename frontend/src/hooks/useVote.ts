@@ -83,8 +83,6 @@ export function useVote() {
 
       return false;
     } catch (error: any) {
-      console.error("Vote failed:", error);
-
       if (error.message?.includes("EAlreadyVoted")) {
         toast.error("You have already voted for this player this week");
       } else if (error.message?.includes("EWeekNotActive")) {

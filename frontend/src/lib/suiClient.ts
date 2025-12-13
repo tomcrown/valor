@@ -62,7 +62,6 @@ export async function getPlatformState() {
 
     return result.data?.object?.asMoveObject?.contents?.json;
   } catch (error) {
-    console.error("Failed to fetch platform state:", error);
     return await rpcClient.getObject({
       id: SUI_CONFIG.contracts.platformObjectId,
       options: { showContent: true },
@@ -102,7 +101,6 @@ export async function executeTransaction(
       objectChanges: confirmed.objectChanges,
     };
   } catch (error: any) {
-    console.error("Transaction execution failed:", error);
     throw new Error(`Transaction failed: ${error.message}`);
   }
 }

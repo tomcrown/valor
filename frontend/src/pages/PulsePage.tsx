@@ -172,9 +172,6 @@ const PulsePage = () => {
               sentiments.find((s) => s.playerId === player.id) || null;
 
             if (!sentiment) {
-              console.warn(
-                `⚠️ No sentiment found for player: ${player.name} (${player.id})`
-              );
             }
 
             return (

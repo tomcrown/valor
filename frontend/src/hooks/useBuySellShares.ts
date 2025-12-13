@@ -77,9 +77,7 @@ export function useBuySellShares() {
         },
         {
           onSuccess: (result) => {},
-          onError: (error) => {
-            console.error("❌ Transaction failed:", error);
-          },
+          onError: (error) => {},
         }
       );
 
@@ -180,9 +178,7 @@ export function useBuySellShares() {
         },
         {
           onSuccess: (result) => {},
-          onError: (error) => {
-            console.error("❌ Transaction failed:", error);
-          },
+          onError: (error) => {},
         }
       );
 
@@ -198,8 +194,6 @@ export function useBuySellShares() {
         digest: result.digest,
       };
     } catch (error: any) {
-      console.error("❌ Sell shares error:", error);
-
       let errorMessage = "Failed to sell shares. Please try again.";
 
       const errorStr = error.message || error.toString();

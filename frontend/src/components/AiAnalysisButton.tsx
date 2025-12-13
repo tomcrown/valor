@@ -46,8 +46,6 @@ export function AIAnalysisButton({
         JSON.stringify(result)
       );
     } catch (err) {
-      console.error("Analysis failed:", err);
-      setError("AI analysis failed. Please try again.");
     } finally {
       setIsAnalyzing(false);
     }

@@ -113,7 +113,6 @@ export function useUserPortfolio() {
       setSummary(portfolioSummary);
       setIsLoading(false);
     } catch (err: any) {
-      console.error("❌ Failed to fetch portfolio:", err);
       setError(err.message);
       setIsLoading(false);
     }
@@ -141,7 +140,6 @@ async function fetchSuiBalance(
 
     return mistToSui(BigInt(balance.totalBalance));
   } catch (error) {
-    console.error("Failed to fetch SUI balance:", error);
     return 0;
   }
 }
@@ -155,8 +153,6 @@ async function fetchUserHoldingsWithRetry(
     try {
       return await fetchUserHoldings(client, address);
     } catch (error) {
-      console.error(`❌ Attempt ${attempt} failed:`, error);
-
       if (attempt === retries) {
         throw error;
       }
@@ -193,7 +189,6 @@ async function fetchUserHoldings(
 
       for (const obj of response.data) {
         if (!obj.data?.content || obj.data.content.dataType !== "moveObject") {
-          console.warn("⚠️ Skipping invalid object:", obj.data?.objectId);
           continue;
         }
 
@@ -213,7 +208,6 @@ async function fetchUserHoldings(
             holdings.push(holding);
           }
         } catch (parseError) {
-          console.error("❌ Error parsing object:", parseError);
           continue;
         }
       }
@@ -227,7 +221,6 @@ async function fetchUserHoldings(
 
     return holdings;
   } catch (error) {
-    console.error("Failed to fetch user holdings:", error);
     throw error;
   }
 }
@@ -279,8 +272,6 @@ async function enrichHoldingsWithPrices(
         player: enrichedPlayer,
       });
     } catch (error) {
-      console.error(`Failed to enrich ${holding.playerName}:`, error);
-
       enrichedHoldings.push({
         ...holding,
         currentPrice: holding.entryPrice,
