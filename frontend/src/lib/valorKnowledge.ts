@@ -1,6 +1,3 @@
-// FILE 2: src/lib/valorKnowledge.ts
-// Updated Knowledge Base with Pulse, Portfolio, NFTs, and Seasonal Data
-
 export const VALOR_KNOWLEDGE = {
   platform: {
     name: "Valor",
@@ -8,8 +5,6 @@ export const VALOR_KNOWLEDGE = {
       "A decentralized fantasy football stock market where users trade player shares based on real performance data, AI-driven analysis, and blockchain verification.",
     tagline: "Trade Football Players Like Stocks",
   },
-
-  // ESSENTIAL QUESTIONS - Getting Started & Core Features
 
   gettingStarted: `To get started on Valor:
 
@@ -143,8 +138,6 @@ You profit when your players perform well and their value increases! 📈`,
 
 Player prices adjust based on BOTH AI scores AND market demand! 🔄`,
 
-  // NEW FEATURES - Valor Pulse & Seasonal Data
-
   valorPulse: `Valor Pulse is our community sentiment voting feature! 🗳️
 
 **How It Works:**
@@ -220,8 +213,6 @@ No rewards - just pure community sentiment! 💪`,
 When viewing player details, you can switch between seasons to see historical data, BUT all trading happens at Current Season prices. The seasonal view helps you understand the journey, not change the trading price!
 
 Example: You view "Mid Season" to see Haaland had 8 goals by match 6, but if you buy shares, you pay the Current Season price (reflects all 15 matches played).`,
-
-  // PORTFOLIO & NFT FEATURES
 
   portfolioView: `Your portfolio is your command center! 📊
 
@@ -313,8 +304,6 @@ Instead of connecting a traditional crypto wallet, you can use your Google accou
 You can always switch to a traditional wallet later if you want more control over your assets.
 
 Get started in seconds! ⚡`,
-
-  // EXISTING FEATURES - Updated
 
   depositSwap: `To get SUI tokens for trading:
 

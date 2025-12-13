@@ -1,16 +1,8 @@
-// ============================================================================
-// FILE: lib/priceCalculator.ts
-// Calculate buy and sell prices based on bonding curve
-// ============================================================================
-
 import { SUI_CONFIG } from "@/config/sui.config";
 
 const BASIS_POINTS = 10000;
-const CURVE_STEEPNESS = 1000; // Default from contract
+const CURVE_STEEPNESS = 1000;
 
-/**
- * Calculate market price based on bonding curve
- */
 export function calculateMarketPrice(
   baseValue: number,
   totalShares: number,
@@ -25,21 +17,15 @@ export function calculateMarketPrice(
     return baseValue;
   }
 
-  // Calculate utilization in basis points
   const utilizationBps = (circulatingShares * BASIS_POINTS) / totalShares;
 
-  // Calculate premium based on curve steepness
   const premiumBps = (utilizationBps * curveSteepness) / BASIS_POINTS;
 
-  // Apply multiplier
   const multiplier = BASIS_POINTS + premiumBps;
 
   return (baseValue * multiplier) / BASIS_POINTS;
 }
 
-/**
- * Calculate cost to buy shares (average of current and future price)
- */
 export function calculateBuyCost(
   baseValue: number,
   totalShares: number,
@@ -66,9 +52,6 @@ export function calculateBuyCost(
   return avgPrice * sharesToBuy;
 }
 
-/**
- * Calculate payout from selling shares (average of current and future price)
- */
 export function calculateSellPayout(
   baseValue: number,
   totalShares: number,
@@ -95,9 +78,6 @@ export function calculateSellPayout(
   return avgPrice * sharesToSell;
 }
 
-/**
- * Calculate price impact percentage
- */
 export function calculatePriceImpact(
   baseValue: number,
   totalShares: number,

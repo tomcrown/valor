@@ -1,8 +1,3 @@
-// ============================================================================
-// FILE: lib/suiDataFetcher.ts
-// Fetch contract data with proper season-specific base values
-// ============================================================================
-
 import { gqlClient, rpcClient } from "./suiClient";
 import { SUI_CONFIG, mistToSui } from "../config/sui.config";
 import { graphql } from "@mysten/sui/graphql/schemas/latest";
@@ -10,14 +5,10 @@ import type { Player, SeasonPeriod, FootballPlayerData } from "@/data/apiData";
 import { FOOTBALL_PLAYERS } from "@/data/apiData";
 
 interface SeasonContractData {
-  baseValueSui: number; // In SUI, not MIST
-  performanceScore: number; // 0-100 format
+  baseValueSui: number;
+  performanceScore: number;
   walrusBlobId: string;
 }
-
-// ============================================================================
-// GraphQL Queries
-// ============================================================================
 
 const getPlayerDataQuery = graphql(`
   query GetPlayerData($platformId: SuiAddress!) {
@@ -31,20 +22,16 @@ const getPlayerDataQuery = graphql(`
   }
 `);
 
-// ============================================================================
-// Types for On-Chain Data
-// ============================================================================
-
 interface OnChainPlayerData {
   player_id: string;
   name: string;
   team: string;
   position: string;
   image_url: string;
-  base_value: string; // Current season value
-  early_season_base_value: string; // Early season value
-  mid_season_base_value: string; // Mid season value
-  current_season_base_value: string; // Current season value
+  base_value: string;
+  early_season_base_value: string;
+  mid_season_base_value: string;
+  current_season_base_value: string;
   total_shares: string;
   circulating_shares: string;
   performance_history: OnChainPerformanceRecord[];
@@ -67,17 +54,9 @@ interface OnChainPerformanceRecord {
   base_value: string;
 }
 
-// ============================================================================
-// Cache for Platform Data
-// ============================================================================
-
 let platformDataCache: any = null;
 let platformDataCacheTime: number = 0;
-const CACHE_DURATION = 30000; // 30 seconds (reduced for real-time updates)
-
-// ============================================================================
-// Fetch Platform Data with Caching
-// ============================================================================
+const CACHE_DURATION = 30000;
 
 async function fetchPlatformData(): Promise<any> {
   if (
@@ -116,10 +95,6 @@ async function fetchPlatformData(): Promise<any> {
     throw new Error(`Platform data fetch failed: ${error.message}`);
   }
 }
-
-// ============================================================================
-// Get Player Object ID from Name
-// ============================================================================
 
 async function getPlayerObjectId(playerName: string): Promise<string | null> {
   try {
@@ -188,10 +163,6 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
   }
 }
 
-// ============================================================================
-// Fetch Single Player Contract Data
-// ============================================================================
-
 async function fetchPlayerContractData(
   playerId: string
 ): Promise<OnChainPlayerData | null> {
@@ -252,36 +223,27 @@ async function fetchPlayerContractData(
   }
 }
 
-// ============================================================================
-// Extract Season-Specific Base Values from Contract
-// ============================================================================
-
 function extractSeasonalContractData(onChainData: OnChainPlayerData): {
   early: SeasonContractData;
   mid: SeasonContractData;
   current: SeasonContractData;
 } {
-  // Extract early season data
   const earlyBaseValueSui = mistToSui(
     BigInt(onChainData.early_season_base_value || "0")
   );
 
-  // Extract mid season data
   const midBaseValueSui = mistToSui(
     BigInt(onChainData.mid_season_base_value || "0")
   );
 
-  // Extract current season data (this is the active trading value)
   const currentBaseValueSui = mistToSui(
     BigInt(
       onChainData.current_season_base_value || onChainData.base_value || "0"
     )
   );
 
-  // Find season-specific performance records from history
   const performanceHistory = onChainData.performance_history || [];
 
-  // Map performance records to seasons (assuming chronological order)
   let earlyScore = 0;
   let midScore = 0;
   let currentScore = 0;
@@ -290,13 +252,11 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
   let currentBlobId = onChainData.walrus_blob_id || "";
 
   if (performanceHistory.length > 0) {
-    // Early season: first record
     if (performanceHistory[0]) {
       earlyScore = Math.round(Number(performanceHistory[0].score || 0) / 10);
       earlyBlobId = performanceHistory[0].walrus_blob_id || "";
     }
 
-    // Mid season: middle record
     const midIndex = Math.floor(performanceHistory.length / 2);
     if (performanceHistory[midIndex]) {
       midScore = Math.round(
@@ -305,7 +265,6 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
       midBlobId = performanceHistory[midIndex].walrus_blob_id || "";
     }
 
-    // Current season: latest record
     const latestRecord = performanceHistory[performanceHistory.length - 1];
     if (latestRecord) {
       currentScore = Math.round(Number(latestRecord.score || 0) / 10);
@@ -320,21 +279,17 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
       walrusBlobId: earlyBlobId,
     },
     mid: {
-      baseValueSui: midBaseValueSui || earlyBaseValueSui, // Fallback to early if mid not set
+      baseValueSui: midBaseValueSui || earlyBaseValueSui,
       performanceScore: midScore || earlyScore,
       walrusBlobId: midBlobId || earlyBlobId,
     },
     current: {
-      baseValueSui: currentBaseValueSui || earlyBaseValueSui, // Fallback chain
+      baseValueSui: currentBaseValueSui || earlyBaseValueSui,
       performanceScore: currentScore || midScore || earlyScore,
       walrusBlobId: currentBlobId,
     },
   };
 }
-
-// ============================================================================
-// Generate Mock Value History (7-day trend)
-// ============================================================================
 
 function generateValueHistory(
   baseValue: number
@@ -343,20 +298,16 @@ function generateValueHistory(
   const history = [];
 
   for (let i = 0; i < 7; i++) {
-    const variance = (Math.random() - 0.5) * 0.1; // ±5% variance
+    const variance = (Math.random() - 0.5) * 0.1;
     const value = baseValue * (1 + variance);
     history.push({
       date: days[i],
-      value: Math.round(value * 1000) / 1000, // Round to 3 decimals
+      value: Math.round(value * 1000) / 1000,
     });
   }
 
   return history;
 }
-
-// ============================================================================
-// Calculate Weekly Change
-// ============================================================================
 
 function calculateWeeklyChange(
   valueHistory: { date: string; value: number }[]
@@ -369,10 +320,6 @@ function calculateWeeklyChange(
   return ((newValue - oldValue) / oldValue) * 100;
 }
 
-// ============================================================================
-// Main Function: Merge Football Stats with Contract Data
-// ============================================================================
-
 export async function enrichPlayerWithContractData(
   footballPlayer: FootballPlayerData
 ): Promise<
@@ -383,11 +330,10 @@ export async function enrichPlayerWithContractData(
   }
 > {
   try {
-    // Get player ID from contract
     const playerId = await getPlayerObjectId(footballPlayer.name);
 
     if (!playerId) {
-      const defaultValue = 0.001; // Default price in SUI
+      const defaultValue = 0.001;
       const valueHistory = generateValueHistory(defaultValue);
 
       return {
@@ -400,7 +346,6 @@ export async function enrichPlayerWithContractData(
       };
     }
 
-    // Fetch contract data
     const onChainData = await fetchPlayerContractData(playerId);
 
     if (!onChainData) {
@@ -417,13 +362,10 @@ export async function enrichPlayerWithContractData(
       };
     }
 
-    // Extract seasonal contract data (prices + blob IDs)
     const seasonData = extractSeasonalContractData(onChainData);
 
-    // Current season value is the ACTIVE trading price
     const currentSeasonValueSui = seasonData.current.baseValueSui;
 
-    // Generate value history and weekly change based on current season
     const valueHistory = generateValueHistory(currentSeasonValueSui);
     const weeklyChange = calculateWeeklyChange(valueHistory);
 
@@ -439,15 +381,14 @@ export async function enrichPlayerWithContractData(
     );
     console.log(`   On-Chain Player ID: ${playerId}`);
 
-    // Merge football stats with contract data
     return {
       ...footballPlayer,
-      currentValue: currentSeasonValueSui, // This is the ACTIVE trading price
+      currentValue: currentSeasonValueSui,
       weeklyChange,
       valueHistory,
       walrusProofId: onChainData.walrus_blob_id || "",
-      onChainSeasonData: seasonData, // All three season prices
-      onChainPlayerId: playerId, // ⭐ CRITICAL: Store the on-chain player ID for transactions
+      onChainSeasonData: seasonData,
+      onChainPlayerId: playerId,
     };
   } catch (error) {
     console.error(
@@ -468,10 +409,6 @@ export async function enrichPlayerWithContractData(
     };
   }
 }
-
-// ============================================================================
-// Fetch All Players with Contract Data
-// ============================================================================
 
 export async function enrichAllPlayersWithContractData(): Promise<
   (Player & {
@@ -508,76 +445,48 @@ export async function enrichAllPlayersWithContractData(): Promise<
   });
 }
 
-// ============================================================================
-// Get Season-Specific Base Value (in SUI) - FOR DISPLAY ONLY
-// ============================================================================
-
 export function getSeasonBaseValue(
   player: Player & { onChainSeasonData?: any },
   season: SeasonPeriod
 ): number {
-  // PRIORITY: Use contract data if available
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
     return player.onChainSeasonData[season].baseValueSui;
   }
 
-  // FALLBACK: Use current value (this is the active trading price)
   return player.currentValue;
 }
-
-// ============================================================================
-// Get CURRENT Season Base Value (for transactions) - ALWAYS CURRENT
-// ============================================================================
 
 export function getCurrentSeasonBaseValue(
   player: Player & { onChainSeasonData?: any }
 ): number {
-  // Always return the CURRENT season value for transactions
   if (player.onChainSeasonData && player.onChainSeasonData.current) {
     return player.onChainSeasonData.current.baseValueSui;
   }
 
-  // Fallback to player.currentValue which should be current season
   return player.currentValue;
 }
-
-// ============================================================================
-// Get Season-Specific Performance Score (0-100 format)
-// ============================================================================
 
 export function getSeasonPerformanceScore(
   player: Player & { onChainSeasonData?: any },
   season: SeasonPeriod
 ): number {
-  // PRIORITY: Use contract performance score if available
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
     return player.onChainSeasonData[season].performanceScore;
   }
 
-  // FALLBACK: Use AI score from football data
   return player.aiScore;
 }
-
-// ============================================================================
-// Get Season-Specific Walrus Blob ID
-// ============================================================================
 
 export function getSeasonWalrusBlobId(
   player: Player & { onChainSeasonData?: any },
   season: SeasonPeriod
 ): string {
-  // PRIORITY: Use contract blob ID if available
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
     return player.onChainSeasonData[season].walrusBlobId;
   }
 
-  // FALLBACK: Use main walrus proof ID
   return player.walrusProofId;
 }
-
-// ============================================================================
-// Helper: Get Player by ID (merged data)
-// ============================================================================
 
 export async function getPlayerById(id: string): Promise<Player | undefined> {
   const enrichedPlayers = await enrichAllPlayersWithContractData();

@@ -1,9 +1,3 @@
-// ============================================================================
-// FILE: pages/PulsePage.tsx
-// Main Valor Pulse sentiment voting page
-// ENHANCED: Uses actual on-chain data with proper player ID mappings
-// ============================================================================
-
 import { useEffect, useState } from "react";
 import { Loader2, AlertCircle, LogIn } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -14,8 +8,6 @@ import { usePulseData } from "@/hooks/usePulseData";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { AuthDialog } from "@/components/AuthDialog";
 
-// Import the 8 registered players with ACTUAL on-chain IDs
-// These IDs should match what's in your init-pulse-week.ts PLAYERS array
 const REGISTERED_PLAYERS = [
   {
     id: "0xd37a3c89148f35ae4fa4a8563a7b1331e48ae0f44747138a619816337b899f46",
@@ -88,7 +80,6 @@ const PulsePage = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const { platformState, sentiments, isLoading, refetch } = usePulseData();
 
-  // Auto-refresh every 30 seconds when voting is active
   useEffect(() => {
     if (platformState.active) {
       const interval = setInterval(refetch, 30000);
@@ -96,7 +87,6 @@ const PulsePage = () => {
     }
   }, [platformState.active, refetch]);
 
-  // Calculate active voters (unique users who voted)
   const activeVoters = sentiments.filter((s) => s.totalVotes > 0).length;
 
   if (isLoading) {
@@ -178,11 +168,9 @@ const PulsePage = () => {
         {/* Player Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {REGISTERED_PLAYERS.map((player) => {
-            // Find sentiment data for this player by matching player ID
             const sentiment =
               sentiments.find((s) => s.playerId === player.id) || null;
 
-            // Log if sentiment is not found (helpful for debugging)
             if (!sentiment) {
               console.warn(
                 `⚠️ No sentiment found for player: ${player.name} (${player.id})`
@@ -202,7 +190,6 @@ const PulsePage = () => {
           })}
         </div>
 
-        {/* No sentiments loaded warning */}
         {sentiments.length === 0 && platformState.active && (
           <div className="glass-card p-8 text-center mt-8">
             <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />

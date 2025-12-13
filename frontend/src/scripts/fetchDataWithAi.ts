@@ -1,7 +1,4 @@
-// ============================================================================
-// FILE: scripts/fetchSeasonalDataWithAI.ts
 // Uses OpenAI with web search to get REAL early, mid, and current season stats
-// ============================================================================
 
 import axios from "axios";
 import OpenAI from "openai";
@@ -97,7 +94,6 @@ function cleanJSON(text: string): string {
     .trim();
 }
 
-// Use OpenAI with web search to get real seasonal breakdown
 async function getSeasonalStatsWithAI(
   playerName: string,
   league: string,
@@ -176,12 +172,10 @@ Respond ONLY with this JSON format:
     console.error(`❌ AI research failed for ${playerName}:`, error.message);
     console.log(`   Falling back to proportional estimate...`);
 
-    // Fallback to proportional if AI fails
     return calculateProportionalStats(currentStats);
   }
 }
 
-// Fallback proportional calculation
 function calculateProportionalStats(totalStats: SeasonStats): SeasonalData {
   const totalMatches = totalStats.matchesPlayed;
   const earlyRatio = Math.min(3 / totalMatches, 0.21);
@@ -233,7 +227,6 @@ async function searchPlayerByName(
 
     const players = response.data.result as AllSportsPlayer[];
 
-    // Filter out national teams
     const clubPlayers = players.filter((p) => {
       const teamName = p.team_name.toLowerCase();
       const isNationalTeam =
@@ -298,7 +291,6 @@ async function fetchPlayerData(
 
     const playerData = response.data.result[0] as AllSportsPlayer;
 
-    // Get current season stats
     const currentStats: SeasonStats = {
       goals: parseInt(playerData.player_goals || "0"),
       assists: parseInt(playerData.player_assists || "0"),
@@ -306,14 +298,12 @@ async function fetchPlayerData(
       matchesPlayed: parseInt(playerData.player_match_played || "0"),
     };
 
-    // Use AI to get real seasonal breakdown
     const seasonalData = await getSeasonalStatsWithAI(
       playerName,
       leagueId,
       currentStats
     );
 
-    // Generate market values
     const performanceScore =
       currentStats.goals * 100 + currentStats.assists * 50;
     const baseValue = Math.max(1000, Math.min(3000, 1200 + performanceScore));
@@ -394,7 +384,6 @@ async function generateApiData() {
       }
     }
 
-    // Rate limiting: wait 2 seconds between players (AI calls take time)
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 

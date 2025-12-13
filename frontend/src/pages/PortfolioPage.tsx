@@ -1,8 +1,3 @@
-// ============================================================================
-// FILE: pages/PortfolioPage.tsx
-// Real blockchain-powered portfolio with user holdings
-// ============================================================================
-
 import { Link } from "react-router-dom";
 import {
   TrendingUp,
@@ -33,7 +28,6 @@ const PortfolioPage = () => {
     [objectId: string]: number;
   }>({});
 
-  // Generate portfolio history based on current total value
   const portfolioHistory = [
     { date: "Mon", value: summary.totalValue * 0.92 },
     { date: "Tue", value: summary.totalValue * 0.94 },
@@ -58,18 +52,16 @@ const PortfolioPage = () => {
 
     const result = await sellShares({
       operations: [{ objectId, amount }],
-      minPricePerShare: minPrice * 0.95, // 5% slippage tolerance
+      minPricePerShare: minPrice * 0.95,
       playerName,
     });
 
     if (result?.success) {
-      // Refetch portfolio after successful sale
       setTimeout(refetch, 2000);
       setSellAmounts((prev) => ({ ...prev, [objectId]: 0 }));
     }
   };
 
-  // Not connected state
   if (!currentAccount?.address) {
     return (
       <Layout>
@@ -86,7 +78,6 @@ const PortfolioPage = () => {
     );
   }
 
-  // Loading state
   if (isLoading) {
     return (
       <Layout>

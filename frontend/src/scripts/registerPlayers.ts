@@ -16,10 +16,6 @@ import {
   suiToMistBigInt,
 } from "../lib/valueCalculator.ts";
 
-// ============================================================================
-// Parse CLI Arguments
-// ============================================================================
-
 function parseArgs() {
   const args = process.argv.slice(2);
   let season: SeasonPeriod = "early";
@@ -97,10 +93,6 @@ function findBaseValueForPlayer(
   return null;
 }
 
-// ============================================================================
-// Register Single Player (EARLY SEASON ONLY)
-// ============================================================================
-
 async function registerPlayer(
   playerData: (typeof FOOTBALL_PLAYERS)[0],
   season: SeasonPeriod,
@@ -126,7 +118,6 @@ async function registerPlayer(
     console.log(`   Assists: ${seasonStats.assists}`);
     console.log(`   Matches: ${seasonStats.matchesPlayed}`);
 
-    // Step 1: Run AI Analysis
     console.log("\n🤖 Running AI analysis...");
     const aiAnalysis: AIAnalysis = await analyzePlayer({
       name: playerData.name,
@@ -144,7 +135,6 @@ async function registerPlayer(
     console.log(`   ✅ AI Score: ${aiAnalysis.performance_score}/100`);
     console.log(`   📈 Trend: ${aiAnalysis.performance_trend}`);
 
-    // Step 2: Calculate base value (decentralized or manual override)
     let baseValueMist: bigint;
 
     const manualValue = findBaseValueForPlayer(
@@ -153,7 +143,6 @@ async function registerPlayer(
     );
 
     if (manualValue != null) {
-      // Manual override (still capped at 0.20)
       baseValueMist = suiToMistBigInt(Math.min(manualValue, 0.2));
       console.log(
         `\n💰 Using MANUAL override: ${Math.min(manualValue, 0.2)} SUI`
@@ -164,7 +153,6 @@ async function registerPlayer(
         );
       }
     } else {
-      // Decentralized calculation
       console.log(`\n💰 Using DECENTRALIZED calculation:`);
       baseValueMist = calculateEarlySeasonBaseValue(
         aiAnalysis.performance_score,
@@ -180,7 +168,6 @@ async function registerPlayer(
       )} SUI (${baseValueMist} MIST)`
     );
 
-    // Step 3: Upload to Walrus
     console.log("\n📦 Uploading to Walrus...");
     const blobId = await walrusClient.uploadPlayerPerformance(
       playerData.id,
@@ -203,7 +190,6 @@ async function registerPlayer(
 
     console.log(`   ✅ Walrus Blob ID: ${blobId}`);
 
-    // Step 4: Register on-chain
     console.log("\n⛓️  Registering on Sui blockchain...");
 
     const tx = new Transaction();
@@ -256,10 +242,6 @@ async function registerPlayer(
     return { success: false };
   }
 }
-
-// ============================================================================
-// Main Script
-// ============================================================================
 
 async function main() {
   console.log("🚀 Valor Player Registration Script (Decentralized Pricing)");
