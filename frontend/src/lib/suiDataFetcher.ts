@@ -369,18 +369,6 @@ export async function enrichPlayerWithContractData(
     const valueHistory = generateValueHistory(currentSeasonValueSui);
     const weeklyChange = calculateWeeklyChange(valueHistory);
 
-    console.log(`✅ Successfully enriched player: ${footballPlayer.name}`);
-    console.log(
-      `   Early Season: ${seasonData.early.baseValueSui.toFixed(4)} SUI`
-    );
-    console.log(`   Mid Season: ${seasonData.mid.baseValueSui.toFixed(4)} SUI`);
-    console.log(
-      `   Current Season: ${seasonData.current.baseValueSui.toFixed(
-        4
-      )} SUI (ACTIVE)`
-    );
-    console.log(`   On-Chain Player ID: ${playerId}`);
-
     return {
       ...footballPlayer,
       currentValue: currentSeasonValueSui,

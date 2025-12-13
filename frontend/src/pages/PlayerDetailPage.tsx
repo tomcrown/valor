@@ -254,91 +254,87 @@ const PlayerDetailPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Player Header */}
             <div className="glass-card overflow-hidden">
+              {/* Player Image */}
               <div className="relative h-56 sm:h-64 md:h-80">
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent z-10" />
 
-                {/* Player Image */}
                 <img
                   src={mergedPlayer.imageUrl}
                   alt={mergedPlayer.name}
                   className="w-full h-full object-contain"
                 />
+              </div>
 
-                {/* Player Info + AI Score */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 z-20">
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
-                    {/* Player Details */}
-                    <div className="flex flex-col">
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="px-2 py-1 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-semibold">
-                          {mergedPlayer.position}
-                        </span>
-                        <span className="text-muted-foreground text-xs sm:text-sm">
-                          {mergedPlayer.nationality}
-                        </span>
-                      </div>
-                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">
-                        {mergedPlayer.name}
-                      </h1>
-                      <p className="text-sm sm:text-lg text-muted-foreground">
-                        {mergedPlayer.club}
-                      </p>
-                    </div>
-
-                    {/* AI Score */}
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 text-sm sm:text-base">
-                      {isAnalyzing || isLoadingContract ? (
-                        <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                      ) : (
-                        <Zap className="w-4 h-4 text-warning" />
-                      )}
-                      <span
-                        className={cn(
-                          "font-semibold",
-                          seasonPerformanceScore && "text-accent"
-                        )}
-                      >
-                        {displayAiScore}/100
-                      </span>
-                      {seasonPerformanceScore > 0 && (
-                        <span className="text-xs ml-1 opacity-80">⛓️</span>
-                      )}
-                    </div>
+              {/* Player Info */}
+              <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+                {/* Player Details */}
+                <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                  <div className="flex flex-wrap items-center gap-2 mb-2 justify-center sm:justify-start">
+                    <span className="px-2 py-1 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-semibold">
+                      {mergedPlayer.position}
+                    </span>
+                    <span className="text-muted-foreground text-xs sm:text-sm">
+                      {mergedPlayer.nationality}
+                    </span>
                   </div>
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">
+                    {mergedPlayer.name}
+                  </h1>
+                  <p className="text-sm sm:text-lg text-muted-foreground">
+                    {mergedPlayer.club}
+                  </p>
+                </div>
+
+                {/* AI Score */}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 text-sm sm:text-base">
+                  {isAnalyzing || isLoadingContract ? (
+                    <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4 text-warning" />
+                  )}
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      seasonPerformanceScore && "text-accent"
+                    )}
+                  >
+                    {displayAiScore}/100
+                  </span>
+                  {seasonPerformanceScore > 0 && (
+                    <span className="text-xs ml-1 opacity-80">⛓️</span>
+                  )}
                 </div>
               </div>
 
               {/* Bottom Stats */}
-              <div className="p-4 sm:p-6 border-t border-border/50">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  {/* Price Info */}
-                  <div>
-                    <p className="text-xs sm:text-sm text-muted-foreground mb-1">
-                      {selectedSeason === "current"
-                        ? "Current Trading Price"
-                        : `${SEASON_LABELS[selectedSeason]} Price`}
-                    </p>
-                    <p className="text-2xl sm:text-3xl font-bold gradient-text">
-                      {displayBaseValueSui.toFixed(4)} SUI
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {selectedSeason === "current"
-                        ? "⚡ Active"
-                        : `📊 ${selectedSeason}`}
-                    </p>
-                  </div>
-
-                  {/* Positive/Negative Indicator */}
-                  <div
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm",
-                      isPositive
-                        ? "bg-success/10 text-success"
-                        : "bg-destructive/10 text-destructive"
-                    )}
-                  ></div>
+              <div className="p-4 sm:p-6 border-t border-border/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                {/* Price Info */}
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-1">
+                    {selectedSeason === "current"
+                      ? "Current Trading Price"
+                      : `${SEASON_LABELS[selectedSeason]} Price`}
+                  </p>
+                  <p className="text-2xl sm:text-3xl font-bold gradient-text">
+                    {displayBaseValueSui.toFixed(4)} SUI
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedSeason === "current"
+                      ? "⚡ Active"
+                      : `📊 ${selectedSeason}`}
+                  </p>
                 </div>
+
+                {/* Positive/Negative Indicator */}
+                <div
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm",
+                    isPositive
+                      ? "bg-success/10 text-success"
+                      : "bg-destructive/10 text-destructive"
+                  )}
+                ></div>
               </div>
             </div>
 

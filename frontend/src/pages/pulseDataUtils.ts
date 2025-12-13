@@ -43,8 +43,6 @@ export async function getAllActiveSentiments(currentWeek: number) {
 
     const sentiments = [];
 
-    console.log("Fetching sentiments for week:", currentWeek);
-
     return sentiments;
   } catch (error) {
     console.error("Error fetching active sentiments:", error);

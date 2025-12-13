@@ -58,18 +58,8 @@ const BuySellWidget = ({
   const totalValue = quantity * currentPrice;
   const networkFee = 0.001;
 
-  // Debug logging
   useEffect(() => {
     if (currentAccount) {
-      console.log("🔍 BuySellWidget Debug:", {
-        address: currentAccount.address,
-        walletType: isEnoki ? "Enoki (zkLogin)" : "Standard Sui Wallet",
-        onChainPlayerId,
-        playerName,
-        currentPrice,
-        totalShares,
-        sharesCount: shares.length,
-      });
     }
   }, [currentAccount, isEnoki, onChainPlayerId, totalShares, shares]);
 
@@ -88,14 +78,6 @@ const BuySellWidget = ({
       return;
     }
 
-    console.log("🛒 Attempting to buy shares:", {
-      playerId: onChainPlayerId,
-      playerName,
-      shares: quantity,
-      maxPricePerShare: currentPrice * 1.05,
-      walletType: isEnoki ? "Enoki" : "Standard",
-    });
-
     const result = await buyShares({
       playerId: onChainPlayerId,
       playerName,
@@ -104,7 +86,6 @@ const BuySellWidget = ({
     });
 
     if (result?.success) {
-      console.log("✅ Buy successful, refreshing data...");
       setQuantity(1);
 
       setTimeout(() => {
@@ -144,13 +125,6 @@ const BuySellWidget = ({
       remainingToSell -= sharesToSellFromThisObject;
     }
 
-    console.log("💰 Attempting to sell shares:", {
-      operations: sellOperations,
-      minPricePerShare: currentPrice * 0.95,
-      playerName,
-      walletType: isEnoki ? "Enoki" : "Standard",
-    });
-
     const result = await sellShares({
       operations: sellOperations,
       minPricePerShare: currentPrice * 0.95,
@@ -158,10 +132,8 @@ const BuySellWidget = ({
     });
 
     if (result?.success) {
-      console.log("✅ Sell successful, refreshing data...");
       setQuantity(1);
 
-      // Wait a bit for blockchain to update
       setTimeout(() => {
         refetchShares();
         onTransactionComplete?.();

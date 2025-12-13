@@ -14,6 +14,7 @@ import { useVote } from "@/hooks/useVote";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { getPlayerQuestion, formatTimeRemaining } from "@/config/pulse.config";
 import type { PlayerSentiment } from "@/hooks/usePulseData";
+import { toast } from "@/hooks/use-toast";
 
 interface PlayerPulseCardProps {
   player: {
@@ -45,16 +46,41 @@ export function PlayerPulseCard({
 
   const handleVote = async (vote: "yes" | "no") => {
     if (!sentiment?.objectId) {
-      console.error("No sentiment object ID");
+      toast({
+        title: "Voting unavailable",
+        description: "Sentiment data is missing for this player.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentAccount) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please log in to cast your vote.",
+        variant: "destructive",
+      });
       return;
     }
 
     setSelectedVote(vote);
+
     const success = await submitVote(sentiment.objectId, vote, player.name);
 
     if (success) {
+      toast({
+        title: "Vote submitted",
+        description: `You voted ${vote.toUpperCase()} for ${player.name}.`,
+      });
+
       onVoteSuccess();
     } else {
+      toast({
+        title: "Vote failed",
+        description: "Transaction failed or was rejected.",
+        variant: "destructive",
+      });
+
       setSelectedVote(null);
     }
   };

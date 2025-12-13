@@ -140,8 +140,6 @@ async function fetchPlayerSentiments(
   }
 
   try {
-    console.log(`📊 Fetching sentiments for week ${currentWeek}...`);
-
     const createdEvents = await client.queryEvents({
       query: {
         MoveEventType: `${PULSE_CONFIG.packageId}::pulse::SentimentCreated`,
@@ -149,10 +147,6 @@ async function fetchPlayerSentiments(
       limit: 100,
       order: "descending",
     });
-
-    console.log(
-      `📊 Found ${createdEvents.data.length} SentimentCreated events`
-    );
 
     const sentimentIds: string[] = [];
     const sentimentMetadata = new Map<string, any>();
@@ -171,10 +165,6 @@ async function fetchPlayerSentiments(
         });
       }
     }
-
-    console.log(
-      `✅ Found ${sentimentIds.length} sentiments for week ${currentWeek}`
-    );
 
     if (sentimentIds.length === 0) {
       return [];
@@ -229,7 +219,6 @@ async function fetchPlayerSentiments(
       });
     }
 
-    console.log(`✅ Loaded ${sentiments.length} complete sentiments`);
     return sentiments;
   } catch (error) {
     console.error("Failed to fetch sentiments:", error);
@@ -311,8 +300,6 @@ async function fetchUserVotes(
       },
     });
 
-    console.log(`🎫 Found ${response.data.length} vote receipts for user`);
-
     const votes = new Map<string, "yes" | "no">();
 
     for (const obj of response.data) {
@@ -331,12 +318,8 @@ async function fetchUserVotes(
       const vote = fields.vote ? "yes" : "no";
 
       votes.set(playerId, vote);
-      console.log(
-        `  ✓ User voted ${vote.toUpperCase()} for player ${playerId}`
-      );
     }
 
-    console.log(`✅ User has voted on ${votes.size} players this week`);
     return votes;
   } catch (error) {
     console.error("Failed to fetch user votes:", error);

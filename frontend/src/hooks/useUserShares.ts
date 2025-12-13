@@ -26,7 +26,6 @@ export function useUserShares(playerId?: string) {
     }
 
     if (!playerId) {
-      console.log("⚠️ No playerId provided, skipping fetch");
       setShares([]);
       return;
     }
