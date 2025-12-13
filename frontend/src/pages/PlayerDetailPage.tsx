@@ -51,7 +51,6 @@ const PlayerDetailPage = () => {
     (location.state?.selectedSeason as SeasonPeriod) || "current"
   );
 
-  // Fetch merged player data (football stats + contract data)
   const {
     player: mergedPlayer,
     isLoading: isLoadingContract,
@@ -100,7 +99,6 @@ const PlayerDetailPage = () => {
 
   const seasonStats = mergedPlayer.seasonalStats[selectedSeason];
 
-  // Get season-specific display price (for showing historical data)
   let displayBaseValueSui = getSeasonBaseValue(
     mergedPlayer as any,
     selectedSeason
@@ -110,7 +108,6 @@ const PlayerDetailPage = () => {
     displayBaseValueSui = mergedPlayer.currentValue ?? 0.001;
   }
 
-  // Get CURRENT season price (for transactions - ALWAYS CURRENT)
   const currentSeasonPrice = getCurrentSeasonBaseValue(mergedPlayer as any);
 
   const seasonPerformanceScore = getSeasonPerformanceScore(
@@ -131,7 +128,6 @@ const PlayerDetailPage = () => {
 
   const isPositive = mergedPlayer.weeklyChange >= 0;
 
-  // Handler for when transaction completes - refresh player data
   const handleTransactionComplete = () => {
     refetchPlayer();
   };
@@ -491,7 +487,7 @@ const PlayerDetailPage = () => {
                 playerId={mergedPlayer.id}
                 onChainPlayerId={mergedPlayer.onChainPlayerId}
                 playerName={mergedPlayer.name}
-                currentPrice={currentSeasonPrice} // ALWAYS CURRENT SEASON PRICE
+                currentPrice={currentSeasonPrice}
                 onTransactionComplete={handleTransactionComplete}
               />
               <div className="mt-4">

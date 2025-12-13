@@ -1,9 +1,3 @@
-// ============================================================================
-// FILE: scripts/init-pulse-week.ts
-// Initialize a new weekly voting round for Valor Pulse
-// UPDATED: Works with new tuple-based registry contract
-// ============================================================================
-
 import { Transaction } from "@mysten/sui/transactions";
 import { loadAdminKeypair, rpcClient } from "../lib/suiClient.ts";
 import { PULSE_CONFIG } from "../config/pulse.config.ts";
@@ -13,7 +7,6 @@ import * as path from "path";
 
 dotenv.config();
 
-// Your 8 registered players
 const PLAYERS = [
   {
     id: "0xd37a3c89148f35ae4fa4a8563a7b1331e48ae0f44747138a619816337b899f46",
@@ -81,9 +74,6 @@ async function initializeWeeklyRound(weekNumber: number) {
     console.log(`   Platform ID: ${platformId}`);
     console.log(`   Admin Cap:   ${adminCapId}`);
 
-    // ========================================================================
-    // Step 1: Verify Platform Object
-    // ========================================================================
     console.log("\n🔍 Verifying platform object...");
 
     const platformObj = await rpcClient.getObject({
@@ -99,9 +89,6 @@ async function initializeWeeklyRound(weekNumber: number) {
 
     console.log("   ✓ Platform object verified");
 
-    // ========================================================================
-    // Step 2: Create Weekly Round
-    // ========================================================================
     console.log("\n📅 Creating weekly round...");
     const tx1 = new Transaction();
 
@@ -111,8 +98,8 @@ async function initializeWeeklyRound(weekNumber: number) {
         tx1.object(adminCapId),
         tx1.object(platformId),
         tx1.pure.u64(weekNumber),
-        tx1.pure.u64(7), // 7 days duration
-        tx1.object("0x6"), // clock
+        tx1.pure.u64(7),
+        tx1.object("0x6"),
       ],
     });
 
@@ -133,9 +120,6 @@ async function initializeWeeklyRound(weekNumber: number) {
 
     console.log(`   ✓ Round created: ${result1.digest}`);
 
-    // ========================================================================
-    // Step 3: Initialize Player Sentiments
-    // ========================================================================
     console.log("\n👥 Initializing player sentiments...");
 
     const sentimentMappings: SentimentMapping[] = [];
@@ -152,7 +136,7 @@ async function initializeWeeklyRound(weekNumber: number) {
           tx.object(platformId),
           tx.pure.id(player.id),
           tx.pure.string(player.name),
-          tx.object("0x6"), // clock
+          tx.object("0x6"),
         ],
       });
 
@@ -171,7 +155,6 @@ async function initializeWeeklyRound(weekNumber: number) {
         continue;
       }
 
-      // Extract created sentiment object
       const objectChanges = result.objectChanges || [];
       let sentimentId: string | null = null;
 
@@ -201,10 +184,6 @@ async function initializeWeeklyRound(weekNumber: number) {
     if (sentimentMappings.length === 0) {
       throw new Error("No sentiments were created successfully");
     }
-
-    // ========================================================================
-    // Step 4: Save Sentiment Mappings
-    // ========================================================================
     console.log("\n💾 Saving sentiment mappings...");
 
     const outputPath = path.join(
@@ -214,13 +193,11 @@ async function initializeWeeklyRound(weekNumber: number) {
     );
     const outputDir = path.dirname(outputPath);
 
-    // Ensure data directory exists
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
       console.log(`   ✓ Created directory: ${outputDir}`);
     }
 
-    // Load existing data if any
     let allMappings: Record<number, SentimentMapping[]> = {};
     if (fs.existsSync(outputPath)) {
       const existing = fs.readFileSync(outputPath, "utf-8");
@@ -228,19 +205,12 @@ async function initializeWeeklyRound(weekNumber: number) {
       console.log(`   ✓ Loaded existing mappings`);
     }
 
-    // Add current week's mappings
     allMappings[weekNumber] = sentimentMappings;
 
-    // Save to file
     fs.writeFileSync(outputPath, JSON.stringify(allMappings, null, 2));
     console.log(`   ✓ Saved to ${outputPath}`);
-
-    // ========================================================================
-    // Step 5: Generate TypeScript Config
-    // ========================================================================
     const configDir = path.join(process.cwd(), "config");
 
-    // Ensure config directory exists
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true });
       console.log(`   ✓ Created directory: ${configDir}`);
@@ -272,9 +242,6 @@ ${sentimentMappings
     fs.writeFileSync(tsConfigPath, tsContent);
     console.log(`   ✓ Generated TypeScript config: ${tsConfigPath}`);
 
-    // ========================================================================
-    // Summary
-    // ========================================================================
     console.log("\n🎉 Week Initialization Complete!\n");
     console.log("═══════════════════════════════════════════════════════");
     console.log(`Week Number:        ${weekNumber}`);
@@ -316,7 +283,6 @@ ${sentimentMappings
   }
 }
 
-// Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const weekNumber = parseInt(process.argv[2] || "1");
 

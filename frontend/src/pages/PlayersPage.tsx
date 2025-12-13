@@ -25,21 +25,6 @@ import { toast } from "@/hooks/use-toast";
 
 type FilterType = "all" | "top" | "rising" | "undervalued";
 
-// const filters: { id: FilterType; label: string; icon: React.ReactNode }[] = [
-//   { id: "all", label: "All Players", icon: <Filter className="w-4 h-4" /> },
-//   {
-//     id: "top",
-//     label: "Top Performers",
-//     icon: <TrendingUp className="w-4 h-4" />,
-//   },
-//   { id: "rising", label: "Rising Stars", icon: <Zap className="w-4 h-4" /> },
-//   {
-//     id: "undervalued",
-//     label: "Undervalued",
-//     icon: <AlertCircle className="w-4 h-4" />,
-//   },
-// ];
-
 const seasonOptions: {
   id: SeasonPeriod;
   label: string;
@@ -55,7 +40,6 @@ const PlayersPage = () => {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [selectedSeason, setSelectedSeason] = useState<SeasonPeriod>("current");
 
-  // Fetch merged players (football stats + contract data)
   const {
     players: mergedPlayers,
     isLoading,
@@ -65,38 +49,32 @@ const PlayersPage = () => {
     refetch,
   } = useOnChainPlayers({
     autoFetch: true,
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
   });
 
   const filteredPlayers = useMemo(() => {
     let players = mergedPlayers;
 
-    // Apply filter
     switch (activeFilter) {
       case "top":
-        // Top performers based on AI score
         players = players
           .filter((p) => p.aiScore >= 80)
           .sort((a, b) => b.aiScore - a.aiScore);
         break;
       case "rising":
-        // Rising based on weekly change
         players = players
           .filter((p) => p.weeklyChange > 5)
           .sort((a, b) => b.weeklyChange - a.weeklyChange);
         break;
       case "undervalued":
-        // High AI score but low price change
         players = players
           .filter((p) => p.aiScore > 85 && p.weeklyChange < 5)
           .sort((a, b) => b.aiScore - a.aiScore);
         break;
       default:
-        // All players
         players = [...mergedPlayers];
     }
 
-    // Apply search
     if (searchQuery) {
       players = players.filter(
         (p) =>
@@ -211,25 +189,6 @@ const PlayersPage = () => {
               className="pl-10 bg-card border-border/50 h-12"
             />
           </div>
-
-          {/* <div className="flex flex-wrap gap-2">
-            {filters.map((filter) => (
-              <Button
-                key={filter.id}
-                variant={activeFilter === filter.id ? "default" : "outline"}
-                onClick={() => setActiveFilter(filter.id)}
-                className={cn(
-                  "transition-all",
-                  activeFilter === filter.id
-                    ? "btn-gradient text-primary-foreground"
-                    : "border-border/50 hover:bg-muted"
-                )}
-              >
-                {filter.icon}
-                <span className="ml-2">{filter.label}</span>
-              </Button>
-            ))}
-          </div> */}
         </div>
 
         {/* Results Count */}

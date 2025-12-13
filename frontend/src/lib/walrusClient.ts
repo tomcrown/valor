@@ -1,16 +1,7 @@
-// ============================================================================
-// FILE: lib/walrusClient.ts
-// Walrus decentralized storage client for performance data and AI analysis
-// ============================================================================
-
 import axios from "axios";
 import { SUI_CONFIG } from "../config/sui.config.ts";
 import type { AIAnalysis } from "./openai.ts";
 import type { SeasonPeriod } from "@/data/apiData.ts";
-
-// ============================================================================
-// Walrus API Response Types
-// ============================================================================
 
 export interface WalrusUploadResponse {
   newlyCreated?: {
@@ -41,27 +32,19 @@ export interface WalrusUploadResponse {
   };
 }
 
-// ============================================================================
-// Player Performance Blob Structure
-// ============================================================================
-
 export interface PlayerPerformanceBlob {
-  // Metadata
   version: string;
   timestamp: string;
 
-  // Player Information
   player_id: string;
   player_name: string;
   team: string;
   position: string;
   nationality: string;
 
-  // Season Context
   season_period: SeasonPeriod;
   season_label: string;
 
-  // Raw Statistics
   stats: {
     goals: number;
     assists: number;
@@ -73,10 +56,8 @@ export interface PlayerPerformanceBlob {
     pass_accuracy?: number;
   };
 
-  // AI Analysis (Full GPT-4o output)
   ai_analysis: AIAnalysis;
 
-  // Valuation Data
   valuation: {
     base_value_mist: number;
     base_value_sui: number;
@@ -85,17 +66,11 @@ export interface PlayerPerformanceBlob {
     confidence: number;
   };
 
-  // Verification
   verified: boolean;
 
-  // Audit Trail
   created_at: string;
   uploaded_by: string;
 }
-
-// ============================================================================
-// Walrus Client Class
-// ============================================================================
 
 export class WalrusClient {
   private publisherUrl: string;
@@ -113,11 +88,6 @@ export class WalrusClient {
     console.log(`   Storage epochs: ${this.epochs}`);
   }
 
-  /**
-   * Upload any JSON data to Walrus
-   * @param data - Any JSON-serializable data
-   * @returns Blob ID for retrieval
-   */
   async uploadJSON(data: any): Promise<string> {
     try {
       const jsonData = JSON.stringify(data, null, 2);
@@ -137,13 +107,12 @@ export class WalrusClient {
           params: {
             epochs: this.epochs,
           },
-          timeout: 30000, // 30 second timeout
+          timeout: 30000,
         }
       );
 
       const result = response.data as WalrusUploadResponse;
 
-      // Extract blob ID from response
       const blobId =
         result.newlyCreated?.blobObject?.blobId ||
         result.alreadyCertified?.blobId;
@@ -152,7 +121,6 @@ export class WalrusClient {
         throw new Error("No blob ID returned from Walrus");
       }
 
-      // Log success details
       if (result.newlyCreated) {
         console.log(`   ✅ Newly created blob`);
         console.log(
@@ -190,11 +158,6 @@ export class WalrusClient {
     }
   }
 
-  /**
-   * Download and parse JSON from Walrus
-   * @param blobId - The blob ID to retrieve
-   * @returns Parsed JSON data
-   */
   async downloadJSON<T = any>(blobId: string): Promise<T> {
     try {
       console.log(`\n🔍 Downloading from Walrus...`);
@@ -231,11 +194,6 @@ export class WalrusClient {
     }
   }
 
-  /**
-   * Check if a blob exists on Walrus
-   * @param blobId - The blob ID to check
-   * @returns true if blob exists, false otherwise
-   */
   async verifyBlob(blobId: string): Promise<boolean> {
     try {
       await axios.head(`${this.aggregatorUrl}/v1/${blobId}`, {
@@ -247,10 +205,6 @@ export class WalrusClient {
     }
   }
 
-  /**
-   * Upload complete player performance data with AI analysis
-   * This is the main method used by the deployment scripts
-   */
   async uploadPlayerPerformance(
     playerId: string,
     playerName: string,
@@ -278,24 +232,19 @@ export class WalrusClient {
       current: "Current Season (All Matches)",
     };
 
-    // Construct comprehensive blob
     const blob: PlayerPerformanceBlob = {
-      // Metadata
       version: "1.0.0",
       timestamp: new Date().toISOString(),
 
-      // Player info
       player_id: playerId,
       player_name: playerName,
       team,
       position,
       nationality,
 
-      // Season context
       season_period: seasonPeriod,
       season_label: seasonLabels[seasonPeriod],
 
-      // Raw stats
       stats: {
         goals: stats.goals,
         assists: stats.assists,
@@ -307,10 +256,8 @@ export class WalrusClient {
         pass_accuracy: stats.pass_accuracy,
       },
 
-      // AI analysis (complete GPT-4o output)
       ai_analysis: aiAnalysis,
 
-      // Valuation
       valuation: {
         base_value_mist: baseValueMist,
         base_value_sui: baseValueMist / 1_000_000_000,
@@ -319,11 +266,8 @@ export class WalrusClient {
         confidence: aiAnalysis.confidence,
       },
 
-      // Verification
-
       verified: true,
 
-      // Audit trail
       created_at: new Date().toISOString(),
       uploaded_by: uploadedBy,
     };
@@ -337,29 +281,16 @@ export class WalrusClient {
     return await this.uploadJSON(blob);
   }
 
-  /**
-   * Download player performance blob
-   */
   async downloadPlayerPerformance(
     blobId: string
   ): Promise<PlayerPerformanceBlob> {
     return await this.downloadJSON<PlayerPerformanceBlob>(blobId);
   }
 
-  /**
-   * Get the full URL for viewing a blob in browser
-   * @param blobId - The blob ID
-   * @returns Full HTTPS URL
-   */
   getBlobUrl(blobId: string): string {
     return `${this.aggregatorUrl}/v1/${blobId}`;
   }
 
-  /**
-   * Verify multiple blobs in parallel
-   * @param blobIds - Array of blob IDs to verify
-   * @returns Map of blob ID to verification status
-   */
   async verifyMultipleBlobs(blobIds: string[]): Promise<Map<string, boolean>> {
     const results = new Map<string, boolean>();
 
@@ -373,11 +304,6 @@ export class WalrusClient {
     return results;
   }
 
-  /**
-   * Get storage info for a blob
-   * @param blobId - The blob ID
-   * @returns Storage metadata if available
-   */
   async getBlobInfo(blobId: string): Promise<any> {
     try {
       const response = await axios.head(`${this.aggregatorUrl}/v1/${blobId}`, {
@@ -398,10 +324,6 @@ export class WalrusClient {
   }
 }
 
-// ============================================================================
-// PULSE-SPECIFIC TYPES AND METHODS (Add to existing walrusClient.ts)
-// ============================================================================
-
 export interface PulseVoteRecord {
   voter_address: string;
   vote: "yes" | "no";
@@ -410,20 +332,16 @@ export interface PulseVoteRecord {
 }
 
 export interface PulseVoteBlob {
-  // Metadata
   version: string;
   timestamp: string;
 
-  // Week Information
   week_number: number;
   week_start: string;
   week_end: string;
 
-  // Player Information
   player_id: string;
   player_name: string;
 
-  // Vote Summary
   summary: {
     yes_count: number;
     no_count: number;
@@ -432,20 +350,13 @@ export interface PulseVoteBlob {
     no_percentage: number;
   };
 
-  // Detailed Vote Records
   votes: PulseVoteRecord[];
 
-  // Verification
   verified: boolean;
   created_at: string;
   updated_by: string;
 }
 
-// Add these methods to the WalrusClient class:
-
-/**
- * Upload pulse vote data to Walrus
- */
 export async function uploadPulseVotes(
   walrusClient: WalrusClient,
   weekNumber: number,
@@ -500,9 +411,6 @@ export async function uploadPulseVotes(
   return await walrusClient.uploadJSON(blob);
 }
 
-/**
- * Download pulse vote data from Walrus
- */
 export async function downloadPulseVotes(
   walrusClient: WalrusClient,
   blobId: string
@@ -510,9 +418,6 @@ export async function downloadPulseVotes(
   return await walrusClient.downloadJSON<PulseVoteBlob>(blobId);
 }
 
-/**
- * Create an empty pulse vote blob (for initialization)
- */
 export async function initializePulseBlob(
   walrusClient: WalrusClient,
   weekNumber: number,
@@ -533,40 +438,16 @@ export async function initializePulseBlob(
   );
 }
 
-// ============================================================================
-// Singleton Instance
-// ============================================================================
-
 export const walrusClient = new WalrusClient();
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Create a shortened blob ID for display
- * @param blobId - Full blob ID
- * @returns Shortened format (e.g., "0xabcd...ef12")
- */
 export function shortenBlobId(blobId: string): string {
   if (blobId.length <= 12) return blobId;
   return `${blobId.slice(0, 6)}...${blobId.slice(-4)}`;
 }
 
-/**
- * Format storage epochs for display
- * @param epochs - Number of epochs
- * @returns Human-readable duration
- */
 export function formatStorageDuration(epochs: number): string {
   const days = epochs * 1; // Rough estimate: 1 epoch ≈ 1 day
   if (days < 7) return `${days} days`;
   if (days < 30) return `${Math.floor(days / 7)} weeks`;
   return `${Math.floor(days / 30)} months`;
 }
-
-// ============================================================================
-// Export Types
-// ============================================================================
-
-// PlayerPerformanceBlob is already exported as an interface above; no additional export needed.

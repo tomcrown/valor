@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
       Authorization: `Bearer ${ENOKI_API_KEY}`,
     };
 
-    // Step 1: Get the zkLogin address
     const addressData = await callEnokiApi("/zklogin", {
       method: "GET",
       headers: {
@@ -47,7 +46,6 @@ export async function POST(req: NextRequest) {
 
     const { address } = addressData.data;
 
-    // Step 2: Request ZK proof generation
     const zkpData = await callEnokiApi("/zklogin/zkp", {
       method: "POST",
       headers: {
@@ -58,7 +56,7 @@ export async function POST(req: NextRequest) {
         ephemeralPublicKey,
         maxEpoch,
         randomness,
-        network: "testnet", // or 'mainnet' for production
+        network: "testnet",
       }),
     });
 
@@ -70,7 +68,7 @@ export async function POST(req: NextRequest) {
         issBase64Details: zkpData.data.issBase64Details,
         headerBase64: zkpData.data.headerBase64,
       },
-      token: jwt, // Internal token for session management
+      token: jwt,
     });
   } catch (error) {
     console.error("zkLogin API error:", error);

@@ -1,12 +1,3 @@
-#!/usr/bin/env ts-node
-// ============================================================================
-// FILE: scripts/updateBaseValues.ts (UPDATED with Performance-Based Pricing)
-// Update player base values on-chain (Mid/Current seasons only)
-// Usage:
-//   ts-node scripts/updateBaseValues.ts --season mid
-//   ts-node scripts/updateBaseValues.ts --season current --players "Erling Haaland"
-// ============================================================================
-
 import dotenv from "dotenv";
 dotenv.config();
 import { Transaction } from "@mysten/sui/transactions";
@@ -26,10 +17,6 @@ import {
   mistToSui,
 } from "../lib/valueCalculator.ts";
 
-// ============================================================================
-// Parse CLI Arguments
-// ============================================================================
-
 function parseArgs() {
   const args = process.argv.slice(2);
   let season: SeasonPeriod = "current";
@@ -48,12 +35,6 @@ function parseArgs() {
   return { season, playersToUpdate };
 }
 
-/**
- * Convert season string to contract season code
- * early = 0 (but shouldn't be used in updates)
- * mid = 1
- * current = 2
- */
 function seasonToContractCode(season: SeasonPeriod): number {
   switch (season) {
     case "early":
@@ -67,9 +48,6 @@ function seasonToContractCode(season: SeasonPeriod): number {
   }
 }
 
-/**
- * Find the on-chain Player object ID from platform.player_names table.
- */
 async function getPlayerObjectIdFromPlatform(
   playerName: string
 ): Promise<string | null> {
@@ -135,7 +113,6 @@ async function getPlayerObjectIdFromPlatform(
       console.error(`   ❌ Error listing fields: ${listErr.message}`);
     }
 
-    // FALLBACK: Try direct query
     try {
       const field = await rpcClient.getDynamicFieldObject({
         parentId: tableId,
@@ -161,10 +138,6 @@ async function getPlayerObjectIdFromPlatform(
   }
 }
 
-// ============================================================================
-// Update Single Player (MID/CURRENT SEASONS ONLY)
-// ============================================================================
-
 async function updatePlayer(
   playerInfo: (typeof FOOTBALL_PLAYERS)[0],
   season: SeasonPeriod,
@@ -175,7 +148,6 @@ async function updatePlayer(
     console.log(`📊 Updating: ${playerInfo.name}`);
     console.log("=".repeat(70));
 
-    // Validate season
     if (season === "early") {
       console.error(`\n❌ Cannot update early season values!`);
       console.log(`   Early season values are set once during registration`);
@@ -199,7 +171,6 @@ async function updatePlayer(
     console.log(`   Assists: ${previousSeasonStats.assists}`);
     console.log(`   Matches: ${previousSeasonStats.matchesPlayed}`);
 
-    // Step 1: Get player ID from platform
     console.log("\n🔍 Looking up player on-chain...");
     const playerObjId = await getPlayerObjectIdFromPlatform(playerInfo.name);
     if (!playerObjId) {
@@ -208,7 +179,6 @@ async function updatePlayer(
     }
     console.log(`   ✅ Player ID: ${playerObjId}`);
 
-    // Step 2: Fetch current player data from platform table
     console.log(`   🔍 Fetching player data from platform...`);
 
     const platformId = SUI_CONFIG.contracts.platformObjectId;
@@ -225,7 +195,6 @@ async function updatePlayer(
       return false;
     }
 
-    // Query the player from the players table
     const playerField = await rpcClient.getDynamicFieldObject({
       parentId: playersTableId,
       name: {
@@ -253,7 +222,6 @@ async function updatePlayer(
       )} SUI`
     );
 
-    // Step 3: Run AI Analysis
     console.log("\n🤖 Running AI analysis...");
     const frontendCurrentValue =
       (Number(previousBaseMist) / 1_000_000_000) * 1000;
@@ -275,7 +243,6 @@ async function updatePlayer(
     console.log(`   📈 Trend: ${aiAnalysis.performance_trend}`);
     console.log(`   🎯 Form: ${aiAnalysis.form_status}`);
 
-    // Step 4: Calculate new base value using performance-based formula
     console.log(`\n💰 Calculating new base value...`);
     const newBaseValue = calculateMidCurrentSeasonValue(
       previousBaseMist,
@@ -304,12 +271,10 @@ async function updatePlayer(
       `   Change: ${changePercent > 0 ? "+" : ""}${changePercent.toFixed(2)}%`
     );
 
-    // Step 5: Create rating for contract
     const rating = Math.round(
       (aiAnalysis.recent_form?.goals_per_90 || 0) * 100
     );
 
-    // Step 6: Upload to Walrus
     console.log("\n📦 Uploading to Walrus...");
     const blobId = await walrusClient.uploadPlayerPerformance(
       playerInfo.id,
@@ -332,7 +297,6 @@ async function updatePlayer(
 
     console.log(`   ✅ Walrus Blob ID: ${blobId}`);
 
-    // Step 7: Update on-chain with season parameter
     console.log("\n⛓️  Updating on Sui blockchain...");
 
     const tx = new Transaction();
@@ -342,19 +306,19 @@ async function updatePlayer(
     tx.moveCall({
       target: `${SUI_CONFIG.contracts.packageId}::valor::update_base_value`,
       arguments: [
-        tx.object(SUI_CONFIG.contracts.adminCapId), // AdminCap
-        tx.object(SUI_CONFIG.contracts.platformObjectId), // Platform
-        tx.pure.address(playerObjId), // player_id (ID)
-        tx.pure.u8(seasonCode), // season (1 = mid, 2 = current)
-        tx.pure.u64(newBaseValue), // new_base_value
-        tx.pure.u64(aiAnalysis.performance_score), // performance_score
-        tx.pure.u64(currentSeasonStats.goals), // goals
-        tx.pure.u64(currentSeasonStats.assists), // assists
-        tx.pure.u64(rating), // rating
-        tx.pure.u64(currentSeasonStats.minutesPlayed), // minutes_played
-        tx.pure.u64(0), // clean_sheets
-        tx.pure.string(blobId), // walrus_blob_id
-        tx.object(clockId), // clock
+        tx.object(SUI_CONFIG.contracts.adminCapId),
+        tx.object(SUI_CONFIG.contracts.platformObjectId),
+        tx.pure.address(playerObjId),
+        tx.pure.u8(seasonCode),
+        tx.pure.u64(newBaseValue),
+        tx.pure.u64(aiAnalysis.performance_score),
+        tx.pure.u64(currentSeasonStats.goals),
+        tx.pure.u64(currentSeasonStats.assists),
+        tx.pure.u64(rating),
+        tx.pure.u64(currentSeasonStats.minutesPlayed),
+        tx.pure.u64(0),
+        tx.pure.string(blobId),
+        tx.object(clockId),
       ],
     });
 
@@ -369,7 +333,6 @@ async function updatePlayer(
         `   🎯 Season updated: ${season.toUpperCase()} (code: ${seasonCode})`
       );
 
-      // Check for circuit breaker
       const circuitBreakerEvent = result.events?.find((e) =>
         e.type.includes("CircuitBreakerTriggered")
       );
@@ -388,10 +351,6 @@ async function updatePlayer(
     return false;
   }
 }
-
-// ============================================================================
-// Main Script
-// ============================================================================
 
 async function main() {
   console.log("🔄 Valor Base Value Update Script (Performance-Based)");
@@ -419,13 +378,11 @@ async function main() {
   console.log(`   • Consistency factor (matches played) applies multiplier`);
   console.log(`   • Max change: ±60% per season (safety bounds)`);
 
-  // Load admin keypair
   console.log("\n🔑 Loading admin keypair...");
   const keypair = loadAdminKeypair();
   const address = keypair.getPublicKey().toSuiAddress();
   console.log(`   Admin address: ${address}`);
 
-  // Check balance
   const balance = await rpcClient.getBalance({ owner: address });
   console.log(
     `   Balance: ${Number(balance.totalBalance) / 1_000_000_000} SUI`
@@ -435,7 +392,6 @@ async function main() {
     throw new Error("Insufficient balance. Need at least 0.05 SUI for gas.");
   }
 
-  // Filter players to update
   let playersToProcess = FOOTBALL_PLAYERS;
   if (playersToUpdate.length > 0) {
     playersToProcess = FOOTBALL_PLAYERS.filter((p) =>
@@ -449,21 +405,18 @@ async function main() {
     console.log(`\n📋 Updating all ${playersToProcess.length} players`);
   }
 
-  // Process each player
   const results: Array<{ player: string; success: boolean }> = [];
 
   for (const player of playersToProcess) {
     const success = await updatePlayer(player, season, keypair);
     results.push({ player: player.name, success });
 
-    // Rate limiting
     if (playersToProcess.indexOf(player) < playersToProcess.length - 1) {
       console.log("\n⏳ Waiting 2s before next update...");
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 
-  // Summary
   console.log("\n" + "=".repeat(70));
   console.log("📊 UPDATE SUMMARY");
   console.log("=".repeat(70));

@@ -11,7 +11,7 @@ export default function SwapSuccessPage() {
   const navigate = useNavigate();
 
   const digest = params.get("digest");
-  const playerId = params.get("playerId"); // ← GET PLAYER ID
+  const playerId = params.get("playerId");
 
   const explorerUrl = digest
     ? `https://suiscan.xyz/mainnet/tx/${digest}`

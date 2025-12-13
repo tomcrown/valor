@@ -10,10 +10,9 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%; /* white */
-    --foreground: 0 0% 0%; /* black text */
+    --background: 0 0% 100%;
 
-    --primary: 360 100% 65%; /* #fe6162 */
+    --primary: 360 100% 65%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 5% 95%;
@@ -26,7 +25,6 @@
 
 @layer base {
   body {
-    /* color: hsl(210, 40%, 98%); */
     font-family: "Prosto One";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

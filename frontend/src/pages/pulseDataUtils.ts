@@ -1,17 +1,7 @@
-// ============================================================================
-// FILE: lib/pulseDataUtils.ts
-// Utility functions for querying Pulse sentiment data
-// FIXED VERSION
-// ============================================================================
-
 import { SuiClient } from "@mysten/sui/client";
 import { SUI_CONFIG } from "@/config/sui.config";
 import { PULSE_CONFIG } from "@/config/pulse.config";
 
-/**
- * Find sentiment object ID for a specific player in a specific week
- * Useful when you know the player ID but not the sentiment object ID
- */
 export async function findSentimentForPlayer(
   playerId: string,
   week: number
@@ -24,14 +14,6 @@ export async function findSentimentForPlayer(
       return null;
     }
 
-    // Query all PlayerSentiment objects
-    // NOTE: getOwnedObjects requires an owner, but for finding sentiments
-    // we need to query by type. Use getDynamicFields or multiGetObjects instead
-    // For now, we'll need the platform/registry to get all sentiments
-
-    // Alternative: Query events or use a different approach
-    // This is a limitation - we need the owner address or use dynamic fields
-
     console.warn(
       "This function requires platform object access - use getAllActiveSentiments instead"
     );
@@ -42,10 +24,6 @@ export async function findSentimentForPlayer(
   }
 }
 
-/**
- * Get all active sentiments for the current week
- * Note: This requires knowing where sentiments are stored
- */
 export async function getAllActiveSentiments(currentWeek: number) {
   try {
     const client = new SuiClient({ url: SUI_CONFIG.rpcUrl });
@@ -54,7 +32,6 @@ export async function getAllActiveSentiments(currentWeek: number) {
       return [];
     }
 
-    // Fetch platform object to get registry
     const platformObj = await client.getObject({
       id: PULSE_CONFIG.platformObjectId,
       options: { showContent: true },
@@ -66,9 +43,6 @@ export async function getAllActiveSentiments(currentWeek: number) {
 
     const sentiments = [];
 
-    // You'll need to access dynamic fields or use a different query method
-    // This is a placeholder - actual implementation depends on your Move contract structure
-
     console.log("Fetching sentiments for week:", currentWeek);
 
     return sentiments;
@@ -78,9 +52,6 @@ export async function getAllActiveSentiments(currentWeek: number) {
   }
 }
 
-/**
- * Check if a user has voted for a specific player in a specific week
- */
 export async function hasUserVoted(
   userAddress: string,
   playerId: string,
@@ -94,7 +65,7 @@ export async function hasUserVoted(
     }
 
     const response = await client.getOwnedObjects({
-      owner: userAddress, // FIXED: Added required owner parameter
+      owner: userAddress,
       filter: {
         StructType: `${PULSE_CONFIG.packageId}::pulse::VoteReceipt`,
       },
@@ -122,9 +93,6 @@ export async function hasUserVoted(
   }
 }
 
-/**
- * Get user's vote for a specific player in a specific week
- */
 export async function getUserVote(
   userAddress: string,
   playerId: string,
@@ -138,7 +106,7 @@ export async function getUserVote(
     }
 
     const response = await client.getOwnedObjects({
-      owner: userAddress, // FIXED: Added required owner parameter
+      owner: userAddress,
       filter: {
         StructType: `${PULSE_CONFIG.packageId}::pulse::VoteReceipt`,
       },
@@ -166,9 +134,6 @@ export async function getUserVote(
   }
 }
 
-/**
- * Get voting statistics for all players in a specific week
- */
 export async function getWeekVotingStats(week: number) {
   try {
     const sentiments = await getAllActiveSentiments(week);
