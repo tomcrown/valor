@@ -70,7 +70,7 @@ const PlayerDetailPage = () => {
   } = useAutoAIAnalysis({
     player: safePlayer,
     selectedSeason,
-    autoRun: !!safePlayer,
+    autoRun: false,
   });
 
   if (!mergedPlayer) {
@@ -422,7 +422,7 @@ const PlayerDetailPage = () => {
                 <AIAnalysisButton
                   player={mergedPlayer}
                   selectedSeason={selectedSeason}
-                  onAnalysisComplete={runAnalysis}
+                  onRunAnalysis={runAnalysis}
                 />
               </div>
 

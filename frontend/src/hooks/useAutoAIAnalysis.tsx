@@ -7,13 +7,13 @@ interface UseAutoAIAnalysisOptions {
   player: Player | null;
   selectedSeason: SeasonPeriod;
   autoRun?: boolean;
-  onAnalysisComplete?: (analysis: AIAnalysis) => void;
+  onAnalysisComplete?: () => void;
 }
 
 export function useAutoAIAnalysis({
   player,
   selectedSeason,
-  autoRun = true,
+  autoRun = false,
   onAnalysisComplete,
 }: UseAutoAIAnalysisOptions) {
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
@@ -44,10 +44,10 @@ export function useAutoAIAnalysis({
       });
 
       setAnalysis(result);
-      onAnalysisComplete?.(result);
+      onAnalysisComplete();
 
       localStorage.setItem(
-        `ai-analysis-${player.id}-${selectedSeason}`,
+        `ai-analysis-${player.id}-${player.club}-${selectedSeason}`,
         JSON.stringify(result)
       );
     } catch (err) {
@@ -64,14 +64,13 @@ export function useAutoAIAnalysis({
     setAnalysis(null);
     setError(null);
 
-    const cacheKey = `ai-analysis-${player.id}-${selectedSeason}`;
+    const cacheKey = `ai-analysis-${player.id}-${player.club}-${selectedSeason}`;
     const cached = localStorage.getItem(cacheKey);
 
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         setAnalysis(parsed);
-        onAnalysisComplete?.(parsed);
         return;
       } catch {}
     }

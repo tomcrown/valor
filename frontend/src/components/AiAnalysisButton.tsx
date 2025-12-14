@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Player, SeasonPeriod } from "@/data/apiData";
@@ -8,18 +8,30 @@ import { analyzePlayer } from "@/lib/openai";
 interface AIAnalysisButtonProps {
   player: Player;
   selectedSeason: SeasonPeriod;
-  onAnalysisComplete?: (analysis: AIAnalysis) => void;
+  onRunAnalysis: () => void;
 }
 
 export function AIAnalysisButton({
   player,
   selectedSeason,
-  onAnalysisComplete,
+  onRunAnalysis,
 }: AIAnalysisButtonProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const storageKey = `ai-analysis-${player.id}-${player.club}-${selectedSeason}`;
+
+  const [hasAnalyzed, setHasAnalyzed] = useState(() => {
+    return !!localStorage.getItem(storageKey);
+  });
+
+  useEffect(() => {
+    setHasAnalyzed(!!localStorage.getItem(storageKey));
+  }, [storageKey]);
+
   const handleAnalyze = async () => {
+    if (hasAnalyzed) return;
+
     setIsAnalyzing(true);
     setError(null);
 
@@ -38,13 +50,12 @@ export function AIAnalysisButton({
         weeklyChange: player.weeklyChange,
         season: selectedSeason,
       });
+      setHasAnalyzed(true);
+      onRunAnalysis();
 
-      onAnalysisComplete?.(result);
+      localStorage.setItem(storageKey, JSON.stringify(result));
 
-      localStorage.setItem(
-        `ai-analysis-${player.id}-${selectedSeason}`,
-        JSON.stringify(result)
-      );
+      console.log("AI KEY:", storageKey);
     } catch (err) {
     } finally {
       setIsAnalyzing(false);
@@ -55,14 +66,16 @@ export function AIAnalysisButton({
     <div className="space-y-2">
       <Button
         onClick={handleAnalyze}
-        disabled={isAnalyzing}
-        className="btn-gradient"
+        disabled={isAnalyzing || hasAnalyzed}
+        className="btn-gradient disabled:opacity-60"
       >
         {isAnalyzing ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             Analyzing...
           </>
+        ) : hasAnalyzed ? (
+          "AI Analysis Completed"
         ) : (
           <>
             <Sparkles className="w-4 h-4 mr-2" />
@@ -70,6 +83,7 @@ export function AIAnalysisButton({
           </>
         )}
       </Button>
+
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
