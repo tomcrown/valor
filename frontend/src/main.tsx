@@ -21,7 +21,6 @@ const networks = {
   testnet: { url: getFullnodeUrl("testnet") },
 };
 
-// Component to register Enoki wallets
 function RegisterEnokiWallets() {
   const { client, network } = useSuiClientContext();
 
