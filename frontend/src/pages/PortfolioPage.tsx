@@ -91,7 +91,6 @@ const PortfolioPage = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <Layout>

@@ -21,17 +21,15 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
-  // Auto-run AI analysis on mount (with cache check)
   const { analysis: aiAnalysis, isAnalyzing } = useAutoAIAnalysis({
     player,
     selectedSeason,
-    autoRun: true, // Automatically analyze on mount
+    autoRun: true,
   });
 
   const account = useCurrentAccount();
   const isLoggedIn = !!account;
 
-  // Get stats for selected season
   const seasonStats = player.seasonalStats[selectedSeason];
   const displayPrice = getSeasonBaseValue(player as any, selectedSeason);
   const displayAiScore = aiAnalysis?.performance_score ?? player.aiScore;

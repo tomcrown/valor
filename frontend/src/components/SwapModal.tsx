@@ -379,7 +379,6 @@ export function SwapModal({ open, onOpenChange }) {
         transaction: txb,
       });
 
-      // Redirect to standalone success page
       window.location.href = `/swap/success?digest=${result.digest}&playerId=${playerId}`;
 
       return;

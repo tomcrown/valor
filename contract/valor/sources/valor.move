@@ -248,7 +248,6 @@ module valor::valor {
             version: 1,
         };
 
-        // Setup NFT Display
         let publisher = package::claim(witness, ctx);
         let keys = vector[
             string::utf8(b"name"),

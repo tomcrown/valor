@@ -28,7 +28,6 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
   const currentAccount = useCurrentAccount();
   const wallets = useWallets();
 
-  // Get Enoki wallets
   const enokiWallets = wallets.filter(isEnokiWallet);
   const googleWallet = enokiWallets.find((w) => w.provider === "google");
 
@@ -41,7 +40,6 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
     }
   }, [isOpen, currentAccount]);
 
-  // Close dialog when account is connected
   if (currentAccount && isOpen) {
     setTimeout(() => onClose(), 500);
   }
