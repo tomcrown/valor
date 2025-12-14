@@ -28,7 +28,9 @@ const StatCard = ({
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between mb-4">
-        <span className="text-sm text-muted-foreground font-medium">{label}</span>
+        <span className="text-sm text-muted-foreground font-medium">
+          {label}
+        </span>
         {icon && (
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-primary">
             {icon}
@@ -37,7 +39,7 @@ const StatCard = ({
       </div>
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-3xl   font-bold">
+          <p className="text-xl md:text-3xl  font-bold">
             {prefix}
             {typeof value === "number" ? value.toLocaleString() : value}
             {suffix}

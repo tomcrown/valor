@@ -31,7 +31,7 @@ const LandingPage = () => {
           <div className="max-w-4xl mx-auto text-center">
             {/* Headline */}
             <h1
-              className="text-4xl md:text-6xl font-bold leading-tight mb-6 opacity-0 animate-fade-in"
+              className="text-4xl md:text-6xl mt-10 md:mt-0 font-bold leading-tight mb-6 opacity-0 animate-fade-in"
               style={{ animationDelay: "300ms" }}
             >
               Trade Football Players
@@ -55,7 +55,7 @@ const LandingPage = () => {
               style={{ animationDelay: "700ms" }}
             >
               <Link to="/players">
-                <Button className="text-primary-foreground font-semibold px-8 py-6 text-lg">
+                <Button className="text-primary-foreground font-semibold text-md px-10 py-6 md:text-lg">
                   Start Trading
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
@@ -336,7 +336,7 @@ const LandingPage = () => {
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link to="/players">
-                  <Button className="text-primary-foreground font-semibold px-10 py-6 text-lg">
+                  <Button className="text-primary-foreground font-semibold text-md px-10 py-6 md:text-lg">
                     Start Trading
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
