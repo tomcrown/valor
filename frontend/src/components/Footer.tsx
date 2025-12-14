@@ -9,13 +9,13 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-10 h-10 rounded-xl  from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
                 <img
-                  className="w-10 h-10 text-primary-foreground"
+                  className="w-8 h-8 text-primary-foreground"
                   src="/valor.png"
                 />{" "}
               </div>
-              <span className="font-bold text-4xl  sm:block">
+              <span className="font-bold md:text-4xl text-2xl  sm:block">
                 <h1 className="text-foreground">VALOR</h1>
               </span>
             </Link>

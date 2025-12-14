@@ -177,20 +177,20 @@ const PortfolioPage = () => {
 
         {/* Your Assets Section */}
         <div className="glass-card p-6 mb-8">
-          <h2 className="text-3xl font-bold mb-6">Wallet Assets</h2>
+          <h2 className="text-2xl font-bold mb-6">Wallet Assets</h2>
 
           {/* SUI Balance */}
           <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl mb-4">
             <div className="flex items-center gap-4">
               <div>
-                <p className="font-semibold text-lg">SUI Balance</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-semibold md:text-lg text-md">SUI Balance</p>
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Available for trading
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold">
+              <p className="text-xl md:text-2xl font-bold">
                 {summary.suiBalance.toFixed(4)} SUI
               </p>
               <p className="text-sm text-muted-foreground"></p>
