@@ -152,7 +152,7 @@ export default function KeyFeaturesSection() {
                 className="container mx-auto px-4 min-h-screen flex flex-col justify-center "
             >
                 {/* Heading */}
-                <div className="text-center mb-16 mt-32 md:mt-20">
+                <div className="text-center mb-16 mt-4 md:mt-20">
                     <h2
                         ref={headingRef}
                         className="text-3xl md:text-4xl font-bold mb-4 overflow-hidden"
