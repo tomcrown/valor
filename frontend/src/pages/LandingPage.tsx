@@ -22,6 +22,8 @@ import StatCard from "@/components/StatCard";
 import FeatureCard from "@/components/FeatureCard";
 import { PLATFORM_STATS } from "@/data/apiData";
 import { easeOutExpo } from "@/components/ui/motion";
+import KeyFeaturesSection from "@/components/KeyFeaturesSection";
+import { TechStackSection } from "@/components/TechStackSection";
 
 const LandingPage = () => {
   return (
@@ -208,162 +210,10 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-card/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Key <span className="gradient-text">Features</span>
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Everything you need to trade football players on-chain
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              viewport={{ amount: 0.2 }}
-            >
-              <FeatureCard
-                icon={<Zap className="w-7 h-7" />}
-                title="AI-Powered Analysis"
-                description="AI analyzes real match data to generate accurate, unbiased player performance scores (0-100)."
-                delay={100}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-              viewport={{ amount: 0.2 }}
-            >
-              <FeatureCard
-                icon={<Calendar className="w-7 h-7" />}
-                title="Seasonal Performance Tracking"
-                description="Track player evolution across Early, Mid, and Current seasons. Understand price history and form trends."
-                delay={150}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              viewport={{ amount: 0.2 }}
-            >
-              <FeatureCard
-                icon={<Vote className="w-7 h-7" />}
-                title="Valor Pulse - Community Voting"
-                description="Vote YES/NO on weekly player predictions. See real-time community sentiment and BULLISH/BEARISH indicators."
-                delay={200}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.25 }}
-              viewport={{ amount: 0.2 }}
-            >
-              <FeatureCard
-                icon={<ImageIcon className="w-7 h-7" />}
-                title="NFT Share Certificates"
-                description="Every purchase mints a unique NFT showing your shares, purchase price, and timestamp. View in your portfolio."
-                delay={250}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              viewport={{ amount: 0.2 }}
-            >
-              <FeatureCard
-                icon={<TrendingUp className="w-7 h-7" />}
-                title="Real-Time Valuations"
-                description="Player values update in real-time based on performance metrics, market demand, and bonding curve pricing."
-                delay={300}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.45 }}
-              viewport={{ amount: 0.2 }}
-            >
-              <FeatureCard
-                icon={<BarChart3 className="w-7 h-7" />}
-                title="Portfolio Analytics"
-                description="Track your NFT holdings, positions, P&L, and performance with comprehensive portfolio management tools."
-                delay={450}
-              />
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      <KeyFeaturesSection />
 
       {/* Tech Stack Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-px " />
-        <div className="absolute bottom-0 left-0 w-full h-px " />
-
-        <div className="container mx-auto px-4r">
-          <div className="glass-card p-8 md:p-12 relative overflow-hidden bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 animate-gradient">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px]" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary/10 rounded-full blur-[100px]" />
-
-            <div className="relative z-10">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  Powered by the <span className="gradient-text">Best</span>
-                </h2>
-                <p className="text-muted-foreground max-w-xl mx-auto">
-                  Built with cutting-edge Web3 technology for maximum
-                  performance and reliability
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-8">
-                <div className="text-center p-6">
-                  <div className="w-20 h-20 rounded-2xl from-primary to-secondary mx-auto mb-4 flex items-center justify-center">
-                    <img src="/sui logo.png" alt="" />
-                  </div>
-                  <h3 className="font-bold text-xl mb-2">Sui Network</h3>
-                  <p className="text-sm text-muted-foreground">
-                    High-throughput Layer 1 blockchain with instant finality and
-                    low fees for seamless trading
-                  </p>
-                </div>
-                <div className="text-center p-6">
-                  <div className="w-20 h-20 rounded-2xl bg-green-200 mx-auto mb-4 flex items-center justify-center">
-                    <img src="/walrus.png" alt="" />
-                  </div>
-                  <h3 className="font-bold text-xl mb-2">Walrus</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Decentralized storage for verifiable performance data and
-                    cryptographic proofs
-                  </p>
-                </div>
-                <div className="text-center p-6">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-secondary to-accent mx-auto mb-4 flex items-center justify-center">
-                    <img src="/ai.png" alt="" />
-                  </div>
-                  <h3 className="font-bold text-xl mb-2">AI Engine</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Advanced AI for accurate player valuation, scoring, and
-                    performance analysis
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <TechStackSection />
 
       {/* CTA Section */}
       <section className="py-24">
