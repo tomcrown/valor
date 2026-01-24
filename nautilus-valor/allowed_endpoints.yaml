@@ -1,0 +1,15 @@
+# Nautilus Allowed Endpoints Configuration
+# This file defines which external APIs the enclave can access
+
+allowed_endpoints:
+  # AllSportsAPI - For fetching real player statistics
+  - domain: apiv2.allsportsapi.com
+    port: 443
+    protocol: https
+    description: "AllSportsAPI - Football player statistics"
+
+  # OpenAI API - For AI analysis inside the enclave
+  - domain: api.openai.com
+    port: 443
+    protocol: https
+    description: "OpenAI API - GPT-4 analysis"
