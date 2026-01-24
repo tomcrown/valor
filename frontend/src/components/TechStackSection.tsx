@@ -34,7 +34,7 @@ export const TechStackSection = () => {
     return (
         <section
             id="tech-stack"
-            className="relative py-24 overflow-hidden"
+            className="relative pt-16 overflow-hidden"
         >
             {/* Section dividers */}
             {/* <div className="absolute top-0 left-0 w-full h-px bg-border/40" />
@@ -45,7 +45,7 @@ export const TechStackSection = () => {
             <div className="absolute bottom-0 left-0 w-72 h-72 bg-secondary/10 rounded-full blur-[120px]" />
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className=" p-8 md:p-12 relative overflow-hidden  animate-gradient">
+                <div className="glass-card p-8 md:p-12 relative overflow-hidden bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 animate-gradient">
                     {/* Floating motion orbs */}
                     <motion.div
                         className="absolute top-16 left-12 w-32 h-32 rounded-full blur-3xl"
@@ -109,7 +109,7 @@ export const TechStackSection = () => {
                                     className="relative group"
                                 >
                                     <motion.div
-                                        className="glass-card p-8 text-center h-full relative overflow-hidden"
+                                        className=" p-8 text-center h-full relative overflow-hidden"
                                         whileHover={{
                                             y: -8,
                                             scale: 1.02,
@@ -121,7 +121,7 @@ export const TechStackSection = () => {
                                     >
                                         {/* Hover gradient */}
                                         <div
-                                            className={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                                            className={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-500`}
                                         />
 
                                         {/* Image Icon */}
