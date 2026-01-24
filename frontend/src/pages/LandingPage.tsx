@@ -44,7 +44,7 @@ const LandingPage = () => {
           />
 
           {/* Dark overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/80 to-background/90" />
 
           {/* Animated glow sweep */}
           <motion.div
@@ -55,7 +55,7 @@ const LandingPage = () => {
         </motion.div>
 
         {/* Content */}
-        <div className="container mx-auto px-4 relative z-10"> <div className="max-w-4xl mx-auto text-center">
+        <div className="container mx-auto px-4 relative z-10 md:mt-20"> <div className="max-w-4xl mx-auto text-center">
           {/* Headline */}
           <h1
             className="text-4xl md:text-6xl font-bold leading-tight mb-6 opacity-0 animate-fade-in"
