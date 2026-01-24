@@ -21,6 +21,7 @@ import Layout from "@/components/Layout";
 import StatCard from "@/components/StatCard";
 import FeatureCard from "@/components/FeatureCard";
 import { PLATFORM_STATS } from "@/data/apiData";
+import { easeOutExpo } from "@/components/ui/motion";
 
 const LandingPage = () => {
   return (
@@ -62,6 +63,50 @@ const LandingPage = () => {
               </Link>
             </div>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 60, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.8, duration: 1, ease: easeOutExpo }}
+            className="mt-16 relative"
+          >
+            <motion.div
+              className="glass-card p-1 mx-auto max-w-5xl"
+              whileHover={{ y: -5 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="relative rounded-lg overflow-hidden">
+                <img
+                  src="/hero-visual.jpg"
+                  alt="AI-powered football player trading visualization"
+                  className="w-full h-auto rounded-2xl"
+                />
+
+                {/* Overlay gradient for depth */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
+
+                {/* Animated glow overlay */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10"
+                  animate={{ opacity: [0.3, 0.5, 0.3] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </div>
+            </motion.div>
+
+            {/* Decorative floating elements */}
+            <motion.div
+              className="absolute -left-8 top-1/2 w-16 h-16 rounded-xl bg-primary/10 border border-primary/20"
+              animate={{ y: [-10, 10, -10], rotate: [0, 5, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute -right-4 top-1/4 w-12 h-12 rounded-lg bg-glow-secondary/10 border border-glow-secondary/20"
+              animate={{ y: [10, -10, 10], rotate: [0, -5, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            />
+          </motion.div>
+
 
           {/* Stats Row */}
           <div
