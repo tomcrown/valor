@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import {
   Menu,
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import { isEnokiWallet } from "@mysten/enoki";
+import { easeOutExpo } from "./ui/motion";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -82,18 +84,30 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 glass-card border-b border-border/50 backdrop-blur-xl">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+      {/* <nav className="sticky top-0 z-50 glass-card border-b border-border/50 backdrop-blur-xl"> */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: easeOutExpo }}
+        className="fixed top-0 left-0 right-0 z-50 "
+      >
+        <div className="mx-auto max-w-7xl px-6 py-3 bg-white rounded-2xl">
+          <div className="glass-card flex items-center justify-between px-6 py-3 bg-white/50">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 rounded-xl from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
-                <img className="w-8 h-8 " src="/valor.png" alt="VALOR" />
-              </div>
-              <span className="font-bold md:text-4xl text-2xl sm:block">
-                <h1 className="text-foreground">VALOR</h1>
-              </span>
-            </Link>
+            <motion.div
+              className="flex items-center gap-2"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Link to="/" className="flex items-center gap-2 group">
+                <div className="w-10 h-10 rounded-xl from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <img className="w-8 h-8 " src="/valor.png" alt="VALOR" />
+                </div>
+                <span className="font-bold md:text-4xl text-2xl sm:block">
+                  <h1 className="text-foreground">VALOR</h1>
+                </span>
+              </Link>
+            </motion.div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
@@ -308,7 +322,8 @@ const Navbar = () => {
             </div>
           )}
         </div>
-      </nav>
+        {/* </nav> */}
+      </motion.header>
 
       <AuthDialog isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </>
