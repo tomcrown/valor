@@ -28,91 +28,71 @@ import { TechStackSection } from "@/components/TechStackSection";
 const LandingPage = () => {
   return (
     <Layout>
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden pt-20">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            {/* Headline */}
-            <h1
-              className="text-4xl md:text-6xl mt-10 md:mt-0 font-bold leading-tight mb-6 opacity-0 animate-fade-in"
-              style={{ animationDelay: "300ms" }}
-            >
-              Trade Football Players
-              <br />
-              <span className="gradient-text">Like Stocks</span>
-            </h1>
+      {/* Hero Section — Background Image */}
+      <section className="relative min-h-[100vh] flex items-center overflow-hidden">
+        {/* Background Image */}
+        <motion.div
+          className="absolute inset-0 z-0"
+          initial={{ scale: 1.05, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+        >
+          <img
+            src="/hero-vid.gif"
+            alt="AI-powered football player trading visualization"
+            className="w-full h-full object-cover"
+          />
 
-            {/* Subheadline */}
-            <p
-              className="text-md md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 opacity-0 animate-fade-in"
-              style={{ animationDelay: "500ms" }}
-            >
-              AI-driven player scoring, seasonal performance tracking, community
-              sentiment voting, and NFT share certificates. The future of
-              fantasy football is here.
-            </p>
+          {/* Dark overlay for readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
 
-            {/* CTA Buttons */}
-            <div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 opacity-0 animate-fade-in"
-              style={{ animationDelay: "700ms" }}
-            >
-              <Link to="/players">
-                <Button className="text-primary-foreground font-semibold text-md px-10 py-6 md:text-lg">
-                  Start Trading
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-
+          {/* Animated glow sweep */}
           <motion.div
-            initial={{ opacity: 0, y: 60, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.8, duration: 1, ease: easeOutExpo }}
-            className="mt-16 relative"
+            className="absolute inset-0 bg-gradient-to-r from-primary/15 via-transparent to-primary/15"
+            animate={{ opacity: [0.25, 0.45, 0.25] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </motion.div>
+
+        {/* Content */}
+        <div className="container mx-auto px-4 relative z-10"> <div className="max-w-4xl mx-auto text-center">
+          {/* Headline */}
+          <h1
+            className="text-4xl md:text-6xl font-bold leading-tight mb-6 opacity-0 animate-fade-in"
+            style={{ animationDelay: "300ms" }}
           >
-            <motion.div
-              className="glass-card p-1 mx-auto max-w-5xl"
-              whileHover={{ y: -5 }}
-              transition={{ duration: 0.4 }}
-            >
-              <div className="relative rounded-lg overflow-hidden">
-                <img
-                  src="/hero-visual.jpg"
-                  alt="AI-powered football player trading visualization"
-                  className="w-full h-auto rounded-2xl"
-                />
+            Trade Football Players
+            <br />
+            <span className="gradient-text">Like Stocks</span>
+          </h1>
 
-                {/* Overlay gradient for depth */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
+          {/* Subheadline */}
+          <p
+            className="text-md md:text-xl text-muted-foreground max-w-2xl mb-10 opacity-0 animate-fade-in mx-auto"
+            style={{ animationDelay: "500ms" }}
+          >
+            AI-driven player scoring, seasonal performance tracking, community
+            sentiment voting, and NFT share certificates. The future of fantasy
+            football is here.
+          </p>
 
-                {/* Animated glow overlay */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10"
-                  animate={{ opacity: [0.3, 0.5, 0.3] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                />
-              </div>
-            </motion.div>
-
-            {/* Decorative floating elements */}
-            <motion.div
-              className="absolute -left-8 top-1/2 w-16 h-16 rounded-xl bg-primary/10 border border-primary/20"
-              animate={{ y: [-10, 10, -10], rotate: [0, 5, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div
-              className="absolute -right-4 top-1/4 w-12 h-12 rounded-lg bg-glow-secondary/10 border border-glow-secondary/20"
-              animate={{ y: [10, -10, 10], rotate: [0, -5, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            />
-          </motion.div>
-
-
-          {/* Stats Row */}
+          {/* CTA */}
           <div
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 opacity-0 animate-fade-in"
+            className="flex flex-col sm:flex-row gap-4 opacity-0 animate-fade-in justify-center"
+            style={{ animationDelay: "700ms" }}
+          >
+            <Link to="/players">
+              <Button className="text-primary-foreground font-semibold text-md px-10 py-6 md:text-lg">
+                Start Trading
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+          {/* Stats */}
+          <div
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-24 opacity-0 animate-fade-in"
             style={{ animationDelay: "900ms" }}
           >
             <StatCard
@@ -143,6 +123,7 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
 
       {/* How It Works Section */}
       <section id="how-it-works" className="py-24 relative">

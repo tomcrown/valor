@@ -24,7 +24,7 @@ const StatCard = ({
 }: StatCardProps) => {
   return (
     <div
-      className={cn("stat-card opacity-0 animate-fade-in", className)}
+      className={cn("stat-card opacity-0 animate-fade-in bg-white/30", className)}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between mb-4">

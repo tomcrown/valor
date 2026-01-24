@@ -91,8 +91,8 @@ const Navbar = () => {
         transition={{ duration: 0.6, ease: easeOutExpo }}
         className="fixed top-0 left-0 right-0 z-50 "
       >
-        <div className="mx-auto max-w-7xl px-6 py-3 bg-white rounded-2xl">
-          <div className="glass-card flex items-center justify-between px-6 py-3 bg-white/50">
+        <div className="mx-auto max-w-7xl px-6 py-3 md:bg-transparent bg-white rounded-2xl">
+          <div className="md:glass-card  flex items-center justify-between px-6 py-3 bg-white/50">
             {/* Logo */}
             <motion.div
               className="flex items-center gap-2"
