@@ -57,14 +57,12 @@ echo "📝 Setting up Valor oracle in Nautilus..."
 mkdir -p src/nautilus-server/src/apps/valor-oracle
 
 # Copy the mod.rs and allowed_endpoints.yaml (assume they're in ../nautilus-valor/)
-if [ -d "../nautilus-valor" ]; then
-    cp ../nautilus-valor/mod.rs src/nautilus-server/src/apps/valor-oracle/
-    cp ../nautilus-valor/allowed_endpoints.yaml src/nautilus-server/src/apps/valor-oracle/
-    echo "✅ Valor oracle code copied"
+if [ -f "src/nautilus-server/src/apps/valor-oracle/mod.rs" ] && \
+   [ -f "src/nautilus-server/src/apps/valor-oracle/allowed_endpoints.yaml" ]; then
+    echo "✅ Valor oracle code already in place"
 else
-    echo "⚠️  ../nautilus-valor directory not found. Please ensure mod.rs and allowed_endpoints.yaml are in place."
-    echo "   You can create them manually in src/nautilus-server/src/apps/valor-oracle/"
-    read -p "Press enter to continue or Ctrl+C to abort..."
+    echo "❌ Valor oracle files not found"
+    exit 1
 fi
 
 # Step 3: Configure AWS credentials
@@ -81,15 +79,37 @@ echo "   Key Pair: $KEY_PAIR"
 echo "   Region: $REGION"
 echo ""
 
-# Step 5: Run Nautilus provisioning script
+# Step 5: Determine secret usage
+SECRET_NAME="allsports-api-key"
+echo "🔐 Checking for existing secret '$SECRET_NAME'..."
+
+if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
+    echo "✅ Secret already exists. Will reuse it."
+    SECRET_MODE="existing"
+else
+    echo "🆕 Secret does not exist. Will create a new one."
+    SECRET_MODE="new"
+fi
+
+# Step 6: Run Nautilus provisioning script
 echo "🚀 Provisioning Nautilus enclave (this may take 5-10 minutes)..."
+
+if [ "$SECRET_MODE" = "existing" ]; then
+sh configure_enclave.sh valor-oracle <<EOF
+valor-oracle
+y
+existing
+$SECRET_NAME
+EOF
+else
 sh configure_enclave.sh valor-oracle <<EOF
 valor-oracle
 y
 new
-allsports-api-key
+$SECRET_NAME
 $ALLSPORTS_API_KEY
 EOF
+fi
 
 # The script will output the EC2 instance ID and IP
 # Save these for later
@@ -98,7 +118,7 @@ echo ""
 echo "⏳ Waiting for EC2 initialization (2 minutes)..."
 sleep 120
 
-# Step 6: Get the public IP
+# Step 7: Get the public IP
 INSTANCE_ID=$(aws ec2 describe-instances \
     --filters "Name=tag:Name,Values=valor-oracle*" "Name=instance-state-name,Values=running" \
     --query 'Reservations[0].Instances[0].InstanceId' \
@@ -114,7 +134,7 @@ echo "   Instance ID: $INSTANCE_ID"
 echo "   Public IP: $PUBLIC_IP"
 echo ""
 
-# Step 7: Copy Nautilus directory to EC2
+# Step 8: Copy Nautilus directory to EC2
 echo "📤 Copying Nautilus code to EC2..."
 rsync -avz -e "ssh -i ~/.ssh/${KEY_PAIR}.pem" \
     ./ \
@@ -123,7 +143,7 @@ rsync -avz -e "ssh -i ~/.ssh/${KEY_PAIR}.pem" \
 echo "✅ Code copied to EC2"
 echo ""
 
-# Step 8: SSH into EC2 and build the enclave
+# Step 9: SSH into EC2 and build the enclave
 echo "🔨 Building enclave on EC2..."
 ssh -i ~/.ssh/${KEY_PAIR}.pem ec2-user@${PUBLIC_IP} << 'ENDSSH'
 cd nautilus
@@ -135,7 +155,7 @@ ENDSSH
 echo "✅ Enclave built and running!"
 echo ""
 
-# Step 9: Test the enclave
+# Step 10: Test the enclave
 echo "🧪 Testing enclave..."
 sleep 5
 
@@ -151,13 +171,13 @@ TEST_RESPONSE=$(curl -s -H 'Content-Type: application/json' \
 echo "Test response:"
 echo $TEST_RESPONSE | jq '.'
 
-# Step 10: Get attestation for on-chain registration
+# Step 11: Get attestation for on-chain registration
 echo ""
 echo "🔐 Getting enclave attestation..."
 ATTESTATION=$(curl -s -H 'Content-Type: application/json' -X GET http://${PUBLIC_IP}:3000/get_attestation)
 echo "Attestation retrieved (length: ${#ATTESTATION})"
 
-# Step 11: Get PCR values
+# Step 12: Get PCR values
 echo ""
 echo "📊 Getting PCR values..."
 ssh -i ~/.ssh/${KEY_PAIR}.pem ec2-user@${PUBLIC_IP} << 'ENDSSH'
@@ -166,7 +186,7 @@ make ENCLAVE_APP=valor-oracle
 cat out/nitro.pcrs
 ENDSSH
 
-# Step 12: Instructions for on-chain registration
+# Step 13: Instructions for on-chain registration
 echo ""
 echo "✅ Deployment Complete!"
 echo "================================"
