@@ -27,7 +27,9 @@
   }
 
   :root {
-    --background: 0 0% 100%;
+    --background: 20 10% 4%;
+    /* Deep charcoal black */
+    --foreground: 40 30% 92%;
 
     --primary: 360 100% 65%;
     --primary-foreground: 0 0% 100%;
@@ -38,6 +40,13 @@
     --border: 240 5% 80%;
     --ring: 360 100% 65%;
   }
+
+  .light {
+    --background: 40 30% 96%;
+    --foreground: 20 10% 8%;
+
+  }
+
 }
 
 @layer base {

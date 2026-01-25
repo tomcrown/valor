@@ -108,7 +108,7 @@ const PlayersPage = () => {
       <div className="container mx-auto px-4 py-8 md:mt-16">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col-reverse md:flex-row gap-4 items-start justify-between">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2">
                 Player <span className="gradient-text">Market</span>
@@ -123,7 +123,7 @@ const PlayersPage = () => {
               variant="outline"
               size="sm"
               disabled={isLoading}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 rounded-2xl"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -180,13 +180,13 @@ const PlayersPage = () => {
         {/* Search and Filters */}
         <div className="flex flex-col lg:flex-row gap-4 mb-8">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground " />
             <Input
               type="text"
               placeholder="Search players, clubs, positions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-card border-border/50 h-12"
+              className="pl-10 bg-card border-border/50 h-12 rounded-full"
             />
           </div>
         </div>
