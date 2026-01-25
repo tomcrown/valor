@@ -123,28 +123,35 @@ export const TechStackSection = () => {
                                         <div
                                             className={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-500`}
                                         />
-
-                                        {/* Image Icon */}
+                                        {/* Image Icon with default gradient */}
                                         <motion.div
-                                            className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-muted to-secondary flex items-center justify-center mx-auto mb-6"
+                                            className="relative mx-auto mb-6 w-20 h-20 rounded-2xl overflow-hidden"
                                             whileHover={{ scale: 1.1, rotate: 5 }}
                                             transition={{ duration: 0.3 }}
                                         >
-                                            <img
-                                                src={tech.image}
-                                                alt={tech.name}
-                                                className="w-12 h-12 object-contain"
+                                            {/* Default gradient background (VISIBLE BEFORE HOVER) */}
+                                            <div
+                                                className={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-100`}
                                             />
 
-                                            {/* Glow */}
+                                            {/* Inner surface */}
+                                            <div className="relative z-10 w-full h-full flex items-center justify-center bg-background/60 backdrop-blur rounded-2xl">
+                                                <img
+                                                    src={tech.image}
+                                                    alt={tech.name}
+                                                    className="w-12 h-12 object-contain"
+                                                />
+                                            </div>
+
+                                            {/* Hover glow */}
                                             <div
                                                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                                                 style={{
-                                                    boxShadow:
-                                                        "0 0 30px hsl(var(--primary) / 0.35)",
+                                                    boxShadow: "0 0 30px hsl(var(--primary) / 0.35)",
                                                 }}
                                             />
                                         </motion.div>
+
 
                                         <h3 className="relative text-xl font-bold mb-3">
                                             {tech.name}

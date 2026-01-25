@@ -23,8 +23,8 @@ export default {
         display: ["Space Grotesk", "sans-serif"],
       },
       colors: {
-        background: "#ffffff",
-        foreground: "#000000",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: "#fe6162",
           foreground: "#ffffff",
