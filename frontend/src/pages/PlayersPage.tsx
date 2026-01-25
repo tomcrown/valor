@@ -30,10 +30,10 @@ const seasonOptions: {
   label: string;
   description: string;
 }[] = [
-  { id: "early", label: "Early Season", description: "Initial Performance" },
-  { id: "mid", label: "Mid Season", description: "Mid-Season Form" },
-  { id: "current", label: "Current Season", description: "Latest Performance" },
-];
+    { id: "early", label: "Early Season", description: "Initial Performance" },
+    { id: "mid", label: "Mid Season", description: "Mid-Season Form" },
+    { id: "current", label: "Current Season", description: "Latest Performance" },
+  ];
 
 const PlayersPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,7 +105,7 @@ const PlayersPage = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 md:mt-16">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between">

@@ -21,7 +21,7 @@ const FeatureCard = ({ icon, title, description, className, delay = 0 }: Feature
       <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
         <div className="text-primary">{icon}</div>
       </div>
-      <h3 className="  font-bold text-lg mb-2 group-hover:text-primary transition-colors">
+      <h3 className="font-bold text-lg md:text-xl mb-2 group-hover:text-primary transition-colors">
         {title}
       </h3>
       <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>

@@ -14,6 +14,7 @@ import SpaceNetworkBackground from "./components/ThreeBg.tsx";
 import { TooltipProvider } from "./components/ui/tooltip.tsx";
 import { useEffect } from "react";
 import { isEnokiNetwork, registerEnokiWallets } from "@mysten/enoki";
+import { ThemeProvider } from "./components/ThemeProvider.tsx";
 
 const queryClient = new QueryClient();
 
@@ -51,17 +52,21 @@ function RegisterEnokiWallets() {
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
-    <SuiClientProvider networks={networks} defaultNetwork="testnet">
-      <RegisterEnokiWallets />
-      <WalletProvider autoConnect>
-        <TooltipProvider>
-          <GoogleOAuthProvider
-            clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}
-          >
-            <App />
-          </GoogleOAuthProvider>
-        </TooltipProvider>
-      </WalletProvider>
-    </SuiClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+
+      <SuiClientProvider networks={networks} defaultNetwork="testnet">
+        <RegisterEnokiWallets />
+        <WalletProvider autoConnect>
+          <TooltipProvider>
+            <GoogleOAuthProvider
+              clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}
+            >
+              <App />
+            </GoogleOAuthProvider>
+          </TooltipProvider>
+        </WalletProvider>
+      </SuiClientProvider>
+    </ThemeProvider>
+
   </QueryClientProvider>
 );
