@@ -33,6 +33,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { isEnokiWallet } from "@mysten/enoki";
 import { easeOutExpo } from "./ui/motion";
+import { ThemeToggle } from "./ThemeToggle";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -89,10 +90,16 @@ const Navbar = () => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: easeOutExpo }}
-        className="fixed top-0 left-0 right-0 z-50 "
+        className={cn(
+          "md:fixed top-0 left-0 right-0 z-50 transition-colors duration-300",
+          isOpen
+            ? "backdrop-blur-xl border-border"
+            : "bg-transparent"
+        )}
       >
-        <div className="mx-auto max-w-7xl px-6 py-3 md:bg-transparent bg-white rounded-2xl">
-          <div className="md:glass-card  flex items-center justify-between px-6 py-3 bg-white/50">
+
+        <div className="mx-auto max-w-7xl px-6 py-3 transition-colors">
+          <div className="md:glass-card  flex items-center justify-between px-6 py-3 ">
             {/* Logo */}
             <motion.div
               className="flex items-center gap-2"
@@ -104,7 +111,7 @@ const Navbar = () => {
                   <img className="w-8 h-8 " src="/valor.png" alt="VALOR" />
                 </div>
                 <span className="font-bold md:text-4xl text-2xl sm:block">
-                  <h1 className="text-foreground">VALOR</h1>
+                  <h1 className="text-dark">VALOR</h1>
                 </span>
               </Link>
             </motion.div>
@@ -118,6 +125,7 @@ const Navbar = () => {
                   className={cn(
                     "nav-link text-sm font-medium py-2 flex items-center gap-1.5",
                     location.pathname === link.href && "nav-link-active",
+
                     link.highlight && "relative"
                   )}
                 >
@@ -129,18 +137,19 @@ const Navbar = () => {
                 </Link>
               ))}
             </div>
-
             {/* Auth Section */}
             <div className="hidden md:flex items-center gap-4">
+              <ThemeToggle />
+
               {/* Faucet Button */}
               <a
                 href="https://faucet.testnet.sui.io"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-2 rounded-2xl  text-black font-medium transition-colors"
+                className="flex items-center gap-1 px-3 py-2 rounded-2xl  text-dark font-medium transition-colors"
                 title="Get Test SUI from Faucet"
               >
-                <Droplet className="w-4 h-4 text-black" /> Faucet
+                <Droplet className="w-4 h-4" /> Faucet
               </a>
               {!currentAccount ? (
                 <Button
@@ -224,31 +233,37 @@ const Navbar = () => {
             </div>
 
             {/* Mobile Menu Button */}
-            <button
-              className="md:hidden p-2 text-foreground"
-              onClick={() => setIsOpen(!isOpen)}
-            >
-              {isOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
+            <div className="md:hidden flex items-center gap-2">
+              <ThemeToggle />
+
+              <button
+                className="p-2"
+                onClick={() => setIsOpen(!isOpen)}
+              >
+                {isOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
+            </div>
+
           </div>
 
           {/* Mobile Navigation */}
           {isOpen && (
-            <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
+            <div className="md:hidden backdrop-blur-2xl py-4 border-t border-border animate-fade-in">
+
               <div className="flex flex-col gap-4">
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
                     to={link.href}
                     className={cn(
-                      "text-sm font-medium py-2 px-4 rounded-2xl transition-colors flex items-center gap-2",
+                      " text-sm font-medium py-2 px-4 rounded-2xl transition-colors flex items-center gap-2",
                       location.pathname === link.href
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        ? "text-primary "
+                        : " hover:bg-muted/50"
                     )}
                     onClick={() => setIsOpen(false)}
                   >
@@ -265,7 +280,7 @@ const Navbar = () => {
                   href="https://faucet.testnet.sui.io"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-2xl btn-gradientmr-2 text-black font-medium"
+                  className="flex items-center gap-2 px-4 py-2 rounded-2xl btn-gradientmr-2 font-medium"
                 >
                   <Droplet className="w-4 h-4" /> Faucet
                 </a>

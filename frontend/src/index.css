@@ -9,6 +9,23 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    transition:
+      background-color 300ms ease,
+      color 300ms ease;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition:
+      background-color 300ms ease,
+      border-color 300ms ease,
+      color 300ms ease,
+      fill 300ms ease,
+      stroke 300ms ease;
+  }
+
   :root {
     --background: 0 0% 100%;
 
@@ -94,7 +111,7 @@
   }
 
   .nav-link {
-    @apply relative text-muted-foreground hover:text-foreground transition-colors duration-200;
+    @apply relative text-muted-foreground hover:text-primary/50 transition-colors duration-200;
   }
 
   .nav-link::after {
@@ -106,7 +123,7 @@
   }
 
   .nav-link-active {
-    @apply text-foreground;
+    @apply text-primary;
   }
 
   .nav-link-active::after {
