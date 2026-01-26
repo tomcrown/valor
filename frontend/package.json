@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@cetusprotocol/aggregator-sdk": "^1.4.2",
+    "@google/genai": "^1.38.0",
     "@hookform/resolvers": "^3.10.0",
     "@mysten/dapp-kit": "^0.19.11",
     "@mysten/enoki": "^0.12.15",
