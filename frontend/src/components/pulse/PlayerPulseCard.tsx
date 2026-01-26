@@ -2,12 +2,12 @@ import { useState } from "react";
 import {
   ThumbsUp,
   ThumbsDown,
-  TrendingUp,
-  TrendingDown,
   Users,
   Clock,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useVote } from "@/hooks/useVote";
@@ -15,6 +15,7 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { getPlayerQuestion, formatTimeRemaining } from "@/config/pulse.config";
 import type { PlayerSentiment } from "@/hooks/usePulseData";
 import { toast } from "@/hooks/use-toast";
+import { easeOutExpo } from "@/components/ui/motion";
 
 interface PlayerPulseCardProps {
   player: {
@@ -39,16 +40,21 @@ export function PlayerPulseCard({
 }: PlayerPulseCardProps) {
   const currentAccount = useCurrentAccount();
   const { submitVote, isVoting } = useVote();
+
   const [selectedVote, setSelectedVote] = useState<"yes" | "no" | null>(null);
 
-  const hasVoted = sentiment?.userHasVoted || false;
+  const hasVoted = sentiment?.userHasVoted ?? false;
   const userVote = sentiment?.userVote;
+
+  const yes = sentiment?.yesPercentage ?? 0;
+  const no = sentiment?.noPercentage ?? 0;
+  const totalVotes = sentiment?.totalVotes ?? 0;
 
   const handleVote = async (vote: "yes" | "no") => {
     if (!sentiment?.objectId) {
       toast({
         title: "Voting unavailable",
-        description: "Sentiment data is missing for this player.",
+        description: "Missing sentiment data.",
         variant: "destructive",
       });
       return;
@@ -57,7 +63,7 @@ export function PlayerPulseCard({
     if (!currentAccount) {
       toast({
         title: "Wallet not connected",
-        description: "Please log in to cast your vote.",
+        description: "Please connect your wallet to vote.",
         variant: "destructive",
       });
       return;
@@ -70,186 +76,153 @@ export function PlayerPulseCard({
     if (success) {
       toast({
         title: "Vote submitted",
-        description: `You voted ${vote.toUpperCase()} for ${player.name}.`,
+        description: `You voted ${vote.toUpperCase()} for ${player.name}`,
       });
-
       onVoteSuccess();
     } else {
-      toast({
-        title: "Vote failed",
-        description: "Transaction failed or was rejected.",
-        variant: "destructive",
-      });
-
       setSelectedVote(null);
     }
   };
 
-  const yesPercentage = sentiment?.yesPercentage || 0;
-  const noPercentage = sentiment?.noPercentage || 0;
-  const totalVotes = sentiment?.totalVotes || 0;
-
-  const isYesMajority = yesPercentage > noPercentage;
-
   return (
-    <div className="glass-card overflow-hidden group hover:border-accent/50 transition-all duration-300">
-      {/* Player Header */}
-      <div className="relative h-48 overflow-hidden bg-gradient-to-b from-transparent to-card/50">
-        <img
-          src={player.imageUrl}
-          alt={player.name}
-          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
-
-        {/* Position Badge */}
-        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-primary/80 backdrop-blur-sm">
-          <span className="text-xs font-semibold text-primary-foreground">
-            {player.position}
-          </span>
+    <motion.div
+      className="glass-card p-6"
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.25, ease: easeOutExpo }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        {/* Player Image */}
+        <div className="w-14 h-14 rounded-full overflow-hidden bg-muted shrink-0">
+          <img
+            src={player.imageUrl}
+            alt={player.name}
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        {/* Vote Status Badge */}
-        {hasVoted && (
-          <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/80 backdrop-blur-sm">
-            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-            <span className="text-xs font-semibold text-white">Voted</span>
-          </div>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="p-5 space-y-4">
         {/* Player Info */}
-        <div>
-          <h3 className="font-bold text-lg mb-1">{player.name}</h3>
-          <p className="text-sm text-muted-foreground">{player.club}</p>
-        </div>
-
-        {/* Question */}
-        <div className="p-3 rounded-2xl bg-muted/30 border border-border/50">
-          <p className="text-sm font-medium text-center">
-            {getPlayerQuestion(player.name)}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-base truncate">
+              {player.name}
+            </h3>
+            {hasVoted && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {player.club} · {player.position}
           </p>
         </div>
+      </div>
+      {/* Question */}
+      <div className="mt-3">
+        <p className="text-sm text-muted-foreground text-center leading-snug">
+          {getPlayerQuestion(player.name)}
+        </p>
+      </div>
 
-        {/* Vote Buttons */}
+      {/* Vote Bar */}
+      {totalVotes > 0 && (
+        <div className="mt-4 space-y-2">
+          <div className="flex justify-between text-xs">
+            <span className="text-emerald-400 font-medium">
+              YES {yes}%
+            </span>
+            <span className="text-rose-400 font-medium">
+              NO {no}%
+            </span>
+          </div>
+
+          <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+            <motion.div
+              className="absolute left-0 top-0 h-full bg-emerald-500"
+              initial={{ width: 0 }}
+              animate={{ width: `${yes}%` }}
+              transition={{ duration: 0.6, ease: easeOutExpo }}
+            />
+            <motion.div
+              className="absolute right-0 top-0 h-full bg-rose-500"
+              initial={{ width: 0 }}
+              animate={{ width: `${no}%` }}
+              transition={{ duration: 0.6, ease: easeOutExpo }}
+            />
+          </div>
+
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              This week’s conviction
+            </span>
+            <span>{totalVotes.toLocaleString()} votes</span>
+          </div>
+        </div>
+      )}
+
+      {/* Voting Buttons */}
+      <AnimatePresence mode="wait">
         {!hasVoted && isVotingActive ? (
-          <div className="grid grid-cols-2 gap-3">
+          <motion.div
+            className="grid grid-cols-2 gap-3 mt-5"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             <Button
               onClick={() => handleVote("yes")}
-              disabled={isVoting || !currentAccount}
+              disabled={isVoting}
               className={cn(
-                "relative h-auto py-1 flex-col gap-2",
-                selectedVote === "yes" && "ring-2 ring-green-500",
-                "bg-green/10 hover:bg-green-500/20 text-green-500 border border-green-500/30"
+                "h-11 rounded-xl border border-emerald-500/30",
+                "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400"
               )}
+              variant="outline"
             >
-              <ThumbsUp className="w-5 h-5" />
-              <span className="font-semibold">YES</span>
+              <ThumbsUp className="w-4 h-4 mr-2" />
+              YES
             </Button>
 
             <Button
               onClick={() => handleVote("no")}
-              disabled={isVoting || !currentAccount}
+              disabled={isVoting}
               className={cn(
-                "relative h-auto py-1 flex-col gap-2",
-                selectedVote === "no" && "ring-2 ring-destructive",
-                "bg-red/10 hover:bg-red-400/20 text-red-400 border border-red-400/30"
+                "h-11 rounded-xl border border-rose-500/30",
+                "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400"
               )}
+              variant="outline"
             >
-              <ThumbsDown className="w-5 h-5" />
-              <span className="font-semibold">NO</span>
+              <ThumbsDown className="w-4 h-4 mr-2" />
+              NO
             </Button>
-          </div>
+          </motion.div>
         ) : hasVoted ? (
-          <div className="p-3 rounded-2xl bg-success/10 border border-success/30 text-center h-full">
-            <div className="flex items-center justify-center gap-2 text-success mb-1">
-              <CheckCircle2 className="w-4 h-4" />
-              <span className="font-semibold">
-                You voted {userVote?.toUpperCase()}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Check back after the week ends
-            </p>
+          <div className="mt-5 text-center text-sm text-muted-foreground">
+            You voted{" "}
+            <span
+              className={
+                userVote === "yes"
+                  ? "text-emerald-400"
+                  : "text-rose-400"
+              }
+            >
+              {userVote?.toUpperCase()}
+            </span>
           </div>
-        ) : (
-          <div className="p-3 rounded-2xl bg-muted/30 border border-border/50 text-center">
-            <p className="text-sm text-muted-foreground">Voting closed</p>
-          </div>
-        )}
+        ) : null}
+      </AnimatePresence>
 
-        {/* Results */}
-        {totalVotes > 0 && (
-          <div className="space-y-3">
-            {/* Vote Bars */}
-            <div className="space-y-2">
-              {/* YES Bar */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-success">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span className="font-semibold">YES</span>
-                  </div>
-                  <span className="font-mono font-semibold">
-                    {yesPercentage}%
-                  </span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-300 transition-all duration-500"
-                    style={{ width: `${yesPercentage}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* NO Bar */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-red-400">
-                    <TrendingDown className="w-3.5 h-3.5" />
-                    <span className="font-semibold">NO</span>
-                  </div>
-                  <span className="font-mono font-semibold">
-                    {noPercentage}%
-                  </span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-red-300 transition-all duration-500"
-                    style={{ width: `${noPercentage}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Stats Footer */}
-            <div className="flex items-center justify-between pt-2 border-t border-border/50">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Users className="w-3.5 h-3.5" />
-                <span className="font-medium">{totalVotes} votes</span>
-              </div>
-
-              {isVotingActive && (
-                <div className="flex items-center gap-1.5 text-xs text-accent">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span className="font-medium">
-                    {formatTimeRemaining(weekEndTime)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* No votes yet */}
-        {totalVotes === 0 && (
-          <div className="text-center py-4 text-sm text-muted-foreground">
-            Be the first to vote!
-          </div>
-        )}
-      </div>
-    </div>
+      {/* Footer */}
+      {isVotingActive && (
+        <div className="flex justify-between mt-4 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Users className="w-3 h-3" />
+            {totalVotes} votes
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {formatTimeRemaining(weekEndTime)}
+          </span>
+        </div>
+      )}
+    </motion.div>
   );
 }

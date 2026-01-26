@@ -94,7 +94,7 @@ const PortfolioPage = () => {
   if (error) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 ">
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
             <AlertCircle className="w-16 h-16 text-destructive mb-4" />
             <h2 className="text-2xl font-bold mb-2">
@@ -110,7 +110,7 @@ const PortfolioPage = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 md:mt-16">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>

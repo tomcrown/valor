@@ -24,6 +24,7 @@ import { PLATFORM_STATS } from "@/data/apiData";
 import { easeOutExpo } from "@/components/ui/motion";
 import KeyFeaturesSection from "@/components/KeyFeaturesSection";
 import { TechStackSection } from "@/components/TechStackSection";
+import { HowItWorksSection } from "@/components/HowItWorksSection";
 
 const LandingPage = () => {
   return (
@@ -126,69 +127,7 @@ const LandingPage = () => {
 
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 relative">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              How It <span className="gradient-text">Works</span>
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Get started trading in minutes with our intuitive platform
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {[
-              {
-                step: "01",
-                title: "Connect Wallet or Google",
-                description:
-                  "Link your Sui wallet or sign in with Google. No wallet? No problem!",
-              },
-              {
-                step: "02",
-                title: "Explore Seasonal Data",
-                description:
-                  "View player performance across Early, Mid, and Current seasons. Track price evolution.",
-              },
-              {
-                step: "03",
-                title: "Buy Shares & Get NFTs",
-                description:
-                  "Purchase player shares and receive unique NFT certificates proving ownership.",
-              },
-              {
-                step: "04",
-                title: "Vote on Pulse & Trade",
-                description:
-                  "Join community sentiment voting and trade based on performance and predictions.",
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                className="relative"
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: i * 0.15 }}
-                viewport={{ amount: 0.2 }}
-              >
-                <div className="glass-card p-6 h-full hover-lift">
-                  <div className="text-5xl font-bold text-primary/50 mb-4">
-                    {item.step}
-                  </div>
-                  <h3 className="font-bold text-lg mb-3">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {item.description}
-                  </p>
-                </div>
-                {i < 3 && (
-                  <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-0.5 bg-gradient-to-r from-primary to-transparent" />
-                )}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HowItWorksSection />
 
       {/* Features Section */}
       <KeyFeaturesSection />

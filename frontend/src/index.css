@@ -39,6 +39,8 @@
 
     --border: 240 5% 80%;
     --ring: 360 100% 65%;
+
+    --glow-secondary: 220 70% 50%;
   }
 
   .light {
@@ -137,5 +139,10 @@
 
   .nav-link-active::after {
     @apply w-full;
+  }
+
+  .connector-line {
+    @apply h-0.5;
+    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--border)) 100%);
   }
 }

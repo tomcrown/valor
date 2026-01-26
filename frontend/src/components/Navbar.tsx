@@ -146,7 +146,7 @@ const Navbar = () => {
                 href="https://faucet.testnet.sui.io"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-2 rounded-2xl  text-dark font-medium transition-colors"
+                className="flex items-center gap-1 px-3 py-2 rounded-2xl font-medium transition-colors"
                 title="Get Test SUI from Faucet"
               >
                 <Droplet className="w-4 h-4" /> Faucet
@@ -154,7 +154,7 @@ const Navbar = () => {
               {!currentAccount ? (
                 <Button
                   onClick={() => setIsAuthOpen(true)}
-                  className="btn-gradient text-primary-foreground font-semibold px-6"
+                  className="btn-gradient font-semibold px-6"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
                   Log In
@@ -241,9 +241,9 @@ const Navbar = () => {
                 onClick={() => setIsOpen(!isOpen)}
               >
                 {isOpen ? (
-                  <X className="w-6 h-6" />
+                  <X className="w-8 h-8" />
                 ) : (
-                  <Menu className="w-6 h-6" />
+                  <Menu className="w-8 h-8" />
                 )}
               </button>
             </div>
