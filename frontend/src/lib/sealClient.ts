@@ -1,11 +1,12 @@
 import { SealClient, SessionKey } from "@mysten/seal";
 import { SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
-import type { AIAnalysis } from "./openai";
+import type { AIAnalysis } from "./gemini";
 
 // Seal configuration for Testnet
 const SEAL_CONFIG = {
-  packageId:
+  // This is the Seal PROTOCOL package (for creating SealClient)
+  sealProtocolPackageId:
     "0x4016869413374eaa71df2a043d1660ed7bc927ab7962831f8b07efbc7efdb2c3",
   keyServerTestnet:
     "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75",
@@ -44,9 +45,12 @@ export interface EncryptedAIBlob {
 export class ValorSealClient {
   private sealClient: SealClient;
   private suiClient: SuiClient;
+  private valorPackageId: string; // Add this
 
-  constructor(suiClient: SuiClient) {
+  constructor(suiClient: SuiClient, valorPackageId: string) {
+    // Add parameter
     this.suiClient = suiClient;
+    this.valorPackageId = valorPackageId; // Store it
 
     this.sealClient = new SealClient({
       suiClient,
@@ -75,7 +79,7 @@ export class ValorSealClient {
       reasoning: fullAnalysis.reasoning,
     };
 
-    // Create encryption ID: [package_id][player_id][season]
+    // Create encryption ID: [player_id][season]
     const encryptionId = this.createEncryptionId(playerId, season);
 
     // Convert encryptionId (Uint8Array) to hex string
@@ -87,9 +91,10 @@ export class ValorSealClient {
     const premiumJson = JSON.stringify(premiumData);
     const premiumBytes = new TextEncoder().encode(premiumJson);
 
+    // CRITICAL FIX: Use valorPackageId, not the Seal protocol package
     const { encryptedObject } = await this.sealClient.encrypt({
       threshold: 1,
-      packageId: SEAL_CONFIG.packageId,
+      packageId: this.valorPackageId, // YOUR package with seal_approve functions
       id: encryptionIdHex,
       data: premiumBytes,
     });
@@ -124,22 +129,21 @@ export class ValorSealClient {
   async decryptPremiumAI(
     encryptedBlob: EncryptedAIBlob,
     userAddress: string,
-    valorPackageId: string,
-    valorSealPackageId: string,
     nftRegistryId: string,
+    VITE_VALOR_SEAL_PACKAGE_ID: any,
+    VITE_NFT_REGISTRY_ID: any,
   ): Promise<PremiumAIData | null> {
     try {
       // Create session key for this user
       const sessionKey = await SessionKey.create({
         address: userAddress,
-        packageId: SEAL_CONFIG.packageId,
+        packageId: SEAL_CONFIG.sealProtocolPackageId,
         ttlMin: 10,
         suiClient: this.suiClient,
       });
 
       // User must sign in wallet to approve access
       // This would be done in the UI with wallet.signPersonalMessage()
-      // For now, we'll prepare the transaction
 
       // Create PTB that calls seal_approve_with_player
       const tx = new Transaction();
@@ -148,7 +152,7 @@ export class ValorSealClient {
       const playerId = encryptedBlob.player_id;
 
       tx.moveCall({
-        target: `${valorSealPackageId}::valor_seal::seal_approve_with_player`,
+        target: `${this.valorPackageId}::valor_seal::seal_approve_with_player`,
         arguments: [
           tx.pure.vector(
             "u8",
@@ -184,7 +188,7 @@ export class ValorSealClient {
 
   /**
    * Create encryption ID for Seal
-   * Format: [package_id][player_id][season_byte]
+   * Format: [player_id][season_byte]
    */
   private createEncryptionId(playerId: string, season: string): Uint8Array {
     // Convert player ID to bytes
@@ -221,9 +225,6 @@ export async function checkNFTOwnership(
 ): Promise<{ hasOwnership: boolean; shares: number }> {
   try {
     // Call the view function to check ownership
-    // This would use SuiClient.devInspectTransactionBlock or similar
-    // For MVP, we'll return a simple check
-
     // TODO: Implement proper on-chain check
     return { hasOwnership: true, shares: 1 };
   } catch (error) {
@@ -233,8 +234,25 @@ export async function checkNFTOwnership(
 }
 
 /**
- * Export singleton instance
+ * Export singleton instance - NOW REQUIRES VALOR PACKAGE ID
  */
-export function createSealClient(suiClient: SuiClient): ValorSealClient {
-  return new ValorSealClient(suiClient);
+export function createSealClient(
+  suiClient: SuiClient,
+  valorPackageId?: string, // Make it optional with fallback
+): ValorSealClient {
+  // Get Valor package ID from env or parameter
+  const pkgId =
+    valorPackageId ||
+    (typeof process !== "undefined" &&
+      process.env?.VITE_VALOR_SEAL_PACKAGE_ID) ||
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any).env?.VITE_VALOR_SEAL_PACKAGE_ID);
+
+  if (!pkgId) {
+    throw new Error(
+      "Valor package ID not found. Set VITE_VALOR_SEAL_PACKAGE_ID in .env",
+    );
+  }
+
+  return new ValorSealClient(suiClient, pkgId);
 }

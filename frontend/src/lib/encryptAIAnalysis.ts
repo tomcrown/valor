@@ -1,7 +1,7 @@
 import { createSealClient, type EncryptedAIBlob } from "./sealClient";
 import { walrusClient } from "./walrusClient";
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
-import type { AIAnalysis } from "./openai";
+import type { AIAnalysis } from "./gemini";
 import type { SeasonPeriod } from "@/data/apiData";
 
 /**
@@ -18,11 +18,30 @@ export async function encryptAndUploadAI(
   );
 
   try {
-    // Initialize Seal client
+    // Get network and package ID from environment
+    const network =
+      (typeof process !== "undefined" && process.env?.VITE_SUI_NETWORK) ||
+      (typeof import.meta !== "undefined" &&
+        (import.meta as any).env?.VITE_SUI_NETWORK) ||
+      "testnet";
+
+    const valorPackageId =
+      (typeof process !== "undefined" &&
+        process.env?.VITE_VALOR_SEAL_PACKAGE_ID) ||
+      (typeof import.meta !== "undefined" &&
+        (import.meta as any).env?.VITE_VALOR_SEAL_PACKAGE_ID);
+
+    if (!valorPackageId) {
+      throw new Error("VITE_VALOR_SEAL_PACKAGE_ID not found in environment");
+    }
+
+    console.log(`   📦 Using Valor Package: ${valorPackageId}`);
+
+    // Initialize Seal client with Valor package ID
     const suiClient = new SuiClient({
-      url: getFullnodeUrl(import.meta.env.VITE_SUI_NETWORK || "testnet"),
+      url: getFullnodeUrl(network),
     });
-    const sealClient = createSealClient(suiClient);
+    const sealClient = createSealClient(suiClient, valorPackageId);
 
     // Encrypt premium fields (prediction, key_factors, reasoning)
     console.log(`   📊 AI Score: ${aiAnalysis.performance_score}/100`);
@@ -52,24 +71,41 @@ export async function encryptAndUploadAI(
 }
 
 /**
- * Downloads and parses encrypted AI blob from Walrus
+ * Downloads and parses encrypted AI blob from Walrus with retry logic
  */
 export async function downloadEncryptedAI(
   blobId: string,
+  options?: {
+    maxRetries?: number;
+    silent?: boolean;
+  },
 ): Promise<EncryptedAIBlob | null> {
   try {
-    console.log(`\n📥 Downloading encrypted AI from Walrus...`);
-    console.log(`   Blob ID: ${blobId}`);
+    if (!options?.silent) {
+      console.log(`\n📥 Downloading encrypted AI from Walrus...`);
+      console.log(`   Blob ID: ${blobId}`);
+    }
 
-    const blob = await walrusClient.downloadJSON<EncryptedAIBlob>(blobId);
+    // Use walrusClient's built-in retry logic
+    const blob = await walrusClient.downloadJSON<EncryptedAIBlob>(blobId, {
+      maxRetries: options?.maxRetries ?? 5,
+      retryDelayMs: 2000,
+      silent: options?.silent ?? false,
+    });
 
-    console.log(`   ✅ Downloaded successfully`);
-    console.log(`   📊 Public data available`);
-    console.log(`   🔒 Premium data encrypted`);
+    if (!options?.silent) {
+      console.log(`   ✅ Downloaded successfully`);
+      console.log(`   📊 Public data available`);
+      console.log(`   🔒 Premium data encrypted`);
+    }
 
     return blob;
   } catch (error: any) {
-    console.error(`   ❌ Download failed:`, error.message);
+    if (!options?.silent) {
+      console.error(`   ❌ Download failed:`, error.message);
+    }
+
+    // Return null instead of throwing - allows graceful degradation
     return null;
   }
 }

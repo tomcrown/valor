@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 let geminiClient: GoogleGenAI | null = null;
 
@@ -127,75 +127,13 @@ const SUMMARY_STYLES = [
   "clinical",
 ];
 
-const analysisSchema = {
-  type: Type.OBJECT,
-  properties: {
-    performance_score: { type: Type.NUMBER },
-    performance_trend: {
-      type: Type.STRING,
-      enum: ["improving", "stable", "declining"],
-    },
-    form_status: {
-      type: Type.STRING,
-      enum: ["excellent", "good", "average", "poor"],
-    },
-    confidence: { type: Type.NUMBER },
-    reasoning: { type: Type.STRING },
-    key_factors: { type: Type.ARRAY, items: { type: Type.STRING } },
-    prediction: { type: Type.STRING },
-    short_summary: { type: Type.STRING },
-    availability_status: {
-      type: Type.OBJECT,
-      properties: {
-        is_playing: { type: Type.BOOLEAN },
-        injury_risk: {
-          type: Type.STRING,
-          enum: ["low", "medium", "high"],
-        },
-        playing_time: {
-          type: Type.STRING,
-          enum: ["regular", "rotation", "bench", "unknown"],
-        },
-        notes: { type: Type.STRING },
-      },
-      required: ["is_playing", "injury_risk", "playing_time", "notes"],
-    },
-    recent_form: {
-      type: Type.OBJECT,
-      properties: {
-        last_5_games: { type: Type.STRING },
-        goals_per_90: { type: Type.NUMBER },
-        consistency_rating: { type: Type.NUMBER },
-      },
-      required: ["last_5_games", "goals_per_90", "consistency_rating"],
-    },
-    position_specific_analysis: {
-      type: Type.OBJECT,
-      properties: {
-        role_effectiveness: { type: Type.NUMBER },
-        tactical_importance: { type: Type.NUMBER },
-        key_metrics: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-        },
-      },
-      required: ["role_effectiveness", "tactical_importance", "key_metrics"],
-    },
-  },
-  required: [
-    "performance_score",
-    "performance_trend",
-    "form_status",
-    "confidence",
-    "reasoning",
-    "key_factors",
-    "prediction",
-    "short_summary",
-    "availability_status",
-    "recent_form",
-    "position_specific_analysis",
-  ],
-};
+function cleanJSON(text: string | undefined): string {
+  if (!text) return "";
+  return text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+}
 
 export async function analyzePlayer(
   playerStats: SeasonalPlayerStats,
@@ -338,29 +276,109 @@ AVOID:
 ✗ Jargon without explanation
 ✗ Mentioning the season year repeatedly
 
-IMPORTANT: Use the Google Search tool to find REAL, CURRENT data about ${playerStats.name}. Don't make up stats or news.`;
+IMPORTANT: Use the Google Search tool to find REAL, CURRENT data about ${playerStats.name}. Don't make up stats or news.
+
+RESPONSE FORMAT:
+Return ONLY valid JSON with this exact structure (no markdown, no backticks):
+{
+  "performance_score": 85,
+  "performance_trend": "improving",
+  "form_status": "excellent",
+  "confidence": 90,
+  "reasoning": "detailed reasoning here",
+  "key_factors": ["factor 1", "factor 2", "factor 3"],
+  "prediction": "prediction here",
+  "short_summary": "summary here",
+  "availability_status": {
+    "is_playing": true,
+    "injury_risk": "low",
+    "playing_time": "regular",
+    "notes": "notes here"
+  },
+  "recent_form": {
+    "last_5_games": "form description",
+    "goals_per_90": 0.85,
+    "consistency_rating": 8.5
+  },
+  "position_specific_analysis": {
+    "role_effectiveness": 90,
+    "tactical_importance": 95,
+    "key_metrics": ["metric 1", "metric 2"]
+  }
+}`;
 
   try {
+    console.log(`   🤖 Calling Gemini 2.0 Flash with Google Search...`);
+    console.log(`   🔍 Researching: ${playerStats.name} (${playerStats.team})`);
+
+    const startTime = Date.now();
+
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash-exp",
       contents: prompt,
       config: {
         systemInstruction: systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: analysisSchema,
         temperature: 0.7,
         tools: [{ googleSearch: {} }],
       },
     });
 
-    const analysis = JSON.parse(response.text);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log(`   ⏱️  Analysis completed in ${duration}s`);
+
+    // Handle different response formats
+    let responseText: string;
+    if (typeof response.text === "function") {
+      responseText = response.text;
+    } else if (typeof response.text === "string") {
+      responseText = response.text;
+    } else if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+      responseText = response.candidates[0].content.parts[0].text;
+    } else {
+      throw new Error("Unable to extract text from Gemini response");
+    }
+
+    const cleanedText = cleanJSON(responseText);
+
+    // Extract JSON from response (handle markdown code blocks)
+    let jsonStr = cleanedText;
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
+    }
+
+    let analysis: AIAnalysis;
+    try {
+      analysis = JSON.parse(jsonStr);
+    } catch (err) {
+      console.error(`   ❌ Failed to parse Gemini JSON:`);
+      console.error(`   Raw response:`, responseText.substring(0, 200));
+      console.error(`   Cleaned:`, jsonStr.substring(0, 200));
+      throw err;
+    }
+
+    // Verify we got real data
+    if (!analysis.prediction || !analysis.key_factors || !analysis.reasoning) {
+      console.warn(`   ⚠️  Warning: AI returned incomplete analysis`);
+    } else {
+      console.log(
+        `   ✅ Full AI analysis received (${analysis.key_factors.length} key factors)`,
+      );
+    }
 
     return {
       ...analysis,
       season_context: seasonLabel,
     } as AIAnalysis;
   } catch (error: any) {
-    console.error("Gemini analysis error:", error);
-    throw new Error(`Failed to analyze player: ${error.message}`);
+    console.error(
+      `   ❌ Gemini analysis error:`,
+      error.message || JSON.stringify(error),
+    );
+
+    // If Gemini fails, throw error instead of returning fallback
+    throw new Error(
+      `Failed to analyze player: ${error.message || JSON.stringify(error)}`,
+    );
   }
 }
