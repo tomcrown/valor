@@ -406,8 +406,8 @@ const PlayerDetailPage = () => {
                     <p className="text-xl font-bold">
                       {seasonStats.goals > 0
                         ? Math.round(
-                            seasonStats.minutesPlayed / seasonStats.goals
-                          )
+                          seasonStats.minutesPlayed / seasonStats.goals
+                        )
                         : "N/A"}
                     </p>
                   </div>
@@ -489,7 +489,7 @@ const PlayerDetailPage = () => {
               <div className="mt-4">
                 <button
                   onClick={() => setIsSwapModalOpen(true)}
-                  className="w-full text-sm text-muted-foreground hover:text-accent transition-colors flex items-center justify-center gap-2 py-2"
+                  className="w-full text-sm text-muted-foreground  transition-colors flex items-center justify-center gap-2 py-2"
                 >
                   Not enough SUI?{" "}
                   <span className="font-semibold text-accent underline">

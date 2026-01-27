@@ -89,7 +89,7 @@ function TokenSelect({ value, onChange, disabled }) {
       </button>
 
       {open && (
-        <div className="z-10 absolute bg-white shadow-xl mt-2 border border-border rounded-xl max-h-48 overflow-y-auto w-full">
+        <div className="z-10 absolute bg-background shadow-xl mt-2 border border-border rounded-xl max-h-48 overflow-y-auto w-full">
           {tokens.map((token) => (
             <div
               key={token.symbol}
@@ -162,7 +162,7 @@ export function SwapModal({ open, onOpenChange }) {
 
       setBalances(newBalances);
       setActualBalances(newActualBalances);
-    } catch (error) {}
+    } catch (error) { }
   }, [currentAccount, suiClient]);
 
   useEffect(() => {
@@ -423,7 +423,7 @@ export function SwapModal({ open, onOpenChange }) {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="z-50 max-w-md bg-white">
+        <DialogContent className="z-50 max-w-md bg-background">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold gradient-text">
               Swap Tokens
@@ -471,7 +471,7 @@ export function SwapModal({ open, onOpenChange }) {
                     size="sm"
                     onClick={handleMaxClick}
                     disabled={isSwapping}
-                    className="h-auto py-1 px-2 text-xs font-semibold text-accent hover:text-accent/80"
+                    className="h-auto py-1 px-2 text-xs font-semibold text-accent hover:bg-accent/0"
                   >
                     MAX
                   </Button>
@@ -535,7 +535,7 @@ export function SwapModal({ open, onOpenChange }) {
                 routeError !== "" ||
                 parseFloat(fromAmount) <= 0
               }
-              className="w-full btn-gradient h-12 text-lg font-semibold"
+              className="w-full btn-gradient h-12 text-lg font-semibold -z-10"
             >
               {isSwapping ? (
                 <>
