@@ -282,8 +282,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
       mid: {
         goals: 0,
         assists: 0,
-        minutesPlayed: 0,
-        matchesPlayed: 0,
+        minutesPlayed: 202,
+        matchesPlayed: 6,
       },
       current: {
         goals: 4,
