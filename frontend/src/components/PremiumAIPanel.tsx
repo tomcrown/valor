@@ -14,7 +14,7 @@ import {
   type PremiumAIData,
 } from "@/lib/sealClient";
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSignPersonalMessage } from "@mysten/dapp-kit";
 import { cn } from "@/lib/utils";
 import type { SeasonPeriod } from "@/data/apiData";
 
@@ -41,6 +41,7 @@ export function PremiumAIPanel({
   const [premiumData, setPremiumData] = useState<PremiumAIData | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [decryptError, setDecryptError] = useState<string | null>(null);
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
 
   const handleUnlock = async () => {
     if (!account?.address) {
@@ -57,9 +58,41 @@ export function PremiumAIPanel({
     setDecryptError(null);
 
     try {
+      console.log("🔐 Preparing to unlock premium insights...");
+
       const suiClient = new SuiClient({
         url: getFullnodeUrl(import.meta.env.VITE_SUI_NETWORK || "testnet"),
       });
+
+      // ✅ Create a proper wallet client with all required methods
+      const walletClient = {
+        getAddress: async () => account.address,
+
+        getPublicKey: async () => {
+          // Get the public key from the connected account
+          if (!account.publicKey) {
+            throw new Error("No public key available");
+          }
+          // Return the public key bytes directly - Seal will handle the conversion
+          return account.publicKey;
+        },
+
+        signPersonalMessage: async (input: Uint8Array) => {
+          console.log("   ✍️ Signing message of length:", input.length);
+
+          // @mysten/dapp-kit expects Uint8Array directly
+          const result = await signPersonalMessage({
+            message: input,
+          });
+
+          console.log("   ✅ Message signed");
+
+          return {
+            signature: result.signature,
+            bytes: result.bytes,
+          };
+        },
+      };
 
       const sealClient = createSealClient(suiClient);
 
@@ -71,26 +104,36 @@ export function PremiumAIPanel({
         encrypted_at: new Date().toISOString(),
         seal_metadata: {
           threshold: 1,
-          services: [import.meta.env.VITE_SEAL_KEY_SERVER],
+          services: [import.meta.env.VITE_SEAL_KEY_SERVER_TESTNET],
         },
       };
+
+      console.log("🔓 Decrypting with wallet signer...");
 
       const decrypted = await sealClient.decryptPremiumAI(
         encryptedBlob,
         account.address,
-        import.meta.env.VITE_PACKAGE_ID,
-        import.meta.env.VITE_VALOR_SEAL_PACKAGE_ID,
         import.meta.env.VITE_NFT_REGISTRY_ID,
+        walletClient,
       );
 
       if (decrypted) {
         setPremiumData(decrypted);
+        console.log("🎉 Premium insights unlocked!");
       } else {
         setDecryptError("Failed to decrypt premium data");
       }
     } catch (error: any) {
-      console.error("Decryption error:", error);
-      setDecryptError(error.message || "Failed to decrypt");
+      console.error("❌ Decryption error:", error);
+
+      if (
+        error.message?.includes("User rejected") ||
+        error.message?.includes("rejected")
+      ) {
+        setDecryptError("Signature request was rejected");
+      } else {
+        setDecryptError(error.message || "Failed to decrypt");
+      }
     } finally {
       setIsDecrypting(false);
     }

@@ -38,6 +38,10 @@ export const SUI_CONFIG = {
     adminCapId:
       getEnv("VITE_ADMIN_CAP_ID") ||
       "0xe15992de3159c3eac404b9b51ff33819b6fa9924b442758af6b1da9cd844a11e",
+
+    nftRegistryObjectId:
+      getEnv("VITE_NFT_REGISTRY_ID") ||
+      "0x944227ba8863cb2fe55e40d9fa1630cbc32941f9202bbd85543b929601ed49db",
   },
 
   gas: {
