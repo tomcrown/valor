@@ -43,9 +43,9 @@ const SEASON_LABELS = {
 };
 
 const SEASON_DESCRIPTIONS = {
-  early: "Initial Performance",
-  mid: "Mid-Season Form",
-  current: "Latest Performance",
+  early: "Initial Performance (Matches 1-3)",
+  mid: "Mid-Season Form (Matches 4-9)",
+  current: "Latest Performance (All Matches)",
 };
 
 const PlayerDetailPage = () => {
@@ -58,11 +58,37 @@ const PlayerDetailPage = () => {
     (location.state?.selectedSeason as SeasonPeriod) || "current",
   );
 
-  // Seal integration state
-  const [encryptedAIBlob, setEncryptedAIBlob] =
-    useState<EncryptedAIBlob | null>(null);
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [aiLoadError, setAiLoadError] = useState<string | null>(null);
+  // Seal integration state - now per-season
+  const [encryptedAIBlobs, setEncryptedAIBlobs] = useState<{
+    early: EncryptedAIBlob | null;
+    mid: EncryptedAIBlob | null;
+    current: EncryptedAIBlob | null;
+  }>({
+    early: null,
+    mid: null,
+    current: null,
+  });
+
+  const [isLoadingAI, setIsLoadingAI] = useState<{
+    early: boolean;
+    mid: boolean;
+    current: boolean;
+  }>({
+    early: false,
+    mid: false,
+    current: false,
+  });
+
+  const [aiLoadError, setAiLoadError] = useState<{
+    early: string | null;
+    mid: string | null;
+    current: string | null;
+  }>({
+    early: null,
+    mid: null,
+    current: null,
+  });
+
   const [retryCount, setRetryCount] = useState(0);
   const [userOwnsNFT, setUserOwnsNFT] = useState(false);
   const [userShares, setUserShares] = useState(0);
@@ -78,102 +104,95 @@ const PlayerDetailPage = () => {
     autoFetch: true,
   });
 
-  // Load encrypted AI from Walrus with improved error handling
-  // Load encrypted AI from Walrus with improved error handling
-  useEffect(() => {
-    async function loadEncryptedAI() {
-      if (!mergedPlayer) {
-        setEncryptedAIBlob(null);
-        setIsLoadingAI(false);
-        setAiLoadError(null);
-        return;
-      }
-
-      // Get the season-specific Walrus blob ID
-      const seasonBlobId = getSeasonWalrusBlobId(
-        mergedPlayer as any,
-        selectedSeason,
-      );
-
-      if (!seasonBlobId) {
-        console.log(`ℹ️ No Walrus blob ID for ${selectedSeason} season`);
-        setEncryptedAIBlob(null);
-        setIsLoadingAI(false);
-        setAiLoadError(null);
-        return;
-      }
-
-      setIsLoadingAI(true);
-      setAiLoadError(null);
-
-      try {
-        console.log(`📥 Loading encrypted AI from Walrus`);
-        console.log(`   Season: ${selectedSeason}`);
-        console.log(`   Blob ID: ${seasonBlobId}`);
-
-        // 🔍 ADD DEBUG CODE HERE (after seasonBlobId is defined):
-        console.log("🔍 Debug Info:");
-        console.log("   Player ID:", mergedPlayer.id);
-        console.log("   Season:", selectedSeason);
-        console.log("   Blob ID:", seasonBlobId); // ✅ Use seasonBlobId, not seasonWalrusBlobId
-        console.log(
-          "   Aggregator URL:",
-          `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${seasonBlobId}`,
-        );
-
-        // Test the blob directly
-        fetch(
-          `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${seasonBlobId}`,
-        )
-          .then((r) => {
-            console.log("   HTTP Status:", r.status);
-            return r.text();
-          })
-          .then((text) =>
-            console.log("   Response preview:", text.substring(0, 200)),
-          )
-          .catch((e) => console.log("   Fetch Error:", e));
-
-        // Download with retry logic (up to 5 attempts with exponential backoff)
-        const blob = await downloadEncryptedAI(seasonBlobId, {
-          maxRetries: 5,
-          silent: false,
-        });
-
-        if (blob && validateEncryptedBlob(blob)) {
-          setEncryptedAIBlob(blob);
-          setAiLoadError(null);
-          console.log("✅ Encrypted AI loaded from Walrus");
-          console.log(`   Public score: ${blob.public_data.performance_score}`);
-          console.log(`   Trend: ${blob.public_data.performance_trend}`);
-        } else {
-          console.warn("⚠️ Invalid or missing encrypted AI blob");
-          setEncryptedAIBlob(null);
-          setAiLoadError("Invalid blob format");
-        }
-      } catch (error: any) {
-        console.error("❌ Failed to load encrypted AI:", error);
-        setEncryptedAIBlob(null);
-
-        // Provide user-friendly error messages
-        if (error.message.includes("404")) {
-          setAiLoadError(
-            "AI data not found. The blob may not have been uploaded yet.",
-          );
-        } else if (error.message.includes("timeout")) {
-          setAiLoadError(
-            "Connection timeout. Please check your network and try again.",
-          );
-        } else {
-          setAiLoadError("Failed to load AI insights. Please try again later.");
-        }
-      } finally {
-        setIsLoadingAI(false);
-      }
+  // Load encrypted AI from Walrus for a specific season
+  const loadEncryptedAIForSeason = async (season: SeasonPeriod) => {
+    if (!mergedPlayer) {
+      return;
     }
 
-    loadEncryptedAI();
-  }, [mergedPlayer, selectedSeason, retryCount]);
+    // Get the season-specific Walrus blob ID
+    const seasonBlobId = getSeasonWalrusBlobId(mergedPlayer as any, season);
+
+    if (!seasonBlobId) {
+      console.log(`ℹ️ No Walrus blob ID for ${season} season`);
+      setEncryptedAIBlobs((prev) => ({ ...prev, [season]: null }));
+      setIsLoadingAI((prev) => ({ ...prev, [season]: false }));
+      setAiLoadError((prev) => ({
+        ...prev,
+        [season]: `No AI data available for ${SEASON_LABELS[season]}`,
+      }));
+      return;
+    }
+
+    setIsLoadingAI((prev) => ({ ...prev, [season]: true }));
+    setAiLoadError((prev) => ({ ...prev, [season]: null }));
+
+    try {
+      console.log(`📥 Loading encrypted AI from Walrus`);
+      console.log(`   Season: ${season}`);
+      console.log(`   Blob ID: ${seasonBlobId}`);
+
+      // Download with retry logic (up to 5 attempts with exponential backoff)
+      const blob = await downloadEncryptedAI(seasonBlobId, {
+        maxRetries: 5,
+        silent: false,
+      });
+
+      if (blob && validateEncryptedBlob(blob)) {
+        setEncryptedAIBlobs((prev) => ({ ...prev, [season]: blob }));
+        setAiLoadError((prev) => ({ ...prev, [season]: null }));
+        console.log(`✅ ${season} season encrypted AI loaded from Walrus`);
+        console.log(`   Public score: ${blob.public_data.performance_score}`);
+        console.log(`   Trend: ${blob.public_data.performance_trend}`);
+      } else {
+        console.warn(`⚠️ Invalid or missing encrypted AI blob for ${season}`);
+        setEncryptedAIBlobs((prev) => ({ ...prev, [season]: null }));
+        setAiLoadError((prev) => ({
+          ...prev,
+          [season]: "Invalid blob format",
+        }));
+      }
+    } catch (error: any) {
+      console.error(`❌ Failed to load ${season} season encrypted AI:`, error);
+      setEncryptedAIBlobs((prev) => ({ ...prev, [season]: null }));
+
+      // Provide user-friendly error messages
+      if (error.message.includes("404")) {
+        setAiLoadError((prev) => ({
+          ...prev,
+          [season]:
+            "AI data not found. The blob may not have been uploaded yet.",
+        }));
+      } else if (error.message.includes("timeout")) {
+        setAiLoadError((prev) => ({
+          ...prev,
+          [season]:
+            "Connection timeout. Please check your network and try again.",
+        }));
+      } else {
+        setAiLoadError((prev) => ({
+          ...prev,
+          [season]: "Failed to load AI insights. Please try again later.",
+        }));
+      }
+    } finally {
+      setIsLoadingAI((prev) => ({ ...prev, [season]: false }));
+    }
+  };
+
+  // Load AI data for all seasons when player data is available
+  useEffect(() => {
+    if (!mergedPlayer) return;
+
+    // Load AI data for all three seasons
+    (async () => {
+      await Promise.all([
+        loadEncryptedAIForSeason("early"),
+        loadEncryptedAIForSeason("mid"),
+        loadEncryptedAIForSeason("current"),
+      ]);
+    })();
+  }, [mergedPlayer, retryCount]);
 
   // Check NFT ownership
   useEffect(() => {
@@ -200,7 +219,7 @@ const PlayerDetailPage = () => {
         const result = await checkPlayerNFTOwnership(
           suiClient,
           account.address,
-          mergedPlayer.onChainPlayerId, // ✅ ONLY valid object ID
+          mergedPlayer.onChainPlayerId,
           packageId,
         );
 
@@ -217,7 +236,6 @@ const PlayerDetailPage = () => {
 
     checkOwnership();
   }, [account?.address, mergedPlayer?.onChainPlayerId]);
-
 
   const handleTransactionComplete = () => {
     refetchPlayer();
@@ -241,6 +259,10 @@ const PlayerDetailPage = () => {
 
   const handleRetryAILoad = () => {
     setRetryCount((prev) => prev + 1);
+  };
+
+  const handleSeasonChange = (season: SeasonPeriod) => {
+    setSelectedSeason(season);
   };
 
   if (!mergedPlayer) {
@@ -285,6 +307,11 @@ const PlayerDetailPage = () => {
     mergedPlayer as any,
     selectedSeason,
   );
+
+  // Get current season's encrypted AI blob for display
+  const currentEncryptedAIBlob = encryptedAIBlobs[selectedSeason];
+  const currentIsLoadingAI = isLoadingAI[selectedSeason];
+  const currentAiLoadError = aiLoadError[selectedSeason];
 
   return (
     <Layout>
@@ -339,7 +366,67 @@ const PlayerDetailPage = () => {
               </div>
             </div>
 
-            {/* Stats Grid */}
+            {/* SEASON TOGGLE TABS */}
+            <div className="glass-card p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Calendar className="w-5 h-5 text-accent" />
+                <h3 className="font-semibold">Select Season Period</h3>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {(["early", "mid", "current"] as SeasonPeriod[]).map(
+                  (season) => {
+                    const hasData = !!encryptedAIBlobs[season];
+                    const isLoading = isLoadingAI[season];
+
+                    return (
+                      <button
+                        key={season}
+                        onClick={() => handleSeasonChange(season)}
+                        disabled={isLoading}
+                        className={cn(
+                          "px-4 py-3 rounded-xl font-medium transition-all relative",
+                          "flex flex-col items-center gap-1",
+                          selectedSeason === season
+                            ? "bg-accent text-accent-foreground shadow-lg scale-105"
+                            : "bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-102",
+                          isLoading && "opacity-50 cursor-wait",
+                        )}
+                      >
+                        <span className="text-sm font-bold">
+                          {SEASON_LABELS[season]}
+                        </span>
+                        <span className="text-xs opacity-80">
+                          {SEASON_DESCRIPTIONS[season]
+                            .split("(")[1]
+                            ?.replace(")", "")}
+                        </span>
+                        {hasData && !isLoading && (
+                          <span className="absolute top-2 right-2 w-2 h-2 bg-success rounded-full" />
+                        )}
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+
+              {/* Season info banner */}
+              <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-accent">
+                    {SEASON_LABELS[selectedSeason]}:
+                  </span>{" "}
+                  {SEASON_DESCRIPTIONS[selectedSeason]}
+                  {selectedSeason !== "current" && (
+                    <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded">
+                      Historic View
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Stats Grid - now shows selected season */}
             <div className="glass-card p-6">
               <h2 className="text-xl font-bold mb-6">
                 {SEASON_LABELS[selectedSeason]} Statistics
@@ -370,39 +457,64 @@ const PlayerDetailPage = () => {
                   <p className="text-sm text-muted-foreground">Matches</p>
                 </div>
               </div>
+
+              {/* Season-specific base value display */}
+              <div className="mt-6 p-4 rounded-xl bg-accent/10 border border-accent/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {SEASON_LABELS[selectedSeason]} Base Value
+                    </p>
+                    <p className="text-2xl font-bold text-accent">
+                      {displayBaseValueSui.toFixed(4)} SUI
+                    </p>
+                  </div>
+                  {seasonPerformanceScore && (
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">AI Score</p>
+                      <p className="text-xl font-bold">
+                        {seasonPerformanceScore}/100
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* 🔥 PREMIUM AI SECTION - SEAL INTEGRATION */}
+            {/* PREMIUM AI SECTION - Now season-aware */}
             <div className="glass-card p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <Shield className="w-5 h-5 text-accent" />
-                  AI-Powered Insights
+                  AI-Powered Insights - {SEASON_LABELS[selectedSeason]}
                 </h2>
                 {isCheckingOwnership && (
                   <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                 )}
               </div>
 
-              {isLoadingAI ? (
+              {currentIsLoadingAI ? (
                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
                   <Loader2 className="w-12 h-12 animate-spin text-accent" />
                   <p className="text-sm text-muted-foreground">
-                    Loading encrypted AI analysis...
+                    Loading encrypted AI analysis for{" "}
+                    {SEASON_LABELS[selectedSeason].toLowerCase()}...
                   </p>
                   <p className="text-xs text-muted-foreground">
                     This may take a few moments if the data is still propagating
                   </p>
                 </div>
-              ) : aiLoadError ? (
+              ) : currentAiLoadError ? (
                 <div className="text-center py-8 space-y-4">
                   <AlertCircle className="w-12 h-12 mx-auto text-warning" />
                   <div className="space-y-2">
                     <p className="text-lg font-semibold text-warning">
-                      {aiLoadError}
+                      {currentAiLoadError}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      The AI analysis blob may still be propagating on Walrus.
+                      The AI analysis blob may still be propagating on Walrus,
+                      or may not have been generated yet for{" "}
+                      {SEASON_LABELS[selectedSeason].toLowerCase()}.
                     </p>
                   </div>
                   <Button
@@ -415,10 +527,10 @@ const PlayerDetailPage = () => {
                     Retry Loading
                   </Button>
                 </div>
-              ) : encryptedAIBlob ? (
+              ) : currentEncryptedAIBlob ? (
                 <PremiumAIPanel
-                  publicData={encryptedAIBlob.public_data}
-                  encryptedPremium={encryptedAIBlob.encrypted_premium}
+                  publicData={currentEncryptedAIBlob.public_data}
+                  encryptedPremium={currentEncryptedAIBlob.encrypted_premium}
                   playerId={mergedPlayer.onChainPlayerId || mergedPlayer.id}
                   playerName={mergedPlayer.name}
                   season={selectedSeason}
@@ -429,7 +541,8 @@ const PlayerDetailPage = () => {
                 <div className="text-center py-8 space-y-4">
                   <Info className="w-12 h-12 mx-auto text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    AI analysis not available for this season yet.
+                    AI analysis not available for{" "}
+                    {SEASON_LABELS[selectedSeason].toLowerCase()} yet.
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Premium insights will be encrypted and stored on Walrus once
@@ -439,7 +552,7 @@ const PlayerDetailPage = () => {
               )}
             </div>
 
-            {/* Walrus Verification */}
+            {/* Walrus Verification - now season-aware */}
             <div className="glass-card p-6 border border-accent/30">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
@@ -447,22 +560,27 @@ const PlayerDetailPage = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold mb-1">
-                    {encryptedAIBlob ? "🔐 Seal Encrypted" : "Walrus Verified"}{" "}
+                    {currentEncryptedAIBlob
+                      ? "🔐 Seal Encrypted"
+                      : "Walrus Verified"}{" "}
                     Data
                   </h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    {encryptedAIBlob
+                    {currentEncryptedAIBlob
                       ? "Premium AI insights are encrypted with Seal. Only NFT holders can decrypt."
                       : `${SEASON_LABELS[selectedSeason]} performance data stored on Walrus.`}
                   </p>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-muted font-mono text-xs break-all">
-                    <span className="text-muted-foreground">Blob ID:</span>
-                    <span className="text-accent">
-                      {seasonWalrusBlobId ||
-                        mergedPlayer.walrusProofId ||
-                        "Not available"}
-                    </span>
-                  </div>
+                  {seasonWalrusBlobId ? (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-muted font-mono text-xs break-all">
+                      <span className="text-muted-foreground">Blob ID:</span>
+                      <span className="text-accent">{seasonWalrusBlobId}</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      No Walrus blob ID available for{" "}
+                      {SEASON_LABELS[selectedSeason].toLowerCase()}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -489,6 +607,21 @@ const PlayerDetailPage = () => {
                   </span>
                 </button>
               </div>
+
+              {/* Season comparison card */}
+              {selectedSeason !== "current" && (
+                <div className="mt-4 glass-card p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Info className="w-4 h-4 text-accent" />
+                    <p className="text-sm font-semibold">Historic View</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    You're viewing {SEASON_LABELS[selectedSeason].toLowerCase()}{" "}
+                    data. Switch to "Current Season" to see the latest
+                    performance and trade at current prices.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

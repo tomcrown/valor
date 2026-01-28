@@ -32,6 +32,12 @@ interface OnChainPlayerData {
   early_season_base_value: string;
   mid_season_base_value: string;
   current_season_base_value: string;
+
+  // 🔥 NEW: Separate blob IDs for each season
+  early_season_walrus_blob_id: string;
+  mid_season_walrus_blob_id: string;
+  current_season_walrus_blob_id: string;
+
   total_shares: string;
   circulating_shares: string;
   performance_history: OnChainPerformanceRecord[];
@@ -52,6 +58,8 @@ interface OnChainPerformanceRecord {
   clean_sheets: string;
   walrus_blob_id: string;
   base_value: string;
+  season?: number | string;
+  season_period?: string;
 }
 
 let platformDataCache: any = null;
@@ -124,7 +132,7 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
     }
 
     const matchingField = fields.data.find(
-      (f) => String(f.name.value).toLowerCase() === playerName.toLowerCase()
+      (f) => String(f.name.value).toLowerCase() === playerName.toLowerCase(),
     );
 
     if (!matchingField) {
@@ -154,7 +162,7 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
 }
 
 async function fetchPlayerContractData(
-  playerId: string
+  playerId: string,
 ): Promise<OnChainPlayerData | null> {
   try {
     const platformData = await fetchPlatformData();
@@ -206,54 +214,98 @@ async function fetchPlayerContractData(
   }
 }
 
+// 🔥 FIXED: Now reads dedicated blob ID fields from contract
 function extractSeasonalContractData(onChainData: OnChainPlayerData): {
   early: SeasonContractData;
   mid: SeasonContractData;
   current: SeasonContractData;
 } {
   const earlyBaseValueSui = mistToSui(
-    BigInt(onChainData.early_season_base_value || "0")
+    BigInt(onChainData.early_season_base_value || "0"),
   );
 
   const midBaseValueSui = mistToSui(
-    BigInt(onChainData.mid_season_base_value || "0")
+    BigInt(onChainData.mid_season_base_value || "0"),
   );
 
   const currentBaseValueSui = mistToSui(
     BigInt(
-      onChainData.current_season_base_value || onChainData.base_value || "0"
-    )
+      onChainData.current_season_base_value || onChainData.base_value || "0",
+    ),
   );
 
   const performanceHistory = onChainData.performance_history || [];
 
+  // Initialize scores
   let earlyScore = 0;
   let midScore = 0;
   let currentScore = 0;
-  let earlyBlobId = "";
-  let midBlobId = "";
-  let currentBlobId = onChainData.walrus_blob_id || "";
+
+  // 🔥 NEW: Read blob IDs directly from dedicated fields
+  const earlyBlobId = onChainData.early_season_walrus_blob_id || "";
+  const midBlobId = onChainData.mid_season_walrus_blob_id || "";
+  const currentBlobId =
+    onChainData.current_season_walrus_blob_id ||
+    onChainData.walrus_blob_id ||
+    ""; // Fallback to main field
+
+  // Match performance records to get scores (optional - scores may not be in history)
+  const earlyBaseValueMist = BigInt(onChainData.early_season_base_value || "0");
+  const midBaseValueMist = BigInt(onChainData.mid_season_base_value || "0");
+  const currentBaseValueMist = BigInt(
+    onChainData.current_season_base_value || onChainData.base_value || "0",
+  );
 
   if (performanceHistory.length > 0) {
-    if (performanceHistory[0]) {
-      earlyScore = Math.round(Number(performanceHistory[0].score || 0) / 10);
-      earlyBlobId = performanceHistory[0].walrus_blob_id || "";
-    }
+    for (const record of performanceHistory) {
+      const recordBaseValue = BigInt(record.base_value || "0");
+      const score = Number(record.score || 0);
 
-    const midIndex = Math.floor(performanceHistory.length / 2);
-    if (performanceHistory[midIndex]) {
-      midScore = Math.round(
-        Number(performanceHistory[midIndex].score || 0) / 10
-      );
-      midBlobId = performanceHistory[midIndex].walrus_blob_id || "";
-    }
-
-    const latestRecord = performanceHistory[performanceHistory.length - 1];
-    if (latestRecord) {
-      currentScore = Math.round(Number(latestRecord.score || 0) / 10);
-      currentBlobId = latestRecord.walrus_blob_id || currentBlobId;
+      // Match by base_value to determine which season this record belongs to
+      if (recordBaseValue === earlyBaseValueMist && earlyBaseValueMist > 0n) {
+        earlyScore = score;
+        console.log(
+          `✅ Found EARLY season performance record with score: ${score}`,
+        );
+      } else if (
+        recordBaseValue === midBaseValueMist &&
+        midBaseValueMist > 0n
+      ) {
+        midScore = score;
+        console.log(
+          `✅ Found MID season performance record with score: ${score}`,
+        );
+      } else if (
+        recordBaseValue === currentBaseValueMist &&
+        currentBaseValueMist > 0n
+      ) {
+        currentScore = score;
+        console.log(
+          `✅ Found CURRENT season performance record with score: ${score}`,
+        );
+      }
     }
   }
+
+  console.log("📊 Extracted season data:");
+  console.log("  Early:", {
+    baseValueSui: earlyBaseValueSui,
+    baseValueMist: earlyBaseValueMist.toString(),
+    score: earlyScore,
+    blobId: earlyBlobId || "NOT FOUND",
+  });
+  console.log("  Mid:", {
+    baseValueSui: midBaseValueSui,
+    baseValueMist: midBaseValueMist.toString(),
+    score: midScore,
+    blobId: midBlobId || "NOT FOUND",
+  });
+  console.log("  Current:", {
+    baseValueSui: currentBaseValueSui,
+    baseValueMist: currentBaseValueMist.toString(),
+    score: currentScore,
+    blobId: currentBlobId || "NOT FOUND",
+  });
 
   return {
     early: {
@@ -262,20 +314,20 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
       walrusBlobId: earlyBlobId,
     },
     mid: {
-      baseValueSui: midBaseValueSui || earlyBaseValueSui,
-      performanceScore: midScore || earlyScore,
-      walrusBlobId: midBlobId || earlyBlobId,
+      baseValueSui: midBaseValueSui,
+      performanceScore: midScore,
+      walrusBlobId: midBlobId,
     },
     current: {
-      baseValueSui: currentBaseValueSui || earlyBaseValueSui,
-      performanceScore: currentScore || midScore || earlyScore,
+      baseValueSui: currentBaseValueSui,
+      performanceScore: currentScore,
       walrusBlobId: currentBlobId,
     },
   };
 }
 
 function generateValueHistory(
-  baseValue: number
+  baseValue: number,
 ): { date: string; value: number }[] {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const history = [];
@@ -293,7 +345,7 @@ function generateValueHistory(
 }
 
 function calculateWeeklyChange(
-  valueHistory: { date: string; value: number }[]
+  valueHistory: { date: string; value: number }[],
 ): number {
   if (valueHistory.length < 2) return 0;
 
@@ -304,7 +356,7 @@ function calculateWeeklyChange(
 }
 
 export async function enrichPlayerWithContractData(
-  footballPlayer: FootballPlayerData
+  footballPlayer: FootballPlayerData,
 ): Promise<
   Player & {
     onChainSeasonData?: any;
@@ -384,7 +436,7 @@ export async function enrichAllPlayersWithContractData(): Promise<
   })[]
 > {
   const enrichedPlayers = await Promise.allSettled(
-    FOOTBALL_PLAYERS.map((player) => enrichPlayerWithContractData(player))
+    FOOTBALL_PLAYERS.map((player) => enrichPlayerWithContractData(player)),
   );
 
   return enrichedPlayers.map((result, index) => {
@@ -408,7 +460,7 @@ export async function enrichAllPlayersWithContractData(): Promise<
 
 export function getSeasonBaseValue(
   player: Player & { onChainSeasonData?: any },
-  season: SeasonPeriod
+  season: SeasonPeriod,
 ): number {
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
     return player.onChainSeasonData[season].baseValueSui;
@@ -418,7 +470,7 @@ export function getSeasonBaseValue(
 }
 
 export function getCurrentSeasonBaseValue(
-  player: Player & { onChainSeasonData?: any }
+  player: Player & { onChainSeasonData?: any },
 ): number {
   if (player.onChainSeasonData && player.onChainSeasonData.current) {
     return player.onChainSeasonData.current.baseValueSui;
@@ -429,7 +481,7 @@ export function getCurrentSeasonBaseValue(
 
 export function getSeasonPerformanceScore(
   player: Player & { onChainSeasonData?: any },
-  season: SeasonPeriod
+  season: SeasonPeriod,
 ): number {
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
     return player.onChainSeasonData[season].performanceScore;
@@ -438,15 +490,37 @@ export function getSeasonPerformanceScore(
   return player.aiScore;
 }
 
+// 🔥 FIXED: Now reads from dedicated season blob ID fields
 export function getSeasonWalrusBlobId(
   player: Player & { onChainSeasonData?: any },
-  season: SeasonPeriod
+  season: SeasonPeriod,
 ): string {
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
-    return player.onChainSeasonData[season].walrusBlobId;
+    const blobId = player.onChainSeasonData[season].walrusBlobId;
+    console.log(
+      `🔍 getSeasonWalrusBlobId for ${season}:`,
+      blobId || "NOT FOUND",
+    );
+
+    if (!blobId) {
+      console.warn(`⚠️ No blob ID found for ${season} season`);
+      return "";
+    }
+
+    return blobId;
   }
 
-  return player.walrusProofId;
+  // Only current season can fallback to main blob
+  if (season === "current" && player.walrusProofId) {
+    console.log(
+      `🔍 Fallback to main walrusProofId for current:`,
+      player.walrusProofId,
+    );
+    return player.walrusProofId;
+  }
+
+  console.warn(`⚠️ No blob ID found for ${season} season`);
+  return "";
 }
 
 export async function getPlayerById(id: string): Promise<Player | undefined> {
