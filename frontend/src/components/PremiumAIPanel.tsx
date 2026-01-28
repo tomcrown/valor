@@ -145,7 +145,7 @@ export function PremiumAIPanel({
       <div className="glass-card p-6">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-5 h-5 text-accent" />
-          <h3 className="font-semibold">Performance Overview</h3>
+          <h3 className="text-lg font-semibold">Performance Overview</h3>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -194,7 +194,7 @@ export function PremiumAIPanel({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Lock className="w-5 h-5 text-warning" />
-            <h3 className="font-semibold">Premium Insights</h3>
+            <h3 className="text-lg font-semibold">Premium Insights</h3>
           </div>
 
           {userOwnsNFT && (
@@ -265,7 +265,7 @@ export function PremiumAIPanel({
 
             {/* Prediction */}
             <div>
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
+              <h4 className="text-lg font-semibold mb-2 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-accent" />
                 Future Outlook
               </h4>
@@ -276,7 +276,7 @@ export function PremiumAIPanel({
 
             {/* Key Factors */}
             <div>
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-warning" />
                 Key Factors
               </h4>
@@ -297,7 +297,7 @@ export function PremiumAIPanel({
 
             {/* Reasoning */}
             <div>
-              <h4 className="font-semibold mb-2">Expert Analysis</h4>
+              <h4 className="text-lg font-semibold mb-2">Expert Analysis</h4>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {premiumData.reasoning}
               </p>

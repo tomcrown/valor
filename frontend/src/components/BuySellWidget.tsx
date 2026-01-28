@@ -91,8 +91,10 @@ const BuySellWidget = ({
       setTimeout(() => {
         refetchShares();
         onTransactionComplete?.();
+        reloadPage();
       }, 2000);
     }
+
   };
 
   const handleSell = async () => {
@@ -148,6 +150,11 @@ const BuySellWidget = ({
       handleSell();
     }
   };
+
+  const reloadPage = () => {
+    window.location.reload();
+  };
+
 
   return (
     <div className="glass-card p-6">

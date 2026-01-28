@@ -139,7 +139,7 @@ const Navbar = () => {
             </div>
             {/* Auth Section */}
             <div className="hidden md:flex items-center gap-4">
-              <ThemeToggle />
+
 
               {/* Faucet Button */}
               <a
@@ -159,6 +159,7 @@ const Navbar = () => {
                   <LogIn className="w-4 h-4 mr-2" />
                   Log In
                 </Button>
+
               ) : (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -182,16 +183,17 @@ const Navbar = () => {
                             </span>
                           </>
                         )}
+
                       </div>
                       <ChevronDown className="w-4 h-4 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white">
+                  <DropdownMenuContent align="end" className="w-56 bg-background">
                     <div className="px-2 py-1.5">
                       <p className="text-sm font-medium">
                         {isEnoki ? "zkLogin Account" : "Connected Wallet"}
                       </p>
-                      <p className="text-xs text-muted-foreground font-mono">
+                      <p className="text-xs  font-mono">
                         {formatAddress(currentAccount.address)}
                       </p>
                     </div>
@@ -230,6 +232,8 @@ const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+              <ThemeToggle />
+
             </div>
 
             {/* Mobile Menu Button */}

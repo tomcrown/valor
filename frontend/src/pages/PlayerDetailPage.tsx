@@ -398,7 +398,7 @@ const PlayerDetailPage = () => {
                 <div className="text-center py-8 space-y-4">
                   <AlertCircle className="w-12 h-12 mx-auto text-warning" />
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold text-warning">
+                    <p className="text-lg font-semibold text-warning">
                       {aiLoadError}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -446,7 +446,7 @@ const PlayerDetailPage = () => {
                   <Shield className="w-6 h-6 text-accent" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold mb-1">
+                  <h3 className="text-lg font-bold mb-1">
                     {encryptedAIBlob ? "🔐 Seal Encrypted" : "Walrus Verified"}{" "}
                     Data
                   </h3>
