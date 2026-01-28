@@ -178,32 +178,34 @@ const PlayerDetailPage = () => {
   // Check NFT ownership
   useEffect(() => {
     async function checkOwnership() {
-      if (!account?.address || !mergedPlayer?.id) {
+      if (!account?.address || !mergedPlayer?.onChainPlayerId) {
         setUserOwnsNFT(false);
         setUserShares(0);
         return;
       }
 
       setIsCheckingOwnership(true);
+
       try {
         const suiClient = new SuiClient({
           url: getFullnodeUrl(import.meta.env.VITE_SUI_NETWORK || "testnet"),
         });
 
         const packageId = import.meta.env.VITE_PACKAGE_ID;
+
+        if (!packageId) {
+          throw new Error("Missing VITE_PACKAGE_ID");
+        }
+
         const result = await checkPlayerNFTOwnership(
           suiClient,
           account.address,
-          mergedPlayer.onChainPlayerId || mergedPlayer.id,
+          mergedPlayer.onChainPlayerId, // ✅ ONLY valid object ID
           packageId,
         );
 
         setUserOwnsNFT(result.ownsNFT);
         setUserShares(result.shareCount);
-
-        if (result.ownsNFT) {
-          console.log(`✅ User owns ${result.shareCount} shares`);
-        }
       } catch (error) {
         console.error("❌ Failed to check NFT ownership:", error);
         setUserOwnsNFT(false);
@@ -214,17 +216,20 @@ const PlayerDetailPage = () => {
     }
 
     checkOwnership();
-  }, [account?.address, mergedPlayer?.id]);
+  }, [account?.address, mergedPlayer?.onChainPlayerId]);
+
 
   const handleTransactionComplete = () => {
     refetchPlayer();
     // Re-check ownership after transaction
     if (account?.address && mergedPlayer?.id) {
       setTimeout(() => {
+        if (!mergedPlayer.onChainPlayerId) return;
+
         checkPlayerNFTOwnership(
           new SuiClient({ url: getFullnodeUrl("testnet") }),
           account.address,
-          mergedPlayer.id,
+          mergedPlayer.onChainPlayerId,
           import.meta.env.VITE_PACKAGE_ID,
         ).then((result) => {
           setUserOwnsNFT(result.ownsNFT);
