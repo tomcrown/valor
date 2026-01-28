@@ -1,3 +1,13 @@
+// Helper function to get env vars that works in both Vite and Node.js
+function getEnv(key: string, fallback: string = ""): string {
+  // In browser/Vite, use import.meta.env
+  if (typeof import.meta !== "undefined" && import.meta.env) {
+    return import.meta.env[key] ?? fallback;
+  }
+  // In Node.js, use process.env
+  return process.env[key] ?? fallback;
+}
+
 export const SUI_CONFIG = {
   network: "testnet" as const,
   rpcUrl: "https://fullnode.testnet.sui.io:443",
@@ -6,28 +16,28 @@ export const SUI_CONFIG = {
 
   walrus: {
     publisherUrl:
-      import.meta.env.VITE_WALRUS_PUBLISHER_URL ??
+      getEnv("VITE_WALRUS_PUBLISHER_URL") ||
       "https://publisher.walrus-testnet.walrus.space",
 
     aggregatorUrl:
-      import.meta.env.VITE_WALRUS_AGGREGATOR_URL ??
+      getEnv("VITE_WALRUS_AGGREGATOR_URL") ||
       "https://aggregator.walrus-testnet.walrus.space",
 
-    epochs: 5,
+    epochs: 40,
   },
 
   contracts: {
     packageId:
-      import.meta.env.VITE_PACKAGE_ID ??
-      "0xf7f467c8a4fd18a89b80d31cfda1c7b00d30430dbe591b442690787b3327283c",
+      getEnv("VITE_PACKAGE_ID") ||
+      "0xc3b7561bb6ce1b24370b1dc7f9962f002925527bd570d9a82485fe52e3d33874",
 
     platformObjectId:
-      import.meta.env.VITE_PLATFORM_ID ??
-      "0x28e1ec862868cdfc5bcc0f6a01fd531cf3d3aa38f1bdc602f474e0e04406d41f",
+      getEnv("VITE_PLATFORM_ID") ||
+      "0xb36ff27e68963bf15035b6d6871e09c8a798b73ab7c10e7a35cbea3c26cec91b",
 
     adminCapId:
-      import.meta.env.VITE_ADMIN_CAP_ID ??
-      "0xe5226492165ed9e21dfe96ee27414a199bb7695e7d0eacd454892a876c8429f8",
+      getEnv("VITE_ADMIN_CAP_ID") ||
+      "0xe15992de3159c3eac404b9b51ff33819b6fa9924b442758af6b1da9cd844a11e",
   },
 
   gas: {

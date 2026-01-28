@@ -11,6 +11,7 @@ module valor::valor {
     use sui::url::{Self, Url};
     use sui::display;
     use sui::package;
+    use valor::valor_seal;
 
     const EInvalidPrice: u64 = 1;
     const EInsufficientShares: u64 = 2;
@@ -117,6 +118,7 @@ module valor::valor {
         nft_image_url: String,
         base_value: u64,
         total_shares: u64,
+        walrus_blob_id: String, 
         timestamp: u64,
     }
 
@@ -426,6 +428,7 @@ module valor::valor {
         nft_image_url: vector<u8>,
         early_season_base_value: u64,
         total_shares: u64,
+        walrus_blob_id: vector<u8>,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -433,6 +436,10 @@ module valor::valor {
         assert!(early_season_base_value <= MAX_BASE_VALUE, EInvalidPrice);
         assert!(total_shares > 0, EInvalidShareAmount);
         assert!(total_shares <= 1000000000, EInvalidShareAmount);
+        assert!(vector::length(&walrus_blob_id) > 0, EInvalidBlobId);
+
+        let blob_id_string = string::utf8(walrus_blob_id); 
+        
 
         let player_name = string::utf8(name);
         assert!(!table::contains(&platform.player_names, player_name), EPlayerAlreadyExists);
@@ -457,7 +464,7 @@ module valor::valor {
             total_shares,
             circulating_shares: 0,
             performance_history: vector::empty(),
-            walrus_blob_id: string::utf8(b""),
+            walrus_blob_id: blob_id_string, 
             active: true,
             lifetime_volume: 0,
             all_time_high: early_season_base_value,
@@ -477,6 +484,7 @@ module valor::valor {
             nft_image_url: nft_url_string,
             base_value: early_season_base_value,
             total_shares,
+            walrus_blob_id: blob_id_string,
             timestamp: clock::timestamp_ms(clock),
         });
     }
@@ -611,6 +619,7 @@ module valor::valor {
 
     public entry fun buy_shares(
         platform: &mut Platform,
+        nft_registry: &mut valor_seal::NFTRegistry,
         player_id: ID,
         shares: u64,
         max_price_per_share: u64,
@@ -682,6 +691,15 @@ module valor::valor {
 
         platform.total_volume = platform.total_volume + total_cost;
 
+        // Register NFT ownership for Seal access control
+        valor_seal::register_nft_ownership(
+        nft_registry,
+        player_id,
+        tx_context::sender(ctx),
+        shares,
+        ctx
+        );
+
         event::emit(SharesPurchased {
             buyer: tx_context::sender(ctx),
             player_id,
@@ -709,6 +727,7 @@ module valor::valor {
 
     public entry fun sell_shares(
         platform: &mut Platform,
+        nft_registry: &mut valor_seal::NFTRegistry,
         nft: PlayerSharesNFT,
         shares_to_sell: u64,
         min_price_per_share: u64,
@@ -757,6 +776,15 @@ module valor::valor {
         };
 
         platform.total_volume = platform.total_volume + total_payout;
+
+        // After player.circulating_shares update
+        valor_seal::reduce_nft_ownership(
+        nft_registry,
+        nft.player_id,
+        tx_context::sender(ctx),
+        shares_to_sell,
+        ctx
+        );
 
         event::emit(SharesSold {
             seller: tx_context::sender(ctx),

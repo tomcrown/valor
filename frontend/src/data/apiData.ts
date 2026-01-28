@@ -1,4 +1,4 @@
-// Stats from AllSportsAPI - Updated: 2025-12-10
+// Stats from AllSportsAPI
 
 export interface PurePlayerStats {
   goals: number;
@@ -126,10 +126,10 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
         matchesPlayed: 6,
       },
       current: {
-        goals: 15,
-        assists: 3,
-        minutesPlayed: 1218,
-        matchesPlayed: 15,
+        goals: 20,
+        assists: 4,
+        minutesPlayed: 1924,
+        matchesPlayed: 23,
       },
     },
   },
@@ -158,10 +158,10 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
         matchesPlayed: 6,
       },
       current: {
-        goals: 16,
+        goals: 21,
         assists: 4,
-        minutesPlayed: 1398,
-        matchesPlayed: 15,
+        minutesPlayed: 1758,
+        matchesPlayed: 20,
       },
     },
   },
@@ -192,8 +192,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
       current: {
         goals: 1,
         assists: 1,
-        minutesPlayed: 356,
-        matchesPlayed: 8,
+        minutesPlayed: 524,
+        matchesPlayed: 10,
       },
     },
   },
@@ -223,9 +223,9 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
       },
       current: {
         goals: 4,
-        assists: 2,
-        minutesPlayed: 1119,
-        matchesPlayed: 13,
+        assists: 4,
+        minutesPlayed: 1274,
+        matchesPlayed: 15,
       },
     },
   },
@@ -254,10 +254,10 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
         matchesPlayed: 6,
       },
       current: {
-        goals: 2,
-        assists: 1,
-        minutesPlayed: 1350,
-        matchesPlayed: 15,
+        goals: 3,
+        assists: 2,
+        minutesPlayed: 1973,
+        matchesPlayed: 22,
       },
     },
   },
@@ -286,10 +286,10 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
         matchesPlayed: 0,
       },
       current: {
-        goals: 3,
-        assists: 2,
-        minutesPlayed: 741,
-        matchesPlayed: 12,
+        goals: 4,
+        assists: 3,
+        minutesPlayed: 1282,
+        matchesPlayed: 17,
       },
     },
   },
@@ -320,8 +320,8 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
       current: {
         goals: 0,
         assists: 0,
-        minutesPlayed: 1350,
-        matchesPlayed: 15,
+        minutesPlayed: 2070,
+        matchesPlayed: 23,
       },
     },
   },
@@ -351,9 +351,9 @@ export const FOOTBALL_PLAYERS: FootballPlayerData[] = [
       },
       current: {
         goals: 4,
-        assists: 1,
-        minutesPlayed: 893,
-        matchesPlayed: 13,
+        assists: 5,
+        minutesPlayed: 1549,
+        matchesPlayed: 21,
       },
     },
   },
@@ -370,14 +370,14 @@ export const PLATFORM_STATS = {
 };
 
 export const getFootballPlayerById = (
-  id: string
+  id: string,
 ): FootballPlayerData | undefined => {
   return FOOTBALL_PLAYERS.find((player) => player.id === id);
 };
 
 export const getPlayerStatsBySeason = (
   player: FootballPlayerData | Player,
-  season: SeasonPeriod
+  season: SeasonPeriod,
 ): PurePlayerStats => {
   return player.seasonalStats[season];
 };
@@ -390,53 +390,53 @@ export const getTopPerformers = (): FootballPlayerData[] => {
 
 export const getRisingPlayers = (): FootballPlayerData[] => {
   return FOOTBALL_PLAYERS.filter((p) => p.aiScore >= 75).sort(
-    (a, b) => b.aiScore - a.aiScore
+    (a, b) => b.aiScore - a.aiScore,
   );
 };
 
 export const getUndervaluedPlayers = (): FootballPlayerData[] => {
   return FOOTBALL_PLAYERS.filter((p) => p.aiScore > 85).sort(
-    (a, b) => b.aiScore - a.aiScore
+    (a, b) => b.aiScore - a.aiScore,
   );
 };
 
 export const getFallingPlayers = (): FootballPlayerData[] => {
   return FOOTBALL_PLAYERS.filter((p) => p.aiScore < 70).sort(
-    (a, b) => a.aiScore - b.aiScore
+    (a, b) => a.aiScore - b.aiScore,
   );
 };
 
 export const getHighPerformers = (): FootballPlayerData[] => {
   return FOOTBALL_PLAYERS.filter((p) => p.aiScore >= 85).sort(
-    (a, b) => b.aiScore - a.aiScore
+    (a, b) => b.aiScore - a.aiScore,
   );
 };
 
 export const calculatePortfolioValue = (
-  positions: PortfolioPosition[]
+  positions: PortfolioPosition[],
 ): number => {
   return positions.reduce(
     (total, pos) => total + pos.quantity * pos.currentValue,
-    0
+    0,
   );
 };
 
 export const calculatePortfolioPnL = (
-  positions: PortfolioPosition[]
+  positions: PortfolioPosition[],
 ): number => {
   const totalCurrent = positions.reduce(
     (total, pos) => total + pos.quantity * pos.currentValue,
-    0
+    0,
   );
   const totalEntry = positions.reduce(
     (total, pos) => total + pos.quantity * pos.averageEntryPrice,
-    0
+    0,
   );
   return totalEntry > 0 ? ((totalCurrent - totalEntry) / totalEntry) * 100 : 0;
 };
 
 export const calculateTrend = (
-  weeklyChange: number
+  weeklyChange: number,
 ): "up" | "stable" | "down" => {
   if (weeklyChange > 5) return "up";
   if (weeklyChange < -5) return "down";
