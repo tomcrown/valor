@@ -194,7 +194,7 @@ const PlayerDetailPage = () => {
         const result = await checkPlayerNFTOwnership(
           suiClient,
           account.address,
-          mergedPlayer.id,
+          mergedPlayer.onChainPlayerId || mergedPlayer.id,
           packageId,
         );
 
@@ -414,7 +414,7 @@ const PlayerDetailPage = () => {
                 <PremiumAIPanel
                   publicData={encryptedAIBlob.public_data}
                   encryptedPremium={encryptedAIBlob.encrypted_premium}
-                  playerId={mergedPlayer.id}
+                  playerId={mergedPlayer.onChainPlayerId || mergedPlayer.id}
                   playerName={mergedPlayer.name}
                   season={selectedSeason}
                   userOwnsNFT={userOwnsNFT}

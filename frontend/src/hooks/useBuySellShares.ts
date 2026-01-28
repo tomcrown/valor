@@ -58,6 +58,7 @@ export function useBuySellShares() {
         target: `${SUI_CONFIG.contracts.packageId}::valor::buy_shares`,
         arguments: [
           tx.object(SUI_CONFIG.contracts.platformObjectId),
+          tx.object(SUI_CONFIG.contracts.nftRegistryObjectId), // ← ADD THIS
           tx.pure.address(params.playerId),
           tx.pure.u64(params.shares),
           tx.pure.u64(suiToMist(params.maxPricePerShare)),
@@ -78,7 +79,7 @@ export function useBuySellShares() {
         {
           onSuccess: (result) => {},
           onError: (error) => {},
-        }
+        },
       );
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -149,7 +150,7 @@ export function useBuySellShares() {
     try {
       const totalShares = params.operations.reduce(
         (sum, op) => sum + op.amount,
-        0
+        0,
       );
 
       const tx = new Transaction();
@@ -159,6 +160,7 @@ export function useBuySellShares() {
           target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
           arguments: [
             tx.object(SUI_CONFIG.contracts.platformObjectId),
+            tx.object(SUI_CONFIG.contracts.nftRegistryObjectId), // ← ADD THIS
             tx.object(operation.objectId),
             tx.pure.u64(operation.amount),
             tx.pure.u64(suiToMist(params.minPricePerShare)),
@@ -179,7 +181,7 @@ export function useBuySellShares() {
         {
           onSuccess: (result) => {},
           onError: (error) => {},
-        }
+        },
       );
 
       await new Promise((resolve) => setTimeout(resolve, 2000));

@@ -1,6 +1,7 @@
 import { SealClient, SessionKey } from "@mysten/seal";
 import { SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
+import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import type { AIAnalysis } from "./gemini";
 
 // Seal configuration for Testnet
@@ -45,12 +46,11 @@ export interface EncryptedAIBlob {
 export class ValorSealClient {
   private sealClient: SealClient;
   private suiClient: SuiClient;
-  private valorPackageId: string; // Add this
+  private valorPackageId: string;
 
   constructor(suiClient: SuiClient, valorPackageId: string) {
-    // Add parameter
     this.suiClient = suiClient;
-    this.valorPackageId = valorPackageId; // Store it
+    this.valorPackageId = valorPackageId;
 
     this.sealClient = new SealClient({
       suiClient,
@@ -130,26 +130,123 @@ export class ValorSealClient {
     encryptedBlob: EncryptedAIBlob,
     userAddress: string,
     nftRegistryId: string,
-    VITE_VALOR_SEAL_PACKAGE_ID: any,
-    VITE_NFT_REGISTRY_ID: any,
+    signer: any,
   ): Promise<PremiumAIData | null> {
     try {
-      // Create session key for this user
+      console.log("🔓 Starting decryption...");
+      console.log("   User:", userAddress);
+      console.log("   Player ID:", encryptedBlob.player_id);
+
+      // Pre-fetch and cache the public key before creating the wrapper
+      const publicKeyBytes = await signer.getPublicKey();
+      console.log("   🔑 Public key bytes (length):", publicKeyBytes.length);
+
+      // Handle the case where the public key has a 1-byte prefix (33 bytes total)
+      let cleanPublicKeyBytes = publicKeyBytes;
+      if (publicKeyBytes.length === 33) {
+        cleanPublicKeyBytes = publicKeyBytes.slice(1);
+        console.log("   🔪 Removed prefix byte, now 32 bytes");
+      } else if (publicKeyBytes.length !== 32) {
+        throw new Error(
+          `Invalid public key length: ${publicKeyBytes.length}. Expected 32 or 33 bytes.`,
+        );
+      }
+
+      // Create the public key object ONCE before the wrapper
+      const cachedPublicKey = new Ed25519PublicKey(cleanPublicKeyBytes);
+      console.log("   ✅ Public key object created and cached");
+      console.log("   🔍 Has toSuiAddress:", "toSuiAddress" in cachedPublicKey);
+      console.log("   ✅ Test toSuiAddress():", cachedPublicKey.toSuiAddress());
+
+      // ✅ Create a full Signer implementation wrapper
+      const wrappedSigner = {
+        // Required for SessionKey.create
+        getAddress: async () => {
+          const address = await signer.getAddress();
+          console.log("   📍 Address requested:", address);
+          return address;
+        },
+
+        // Make this SYNCHRONOUS - return the cached key immediately
+        getPublicKey: () => {
+          console.log("   🔄 getPublicKey() called, returning cached key");
+          return cachedPublicKey;
+        },
+
+        signPersonalMessage: async (input: Uint8Array) => {
+          console.log("   ✍️ Signing message...");
+          console.log("   📏 Message length:", input?.length);
+
+          if (!input || !input.length) {
+            throw new Error(
+              "signPersonalMessage: message is empty or undefined",
+            );
+          }
+
+          // Pass the Uint8Array directly - don't convert to base64
+          // The wallet will handle the format it needs
+          const result = await signer.signPersonalMessage(input);
+          console.log("   ✅ Message signed");
+          console.log("   🔑 Result:", result);
+
+          return result;
+        },
+
+        // Additional Signer methods (may not be used by Seal but required by interface)
+        sign: async (input: Uint8Array) => {
+          throw new Error(
+            "sign() not implemented - use signPersonalMessage instead",
+          );
+        },
+
+        signWithIntent: async (input: Uint8Array, intent: any) => {
+          throw new Error("signWithIntent() not implemented");
+        },
+
+        signTransaction: async (input: Uint8Array | Transaction) => {
+          throw new Error(
+            "signTransaction() not implemented for Seal decryption",
+          );
+        },
+
+        signAndExecuteTransaction: async (input: any) => {
+          throw new Error(
+            "signAndExecuteTransaction() not needed for Seal decryption",
+          );
+        },
+
+        // These might be needed
+        toSuiAddress: () => userAddress,
+
+        getKeyScheme: () => "ED25519" as const,
+      };
+
+      // ✅ Create session key with the wrapped signer
       const sessionKey = await SessionKey.create({
         address: userAddress,
-        packageId: SEAL_CONFIG.sealProtocolPackageId,
+        packageId: this.valorPackageId,
         ttlMin: 10,
         suiClient: this.suiClient,
+        signer: wrappedSigner as any, // Cast to 'any' to bypass strict type checking
       });
 
-      // User must sign in wallet to approve access
-      // This would be done in the UI with wallet.signPersonalMessage()
+      console.log("   ✅ Session key created");
 
-      // Create PTB that calls seal_approve_with_player
+      // Create PTB
       const tx = new Transaction();
-
-      // Parse player_id from blob
       const playerId = encryptedBlob.player_id;
+
+      console.log("   📦 Building PTB for seal_approve...");
+      console.log(
+        "   🎯 Target:",
+        `${this.valorPackageId}::valor_seal::seal_approve_with_player`,
+      );
+      console.log(
+        "   🔑 Encryption ID:",
+        this.createEncryptionId(playerId, encryptedBlob.season),
+      );
+      console.log("   🏛️  NFT Registry:", nftRegistryId);
+      console.log("   👤 Player ID:", playerId);
 
       tx.moveCall({
         target: `${this.valorPackageId}::valor_seal::seal_approve_with_player`,
@@ -168,20 +265,23 @@ export class ValorSealClient {
         onlyTransactionKind: true,
       });
 
-      // Decrypt the premium data
+      console.log("   ✅ PTB built, transaction bytes length:", txBytes.length);
+
+      console.log("   🔐 Decrypting...");
+
       const decryptedBytes = await this.sealClient.decrypt({
         data: encryptedBlob.encrypted_premium,
         sessionKey,
         txBytes,
       });
 
-      // Parse the decrypted JSON
       const decryptedJson = new TextDecoder().decode(decryptedBytes);
       const premiumData: PremiumAIData = JSON.parse(decryptedJson);
 
+      console.log("   🎊 Unlocked!");
       return premiumData;
     } catch (error) {
-      console.error("Failed to decrypt premium AI data:", error);
+      console.error("❌ Decryption failed:", error);
       return null;
     }
   }
@@ -238,7 +338,7 @@ export async function checkNFTOwnership(
  */
 export function createSealClient(
   suiClient: SuiClient,
-  valorPackageId?: string, // Make it optional with fallback
+  valorPackageId?: string,
 ): ValorSealClient {
   // Get Valor package ID from env or parameter
   const pkgId =
