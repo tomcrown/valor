@@ -112,15 +112,55 @@ export async function downloadEncryptedAI(
 
 /**
  * Verifies that an encrypted blob is valid
+ * Also converts serialized Uint8Array back to actual Uint8Array
+ *
+ * 🔥 FIX: When JSON is serialized/deserialized, Uint8Array becomes a plain object
+ * with numeric keys like {"0": 170, "1": 186, ...}. We need to convert it back.
  */
 export function validateEncryptedBlob(blob: any): blob is EncryptedAIBlob {
-  return (
-    blob &&
-    typeof blob === "object" &&
-    "public_data" in blob &&
-    "encrypted_premium" in blob &&
-    "player_id" in blob &&
-    "season" in blob &&
-    blob.encrypted_premium instanceof Uint8Array
-  );
+  if (
+    !blob ||
+    typeof blob !== "object" ||
+    !("public_data" in blob) ||
+    !("encrypted_premium" in blob) ||
+    !("player_id" in blob) ||
+    !("season" in blob)
+  ) {
+    console.warn("❌ Blob validation failed: missing required fields");
+    return false;
+  }
+
+  // 🔥 FIX: Convert serialized Uint8Array back to actual Uint8Array
+  if (!(blob.encrypted_premium instanceof Uint8Array)) {
+    console.log("🔄 Converting serialized Uint8Array back to typed array...");
+
+    const encryptedObj = blob.encrypted_premium;
+
+    // Check if it's a plain object with numeric keys
+    if (typeof encryptedObj !== "object" || encryptedObj === null) {
+      console.warn("❌ encrypted_premium is not an object");
+      return false;
+    }
+
+    // Get all numeric keys and find the length
+    const keys = Object.keys(encryptedObj);
+    const length = keys.length;
+
+    if (length === 0) {
+      console.warn("❌ encrypted_premium is empty");
+      return false;
+    }
+
+    // Convert to Uint8Array
+    const uint8Array = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      uint8Array[i] = encryptedObj[i.toString()];
+    }
+
+    // Replace the plain object with the Uint8Array
+    blob.encrypted_premium = uint8Array;
+    console.log(`✅ Converted ${length} bytes to Uint8Array`);
+  }
+
+  return true;
 }

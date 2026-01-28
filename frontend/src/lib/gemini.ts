@@ -314,7 +314,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no backticks):
     const startTime = Date.now();
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.0-flash",
       contents: prompt,
       config: {
         systemInstruction: systemInstruction,

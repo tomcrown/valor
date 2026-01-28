@@ -172,12 +172,15 @@ export class WalrusClient {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        const response = await axios.get(`${this.aggregatorUrl}/v1/${blobId}`, {
-          timeout: 30000,
-          headers: {
-            Accept: "application/json",
+        const response = await axios.get(
+          `${this.aggregatorUrl}/v1/blobs/${blobId}`,
+          {
+            timeout: 30000,
+            headers: {
+              Accept: "application/json",
+            },
           },
-        });
+        );
 
         // Success!
         if (attempt > 0 && !silent) {
@@ -250,7 +253,7 @@ export class WalrusClient {
         return true;
       } else {
         // Quick check without retries
-        await axios.head(`${this.aggregatorUrl}/v1/${blobId}`, {
+        await axios.head(`${this.aggregatorUrl}/v1/blobs/${blobId}`, {
           timeout: 10000,
         });
         return true;
@@ -337,7 +340,7 @@ export class WalrusClient {
   }
 
   getBlobUrl(blobId: string): string {
-    return `${this.aggregatorUrl}/v1/${blobId}`;
+    return `${this.aggregatorUrl}/v1/blobs/${blobId}`;
   }
 
   async verifyMultipleBlobs(blobIds: string[]): Promise<Map<string, boolean>> {
@@ -355,9 +358,12 @@ export class WalrusClient {
 
   async getBlobInfo(blobId: string): Promise<any> {
     try {
-      const response = await axios.head(`${this.aggregatorUrl}/v1/${blobId}`, {
-        timeout: 10000,
-      });
+      const response = await axios.head(
+        `${this.aggregatorUrl}/v1/blobs/${blobId}`,
+        {
+          timeout: 10000,
+        },
+      );
 
       return {
         exists: true,

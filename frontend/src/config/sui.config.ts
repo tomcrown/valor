@@ -29,15 +29,15 @@ export const SUI_CONFIG = {
   contracts: {
     packageId:
       getEnv("VITE_PACKAGE_ID") ||
-      "0x859118df66d44154d0d292e27538fde1a4ef1d689d9089100ba0a56b219f2dfb",
+      "0xc3b7561bb6ce1b24370b1dc7f9962f002925527bd570d9a82485fe52e3d33874",
 
     platformObjectId:
       getEnv("VITE_PLATFORM_ID") ||
-      "0x80379e0215923007f1ed00bde382a61acc186d34577a911a590e51866de4c257",
+      "0xb36ff27e68963bf15035b6d6871e09c8a798b73ab7c10e7a35cbea3c26cec91b",
 
     adminCapId:
       getEnv("VITE_ADMIN_CAP_ID") ||
-      "0xb9f6417dae5dd603e21b5c517eff252341e7dd80fb0687c2a9492016c6e423ea",
+      "0xe15992de3159c3eac404b9b51ff33819b6fa9924b442758af6b1da9cd844a11e",
   },
 
   gas: {

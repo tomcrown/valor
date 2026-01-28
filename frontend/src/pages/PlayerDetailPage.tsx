@@ -79,6 +79,7 @@ const PlayerDetailPage = () => {
   });
 
   // Load encrypted AI from Walrus with improved error handling
+  // Load encrypted AI from Walrus with improved error handling
   useEffect(() => {
     async function loadEncryptedAI() {
       if (!mergedPlayer) {
@@ -110,6 +111,29 @@ const PlayerDetailPage = () => {
         console.log(`   Season: ${selectedSeason}`);
         console.log(`   Blob ID: ${seasonBlobId}`);
 
+        // 🔍 ADD DEBUG CODE HERE (after seasonBlobId is defined):
+        console.log("🔍 Debug Info:");
+        console.log("   Player ID:", mergedPlayer.id);
+        console.log("   Season:", selectedSeason);
+        console.log("   Blob ID:", seasonBlobId); // ✅ Use seasonBlobId, not seasonWalrusBlobId
+        console.log(
+          "   Aggregator URL:",
+          `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${seasonBlobId}`,
+        );
+
+        // Test the blob directly
+        fetch(
+          `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${seasonBlobId}`,
+        )
+          .then((r) => {
+            console.log("   HTTP Status:", r.status);
+            return r.text();
+          })
+          .then((text) =>
+            console.log("   Response preview:", text.substring(0, 200)),
+          )
+          .catch((e) => console.log("   Fetch Error:", e));
+
         // Download with retry logic (up to 5 attempts with exponential backoff)
         const blob = await downloadEncryptedAI(seasonBlobId, {
           maxRetries: 5,
@@ -134,7 +158,7 @@ const PlayerDetailPage = () => {
         // Provide user-friendly error messages
         if (error.message.includes("404")) {
           setAiLoadError(
-            "AI data is still being processed. Please try refreshing in a minute.",
+            "AI data not found. The blob may not have been uploaded yet.",
           );
         } else if (error.message.includes("timeout")) {
           setAiLoadError(
