@@ -72,15 +72,24 @@ module valor::valor {
         team: String,
         position: String,
         image_url: String,
-        nft_image_url: String, 
-        base_value: u64, 
-        early_season_base_value: u64, 
-        mid_season_base_value: u64,   
-        current_season_base_value: u64, 
-        total_shares: u64,      
+        nft_image_url: String,
+        
+        base_value: u64,
+        early_season_base_value: u64,
+        mid_season_base_value: u64,
+        current_season_base_value: u64,
+        
+        // 🔥 NEW: Separate blob IDs for each season
+        early_season_walrus_blob_id: String,
+        mid_season_walrus_blob_id: String,
+        current_season_walrus_blob_id: String,
+        
+        // Keep for backwards compatibility
+        walrus_blob_id: String,
+        
+        total_shares: u64,
         circulating_shares: u64,
         performance_history: vector<PerformanceRecord>,
-        walrus_blob_id: String,
         active: bool,
         lifetime_volume: u64,
         all_time_high: u64,
@@ -450,26 +459,35 @@ module valor::valor {
 
         let nft_url_string = string::utf8(nft_image_url);
 
-        let player_info = PlayerInfo {
-            player_id,
-            name: player_name,
-            team: string::utf8(team),
-            position: string::utf8(position),
-            image_url: string::utf8(image_url),
-            nft_image_url: nft_url_string,
-            base_value: early_season_base_value,
-            early_season_base_value,
-            mid_season_base_value: 0,
-            current_season_base_value: 0,
-            total_shares,
-            circulating_shares: 0,
-            performance_history: vector::empty(),
-            walrus_blob_id: blob_id_string, 
-            active: true,
-            lifetime_volume: 0,
-            all_time_high: early_season_base_value,
-            all_time_low: early_season_base_value,
-        };
+   let player_info = PlayerInfo {
+        player_id,
+        name: player_name,
+        team: string::utf8(team),
+        position: string::utf8(position),
+        image_url: string::utf8(image_url),
+        nft_image_url: nft_url_string,
+        
+        base_value: early_season_base_value,
+        early_season_base_value,
+        mid_season_base_value: 0,
+        current_season_base_value: 0,
+        
+        // 🔥 NEW: Store early season blob
+        early_season_walrus_blob_id: blob_id_string,
+        mid_season_walrus_blob_id: string::utf8(b""),
+        current_season_walrus_blob_id: string::utf8(b""),
+        
+        // Legacy field - points to early season initially
+        walrus_blob_id: blob_id_string,
+        
+        total_shares,
+        circulating_shares: 0,
+        performance_history: vector::empty(),
+        active: true,
+        lifetime_volume: 0,
+        all_time_high: early_season_base_value,
+        all_time_low: early_season_base_value,
+    };
 
         table::add(&mut platform.players, player_id, player_info);
         table::add(&mut platform.player_names, player_name, player_id);
@@ -522,6 +540,21 @@ module valor::valor {
         let blob_id_string = string::utf8(walrus_blob_id);
         let player = table::borrow_mut(&mut platform.players, player_id);
         assert!(player.active, EUnauthorized);
+
+
+        // 🔥 NEW: Store blob ID in the correct season field
+        if (season == SEASON_MID) {
+            player.mid_season_base_value = new_base_value;
+            player.mid_season_walrus_blob_id = blob_id_string;
+        } else if (season == SEASON_CURRENT) {
+            player.current_season_base_value = new_base_value;
+            player.current_season_walrus_blob_id = blob_id_string;
+        };
+
+        // Update current active values
+        player.base_value = new_base_value;
+        player.walrus_blob_id = blob_id_string;  // Keep for backwards compatibility
+
 
         let current_time = clock::timestamp_ms(clock);
         let old_base_value = player.base_value;
@@ -1102,5 +1135,30 @@ module valor::valor {
 
     public fun get_nft_purchase_timestamp(nft: &PlayerSharesNFT): u64 {
         nft.purchase_timestamp
+    }
+
+    // 🔥 NEW: Getter functions for season-specific blob IDs
+    public fun get_early_season_walrus_blob_id(
+        platform: &Platform, 
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.early_season_walrus_blob_id
+    }
+
+    public fun get_mid_season_walrus_blob_id(
+        platform: &Platform, 
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.mid_season_walrus_blob_id
+    }
+
+    public fun get_current_season_walrus_blob_id(
+        platform: &Platform, 
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.current_season_walrus_blob_id
     }
 }
