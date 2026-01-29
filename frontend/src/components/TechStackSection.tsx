@@ -19,7 +19,7 @@ const techStack = [
         name: "Walrus",
         description:
             "Decentralized storage for secure and permanent data.",
-        gradient: "from-emerald-500/20 to-teal-500/10",
+        gradient: "from-emerald-500/50 to-emerald-500/10 dark:from-emerald-400 dark:to-emerald-400/30",
     },
     {
         image: "/ai.png",
@@ -34,7 +34,7 @@ export const TechStackSection = () => {
     return (
         <section
             id="tech-stack"
-            className="relative pt-16 overflow-hidden"
+            className="relative md:pt-24 overflow-hidden"
         >
             {/* Section dividers */}
             {/* <div className="absolute top-0 left-0 w-full h-px bg-border/40" />

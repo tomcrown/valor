@@ -37,7 +37,7 @@ const steps = [
 
 export const HowItWorksSection = () => {
     return (
-        <section id="how-it-works" className="relative py-24 px-6 overflow-hidden mt-10">
+        <section id="how-it-works" className="relative py-16 md:py-24 px-6 overflow-hidden md:mt-10">
             {/* Background accent */}
             <motion.div
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[400px] rounded-full opacity-30"
