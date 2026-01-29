@@ -98,8 +98,8 @@ const Navbar = () => {
           isOpen ? "backdrop-blur-xl border-border" : "bg-transparent",
         )}
       >
-        <div className="mx-auto max-w-7xl px-6 py-3 transition-colors">
-          <div className="md:glass-card  flex items-center justify-between px-6 py-3 ">
+        <div className="mx-auto max-w-[1480px] px-6 py-3 transition-colors">
+          <div className="md:bg-background rounded-full flex items-center justify-between px-6 py-3 ">
             {/* Logo */}
             <motion.div
               className="flex items-center gap-2"
@@ -139,7 +139,6 @@ const Navbar = () => {
             </div>
             {/* Auth Section */}
             <div className="hidden md:flex items-center gap-4">
-              <ThemeToggle />
               {currentAccount && <PointsBadge variant="icon" />}
 
               {/* Faucet Button */}
@@ -231,6 +230,8 @@ const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+              <ThemeToggle />
+
             </div>
 
             {/* Mobile Menu Button */}
