@@ -34,29 +34,51 @@ const Layout = ({ children }: LayoutProps) => {
     }
   };
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowPrompt(false);
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+
   return (
     <div className="min-h-screen flex flex-col relative z-10 mt-0 md:mt-0">
       <Navbar />
 
       {/* Points Initialization Prompt */}
       {showPrompt && (
-        <div className="fixed bottom-4 right-4 z-50 glass-card p-4 max-w-sm border border-accent/30 shadow-lg animate-slide-in-right">
-          <button
-            onClick={() => setShowPrompt(false)}
-            className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm"
+          onClick={() => setShowPrompt(false)}
+        >
+          <div
+            className="glass-card p-6 max-w-sm w-full border border-accent/30 shadow-xl animate-scale-in relative"
+            onClick={(e) => e.stopPropagation()}
           >
-            <X className="w-4 h-4" />
-          </button>
-          <div className="flex items-start gap-3">
-            <Coins className="w-8 h-8 text-accent flex-shrink-0 mt-1" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold mb-1">
-                🎉 Start Earning Pulse Points!
+            <button
+              onClick={() => setShowPrompt(false)}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex flex-col items-center text-center gap-3">
+              <Coins className="w-8 h-8 text-accent" />
+
+              <p className="text-sm font-semibold">
+                Start Earning Pulse Points!
               </p>
-              <p className="text-xs text-muted-foreground mb-3">
+
+              <p className="text-xs text-muted-foreground">
                 Initialize your points balance to earn rewards for votes,
                 predictions, and NFT purchases
               </p>
+
               <Button
                 onClick={handleInitialize}
                 disabled={isProcessing}
@@ -69,6 +91,7 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
         </div>
       )}
+
 
       <main className="flex-1">{children}</main>
       <Footer />

@@ -186,7 +186,7 @@ const Navbar = () => {
                       <ChevronDown className="w-4 h-4 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white">
+                  <DropdownMenuContent align="end" className="w-56 bg-background">
                     <div className="px-2 py-1.5">
                       <p className="text-sm font-medium">
                         {isEnoki ? "zkLogin Account" : "Connected Wallet"}
