@@ -36,6 +36,8 @@ import { easeOutExpo } from "./ui/motion";
 import { ThemeToggle } from "./ThemeToggle";
 import { PointsBadge } from "@/components/PointsBadge";
 import { Trophy } from "lucide-react";
+import { AddressDisplay } from "@/components/AddressDisplay";
+import { useSuiNSName } from "@/hooks/useSuiNsName";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -56,6 +58,11 @@ const Navbar = () => {
   const { currentWallet } = useCurrentWallet();
 
   const isEnoki = currentWallet && isEnokiWallet(currentWallet);
+
+  // Get SuiNS name for the connected account
+  const { name: suinsName, isLoading: isLoadingSuiNS } = useSuiNSName(
+    currentAccount?.address,
+  );
 
   const handleLogout = () => {
     disconnect();
@@ -86,9 +93,15 @@ const Navbar = () => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
+  // Get display name - prioritize SuiNS name, fallback to formatted address
+  const getDisplayName = () => {
+    if (!currentAccount?.address) return "";
+    if (isLoadingSuiNS) return formatAddress(currentAccount.address);
+    return suinsName || formatAddress(currentAccount.address);
+  };
+
   return (
     <>
-      {/* <nav className="sticky top-0 z-50 glass-card border-b border-border/50 backdrop-blur-xl"> */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -170,16 +183,12 @@ const Navbar = () => {
                         {isEnoki ? (
                           <>
                             <Chrome className="w-4 h-4 text-blue-500" />
-                            <span className="font-mono text-sm">
-                              {formatAddress(currentAccount.address)}
-                            </span>
+                            <span className="text-sm">{getDisplayName()}</span>
                           </>
                         ) : (
                           <>
                             <Wallet className="w-4 h-4" />
-                            <span className="font-mono text-sm">
-                              {formatAddress(currentAccount.address)}
-                            </span>
+                            <span className="text-sm">{getDisplayName()}</span>
                           </>
                         )}
                       </div>
@@ -191,6 +200,11 @@ const Navbar = () => {
                       <p className="text-sm font-medium">
                         {isEnoki ? "zkLogin Account" : "Connected Wallet"}
                       </p>
+                      {suinsName && (
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {suinsName}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground font-mono">
                         {formatAddress(currentAccount.address)}
                       </p>
@@ -231,7 +245,6 @@ const Navbar = () => {
                 </DropdownMenu>
               )}
               <ThemeToggle />
-
             </div>
 
             {/* Mobile Menu Button */}
@@ -305,6 +318,9 @@ const Navbar = () => {
                       <p className="text-xs text-muted-foreground mb-1">
                         {isEnoki ? "zkLogin" : "Wallet"} Account
                       </p>
+                      {suinsName && (
+                        <p className="text-sm font-medium mb-1">{suinsName}</p>
+                      )}
                       <p className="text-xs font-mono">
                         {formatAddress(currentAccount.address)}
                       </p>
@@ -340,7 +356,6 @@ const Navbar = () => {
             </div>
           )}
         </div>
-        {/* </nav> */}
       </motion.header>
 
       <AuthDialog isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />

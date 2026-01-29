@@ -26,15 +26,29 @@ import KeyFeaturesSection from "@/components/KeyFeaturesSection";
 import { TechStackSection } from "@/components/TechStackSection";
 import { HowItWorksSection } from "@/components/HowItWorksSection";
 import { useLeaderboard } from "@/hooks/useUserPoints";
-import { formatAddress } from "@/lib/utils"; // or wherever this lives
+import { useBulkSuiNSNames } from "@/hooks/useSuiNsName";
 
 const LandingPage = () => {
   const { leaderboard } = useLeaderboard(5);
+
+  // Fetch SuiNS names for leaderboard addresses
+  const addresses = leaderboard.map((entry) => entry.address);
+  const { names: suinsNames } = useBulkSuiNSNames(addresses);
+
+  // Format address with SuiNS name fallback
+  const formatAddressWithName = (address: string) => {
+    const suinsName = suinsNames.get(address);
+    if (suinsName && typeof suinsName === "string") {
+      return suinsName;
+    }
+    // Fallback to truncated address
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
   return (
     <Layout>
       {/* Hero Section — Background Image */}
       <section className="relative min-h-[100vh] flex items-center overflow-hidden">
-
         {/* Background Image */}
         <motion.div
           className="absolute inset-0 z-0"
@@ -67,12 +81,8 @@ const LandingPage = () => {
             <span className="bg-foreground text-background px-2 py-1 rounded-xl font-semibold">
               TESTNET
             </span>
-          </p>
-
-
-          {" "}
+          </p>{" "}
           <div className="max-w-4xl mx-auto text-center">
-
             {/* Headline */}
             <h1
               className="text-4xl md:text-6xl font-bold leading-tight mb-6 opacity-0 animate-fade-in"
@@ -185,7 +195,7 @@ const LandingPage = () => {
                       #{entry.rank}
                     </div>
                     <div className="font-mono text-sm">
-                      {formatAddress(entry.address)}
+                      {formatAddressWithName(entry.address)}
                     </div>
                   </div>
                   <div className="font-semibold">
