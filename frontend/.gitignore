@@ -12,8 +12,8 @@ dist
 dist-ssr
 *.local
 .env
-config
-data
+# config
+# data
 
 
 # Editor directories and files
@@ -28,5 +28,5 @@ data
 *.sw?
 
 /src/scripts
-/src/config
-/src/data
+# /src/config
+# /src/data
