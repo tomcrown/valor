@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AddressDisplay } from "@/components/AddressDisplay";
+import { useBulkSuiNSNames } from "@/hooks/useSuiNsName";
 
 type LeaderboardType = "lifetime" | "engagement" | "investor";
 
@@ -37,12 +39,23 @@ const LeaderboardPage = () => {
   const { pointsData } = useUserPoints();
   const [selectedTab, setSelectedTab] = useState<LeaderboardType>("lifetime");
 
+  // Fetch SuiNS names for all leaderboard addresses
+  const addresses = leaderboard.map((entry) => entry.address);
+  const { names: suinsNames, isLoading: isLoadingNames } =
+    useBulkSuiNSNames(addresses);
+
   useEffect(() => {
     const interval = setInterval(refetch, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const formatAddress = (address: string) => {
+    // Check if we have a SuiNS name first
+    const suinsName = suinsNames.get(address);
+    if (suinsName && typeof suinsName === "string") {
+      return suinsName;
+    }
+    // Fallback to truncated address
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
@@ -173,7 +186,7 @@ const LeaderboardPage = () => {
           </TabsList>
 
           {/* Loading State */}
-          {isLoading && (
+          {(isLoading || isLoadingNames) && (
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
                 <Skeleton key={i} className="h-20 w-full" />
@@ -329,9 +342,13 @@ function LeaderboardContent({
             >
               <CardContent className="pt-6 text-center">
                 <div className="mb-4">{getRankIcon(position)}</div>
-                <p className="font-mono text-sm mb-2">
-                  {formatAddress(entry.address)}
-                </p>
+                <div className="mb-2">
+                  <AddressDisplay
+                    address={entry.address}
+                    className="text-sm"
+                    showLoader={false}
+                  />
+                </div>
                 <p className="text-3xl font-bold mb-1">
                   {getMetricValue(entry)}
                 </p>
@@ -378,14 +395,18 @@ function LeaderboardContent({
                       {getRankIcon(entry.rank)}
                     </div>
                     <div className="flex-1">
-                      <p className="font-mono text-sm">
-                        {formatAddress(entry.address)}
+                      <div className="flex items-center gap-2">
+                        <AddressDisplay
+                          address={entry.address}
+                          className="text-sm"
+                          showLoader={false}
+                        />
                         {isCurrentUser && (
-                          <span className="ml-2 text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full">
+                          <span className="text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full">
                             You
                           </span>
                         )}
-                      </p>
+                      </div>
                     </div>
                   </div>
 
