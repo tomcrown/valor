@@ -167,8 +167,11 @@ const LandingPage = () => {
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="glass-card p-8 md:p-12 relative overflow-hidden bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 animate-gradient">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-center">
+              Leaderboard
+            </h2>
             <div className="flex flex-col gap-4 md:flex-row items-center justify-between mb-8">
-              <h2 className="text-3xl md:text-4xl font-bold flex items-center gap-2">
+              <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
                 <TrendingUp className="w-6 h-6 text-primary" />
                 Top Performers
               </h2>

@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { isEnokiWallet } from "@mysten/enoki";
 import { usePointsOperations } from "@/hooks/usePointsOperations";
 import { useUserPoints } from "@/hooks/useUserPoints";
+import { usePoints } from "@/context/PointsContext";
 
 export interface BuySharesParams {
   playerId: string;
@@ -31,7 +32,7 @@ export function useBuySellShares() {
   const currentAccount = useCurrentAccount();
   const { currentWallet } = useCurrentWallet();
   const { mintNFTPoints } = usePointsOperations();
-  const { pointsData } = useUserPoints();
+  const { pointsData } = usePoints();
   const { mutateAsync: signAndExecuteTransaction } =
     useSignAndExecuteTransaction();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -81,8 +82,8 @@ export function useBuySellShares() {
           transaction: tx,
         },
         {
-          onSuccess: (result) => {},
-          onError: (error) => {},
+          onSuccess: (result) => { },
+          onError: (error) => { },
         },
       );
 
@@ -193,8 +194,8 @@ export function useBuySellShares() {
           transaction: tx,
         },
         {
-          onSuccess: (result) => {},
-          onError: (error) => {},
+          onSuccess: (result) => { },
+          onError: (error) => { },
         },
       );
 

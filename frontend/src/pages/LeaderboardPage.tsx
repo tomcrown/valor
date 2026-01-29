@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Trophy,
   Medal,
@@ -9,12 +9,12 @@ import {
   Coins,
   Crown,
   Star,
+  RefreshCw,
+  Loader2
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import {
   useLeaderboard,
-  useUserPoints,
-  calculateTotalScore,
 } from "@/hooks/useUserPoints";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { cn } from "@/lib/utils";
@@ -28,16 +28,37 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePoints } from "@/context/PointsContext";
 import { AddressDisplay } from "@/components/AddressDisplay";
 import { useBulkSuiNSNames } from "@/hooks/useSuiNsName";
 
 type LeaderboardType = "lifetime" | "engagement" | "investor";
+const MIN_OVERLAY_TIME = 500; // 👈 prevents flicker
 
 const LeaderboardPage = () => {
   const currentAccount = useCurrentAccount();
   const { leaderboard, isLoading, error, refetch } = useLeaderboard(50);
-  const { pointsData } = useUserPoints();
+  const { pointsData } = usePoints();
   const [selectedTab, setSelectedTab] = useState<LeaderboardType>("lifetime");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshStartRef = useRef<number | null>(null);
+
+  const handleRefetch = async () => {
+    refreshStartRef.current = Date.now();
+    setIsRefreshing(true);
+
+    try {
+      await refetch();
+    } finally {
+      const elapsed = Date.now() - (refreshStartRef.current ?? 0);
+      const remaining = Math.max(0, MIN_OVERLAY_TIME - elapsed);
+
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, remaining);
+    }
+  };
 
   // Fetch SuiNS names for all leaderboard addresses
   const addresses = leaderboard.map((entry) => entry.address);
@@ -45,10 +66,15 @@ const LeaderboardPage = () => {
     useBulkSuiNSNames(addresses);
 
   useEffect(() => {
-    const interval = setInterval(refetch, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    handleRefetch();
+  }, [selectedTab]);
 
+  // In leaderboard page
+  useEffect(() => {
+    if (pointsData && pointsData.currentPoints > 0) {
+      handleRefetch();
+    }
+  }, [pointsData?.currentPoints]);
   const formatAddress = (address: string) => {
     // Check if we have a SuiNS name first
     const suinsName = suinsNames.get(address);
@@ -103,18 +129,41 @@ const LeaderboardPage = () => {
   const topThree = sortedLeaderboard.slice(0, 3);
   const restOfLeaderboard = sortedLeaderboard.slice(3);
 
+
   return (
     <Layout>
+
       <div className="container mx-auto px-4 py-8 md:mt-16">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 relative">
           <h1 className="text-4xl md:text-5xl font-bold mb-3 gradient-text">
             Leaderboard
           </h1>
+
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Top performers in the Valor ecosystem
           </p>
+
+          {/* Refresh Button */}
+
+          <Button
+            onClick={handleRefetch}
+            variant="outline"
+            size="sm"
+            aria-label="Refresh leaderboard"
+
+            disabled={isLoading}
+            className="flex items-center gap-2 rounded-2xl absolute right-0 top-1/2 -translate-y-1/2 p-2 "
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            {isLoading ? "Updating..." : "Refresh"}
+          </Button>
         </div>
+
 
         {/* User Stats Card */}
         {currentAccount && (
@@ -171,77 +220,78 @@ const LeaderboardPage = () => {
           onValueChange={(v) => setSelectedTab(v as LeaderboardType)}
         >
           <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="lifetime" className="flex items-center gap-2">
-              <Trophy className="w-4 h-4" />
-              All-Time
+            <TabsTrigger value="lifetime" className="flex items-center gap-2 p-4 rounded-xl">
+              <Trophy className="w-4 h-4" /> All-Time
             </TabsTrigger>
-            <TabsTrigger value="engagement" className="flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              Most Engaged
+            <TabsTrigger value="engagement" className="flex items-center gap-2 p-4 rounded-xl">
+              <Target className="w-4 h-4" /> Most Engaged
             </TabsTrigger>
-            <TabsTrigger value="investor" className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              Top Investors
+            <TabsTrigger value="investor" className="flex items-center gap-2 p-4 rounded-xl">
+              <TrendingUp className="w-4 h-4" /> Top Investors
             </TabsTrigger>
           </TabsList>
 
-          {/* Loading State */}
-          {(isLoading || isLoadingNames) && (
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-20 w-full" />
-              ))}
-            </div>
-          )}
+          {/* Tab Contents */}
+          <div className="space-y-6">
+            {["lifetime", "engagement", "investor"].map((tab) => (
+              <TabsContent key={tab} value={tab} className="relative">
+                {/* Overlay */}
+                <div
+                  className={cn(
+                    "absolute inset-0 flex items-center justify-center  rounded-xl z-10 transition-opacity duration-300",
+                    isRefreshing ? "opacity-100" : "opacity-0 pointer-events-none"
+                  )}
+                >
+                  <div className="flex items-center gap-2 text-sm ">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Updating leaderboard…
+                  </div>
+                </div>
 
-          {/* Error State */}
-          {error && (
-            <Card className="p-8 text-center">
-              <p className="text-destructive mb-4">{error}</p>
-              <Button onClick={refetch}>Try Again</Button>
-            </Card>
-          )}
+                {/* Leaderboard Content */}
+                {!isLoading && !error && (
+                  <LeaderboardContent
+                    topThree={topThree}
+                    restOfLeaderboard={restOfLeaderboard}
+                    currentUserAddress={currentAccount?.address}
+                    formatAddress={formatAddress}
+                    getRankIcon={getRankIcon}
+                    metric={
+                      tab === "lifetime"
+                        ? "lifetimePoints"
+                        : tab === "engagement"
+                          ? "engagement"
+                          : "nftSharesOwned"
+                    }
+                    metricLabel={
+                      tab === "lifetime"
+                        ? "Lifetime Points"
+                        : tab === "engagement"
+                          ? "Engagement Score"
+                          : "NFT Shares"
+                    }
+                  />
+                )}
 
-          {/* Leaderboard Content */}
-          {!isLoading && !error && (
-            <>
-              <TabsContent value="lifetime" className="space-y-6">
-                <LeaderboardContent
-                  topThree={topThree}
-                  restOfLeaderboard={restOfLeaderboard}
-                  currentUserAddress={currentAccount?.address}
-                  formatAddress={formatAddress}
-                  getRankIcon={getRankIcon}
-                  metric="lifetimePoints"
-                  metricLabel="Lifetime Points"
-                />
+                {/* Loading Skeleton */}
+                {isLoading && (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Skeleton key={i} className="h-20 w-full" />
+                    ))}
+                  </div>
+                )}
+
+                {/* Error State */}
+                {error && (
+                  <Card className="p-8 text-center">
+                    <p className="text-destructive mb-4">{error}</p>
+                    <Button onClick={refetch}>Try Again</Button>
+                  </Card>
+                )}
               </TabsContent>
-
-              <TabsContent value="engagement" className="space-y-6">
-                <LeaderboardContent
-                  topThree={topThree}
-                  restOfLeaderboard={restOfLeaderboard}
-                  currentUserAddress={currentAccount?.address}
-                  formatAddress={formatAddress}
-                  getRankIcon={getRankIcon}
-                  metric="engagement"
-                  metricLabel="Engagement Score"
-                />
-              </TabsContent>
-
-              <TabsContent value="investor" className="space-y-6">
-                <LeaderboardContent
-                  topThree={topThree}
-                  restOfLeaderboard={restOfLeaderboard}
-                  currentUserAddress={currentAccount?.address}
-                  formatAddress={formatAddress}
-                  getRankIcon={getRankIcon}
-                  metric="nftSharesOwned"
-                  metricLabel="NFT Shares"
-                />
-              </TabsContent>
-            </>
-          )}
+            ))}
+          </div>
         </Tabs>
 
         {/* Info Section */}
@@ -291,6 +341,7 @@ const LeaderboardPage = () => {
           </CardContent>
         </Card>
       </div>
+
     </Layout>
   );
 };

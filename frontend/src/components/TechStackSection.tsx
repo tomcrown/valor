@@ -5,6 +5,7 @@ import {
     easeOutExpo,
     fadeUpVariants,
 } from "@/components/ui/motion";
+import { useEffect, useRef, useState } from "react";
 
 const techStack = [
     {
@@ -28,9 +29,50 @@ const techStack = [
             "Proprietary ML models for accurate player valuations.",
         gradient: "from-primary/20 to-orange-500/10",
     },
+    {
+        image: "/zklogin.png",
+        name: "ZKLogin",
+        description:
+            "Zero-knowledge login for secure and private user authentication.",
+        gradient: "from-primary/20 to-orange-500/10",
+    },
+    {
+        image: "/nautilus.png",
+        name: "Nautilus sui",
+        description:
+            "A powerful Sui wallet that makes interacting with tokens, NFTs, and dApps simple and secure",
+        gradient: "from-primary/20 to-orange-500/10",
+    },
+    {
+        image: "/suins.png",
+        name: "SuiNS",
+        description:
+            "Human-readable names for easy wallet address management.",
+        gradient: "from-emerald-500/50 to-emerald-500/10 dark:from-emerald-400 dark:to-emerald-400/30",
+    },
+
+    {
+        image: "/seal.png",
+        name: "Seal",
+        description:
+            "Secure and private data management for Sui applications.",
+        gradient: "from-purple-500/50 to-purple-500/10 dark:from-purple-400 dark:to-purple-400/30",
+    },
 ];
 
 export const TechStackSection = () => {
+
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const trackRef = useRef<HTMLDivElement>(null);
+    const [dragWidth, setDragWidth] = useState(0);
+
+    useEffect(() => {
+        if (carouselRef.current && trackRef.current) {
+            setDragWidth(
+                trackRef.current.scrollWidth - carouselRef.current.offsetWidth
+            );
+        }
+    }, []);
     return (
         <section
             id="tech-stack"
@@ -96,89 +138,97 @@ export const TechStackSection = () => {
 
                         {/* Tech cards */}
                         <motion.div
+                            ref={carouselRef}
                             variants={staggerContainer}
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: "-100px" }}
-                            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+                            className="relative overflow-hidden"
                         >
-                            {techStack.map((tech, i) => (
-                                <motion.div
-                                    key={tech.name}
-                                    variants={staggerItem}
-                                    className="relative group"
-                                >
+                            <motion.div
+                                ref={trackRef}
+                                className="flex gap-8 cursor-grab active:cursor-grabbing"
+                                drag="x"
+
+                                dragConstraints={{ left: -dragWidth, right: 0 }}
+                                dragElastic={0.08}
+                                animate={{ x: [0, -dragWidth / 2, 0] }}
+                                transition={{
+                                    duration: 25,
+                                    repeat: Infinity,
+                                    ease: "linear",
+                                }}
+                            >
+                                {[...techStack, ...techStack].map((tech, i) => (
                                     <motion.div
-                                        className=" p-8 text-center h-full relative overflow-hidden"
-                                        whileHover={{
-                                            y: -8,
-                                            scale: 1.02,
-                                            transition: {
-                                                duration: 0.4,
-                                                ease: easeOutExpo,
-                                            },
-                                        }}
+                                        key={`${tech.name}-${i}`}
+                                        variants={staggerItem}
+                                        whileHover={{ x: undefined }}
+
+                                        className="relative group min-w-[320px]"
                                     >
-                                        {/* Hover gradient */}
-                                        <div
-                                            className={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-500`}
-                                        />
-                                        {/* Image Icon with default gradient */}
                                         <motion.div
-                                            className="relative mx-auto mb-6 w-20 h-20 rounded-2xl overflow-hidden"
-                                            whileHover={{ scale: 1.1, rotate: 5 }}
-                                            transition={{ duration: 0.3 }}
+                                            className="p-8 text-center h-full relative overflow-hidden rounded-2xl bg-card"
+                                            whileHover={{
+                                                y: -8,
+                                                scale: 1.02,
+                                                transition: {
+                                                    duration: 0.4,
+                                                    ease: easeOutExpo,
+                                                },
+                                            }}
                                         >
-                                            {/* Default gradient background (VISIBLE BEFORE HOVER) */}
+                                            {/* Hover gradient */}
                                             <div
-                                                className={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-100`}
+                                                className={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-500`}
                                             />
 
-                                            {/* Inner surface */}
-                                            <div className="relative z-10 w-full h-full flex items-center justify-center bg-background/60 backdrop-blur rounded-2xl">
-                                                <img
-                                                    src={tech.image}
-                                                    alt={tech.name}
-                                                    className="w-12 h-12 object-contain"
+                                            {/* Image */}
+                                            <motion.div
+                                                className="relative mx-auto mb-6 w-20 h-20 rounded-2xl overflow-hidden"
+                                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                                transition={{ duration: 0.3 }}
+                                            >
+                                                <div
+                                                    className={`absolute inset-0 bg-gradient-to-br ${tech.gradient}`}
                                                 />
-                                            </div>
+                                                <div className="relative z-10 w-full h-full flex items-center justify-center bg-background/60 backdrop-blur rounded-2xl">
+                                                    <img
+                                                        src={tech.image}
+                                                        alt={tech.name}
+                                                        className="w-12 h-12 object-contain"
+                                                    />
+                                                </div>
+                                            </motion.div>
 
-                                            {/* Hover glow */}
-                                            <div
-                                                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                            <h3 className="relative text-xl font-bold mb-3">
+                                                {tech.name}
+                                            </h3>
+
+                                            <p className="relative text-muted-foreground text-sm">
+                                                {tech.description}
+                                            </p>
+
+                                            {/* Animated border */}
+                                            <motion.div
+                                                className="absolute inset-0 rounded-xl border-2 border-transparent pointer-events-none"
                                                 style={{
-                                                    boxShadow: "0 0 30px hsl(var(--primary) / 0.35)",
+                                                    background:
+                                                        "linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(135deg, transparent 0%, hsl(var(--primary) / 0.35) 50%, transparent 100%) border-box",
+                                                }}
+                                                animate={{ opacity: [0, 1, 0] }}
+                                                transition={{
+                                                    duration: 3,
+                                                    repeat: Infinity,
+                                                    delay: i * 0.4,
                                                 }}
                                             />
                                         </motion.div>
-
-
-                                        <h3 className="relative text-xl font-bold mb-3">
-                                            {tech.name}
-                                        </h3>
-
-                                        <p className="relative text-muted-foreground text-sm">
-                                            {tech.description}
-                                        </p>
-
-                                        {/* Animated border */}
-                                        <motion.div
-                                            className="absolute inset-0 rounded-xl border-2 border-transparent pointer-events-none"
-                                            style={{
-                                                background:
-                                                    "linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(135deg, transparent 0%, hsl(var(--primary) / 0.35) 50%, transparent 100%) border-box",
-                                            }}
-                                            animate={{ opacity: [0, 1, 0] }}
-                                            transition={{
-                                                duration: 3,
-                                                repeat: Infinity,
-                                                delay: i * 0.5,
-                                            }}
-                                        />
                                     </motion.div>
-                                </motion.div>
-                            ))}
+                                ))}
+                            </motion.div>
                         </motion.div>
+
                     </div>
                 </div>
             </div>

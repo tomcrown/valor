@@ -21,13 +21,15 @@ import {
 } from "@mysten/dapp-kit";
 import { toast } from "@/hooks/use-toast";
 import { isEnokiWallet } from "@mysten/enoki";
+import { usePoints } from "@/context/PointsContext";
+import { PULSE_POINTS_CONFIG } from "@/config/pulse-points.config";
 
 interface BuySellWidgetProps {
   playerId: string;
   onChainPlayerId?: string;
   playerName: string;
   currentPrice: number;
-  onTransactionComplete?: () => void;
+  onTransactionComplete: (pointsEarned: number) => void;
 }
 
 const BuySellWidget = ({
@@ -41,6 +43,8 @@ const BuySellWidget = ({
   const { currentWallet } = useCurrentWallet();
   const [mode, setMode] = useState<"buy" | "sell">("buy");
   const [quantity, setQuantity] = useState(1);
+  const { pointsData, optimisticAddPoints, refetch } = usePoints();
+
   const {
     buyShares,
     sellShares,
@@ -86,11 +90,13 @@ const BuySellWidget = ({
     });
 
     if (result?.success) {
+      optimisticAddPoints(PULSE_POINTS_CONFIG.votePoints);
       setQuantity(1);
 
       setTimeout(() => {
+        refetch();
         refetchShares();
-        onTransactionComplete?.();
+        onTransactionComplete?.(0);
       }, 2000);
     }
   };
@@ -136,7 +142,7 @@ const BuySellWidget = ({
 
       setTimeout(() => {
         refetchShares();
-        onTransactionComplete?.();
+        onTransactionComplete?.(0);
       }, 2000);
     }
   };
