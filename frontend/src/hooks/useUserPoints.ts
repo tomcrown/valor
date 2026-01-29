@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { SuiClient } from "@mysten/sui/client";
 import { SUI_CONFIG } from "@/config/sui.config";
@@ -26,6 +26,9 @@ export interface LeaderboardEntry {
 }
 
 export function useUserPoints() {
+  const prevPointsRef = useRef<number | null>(null);
+  const isAutoRefreshingRef = useRef(false);
+
   const currentAccount = useCurrentAccount();
   const [pointsData, setPointsData] = useState<UserPointsData>({
     currentPoints: 0,
@@ -42,16 +45,6 @@ export function useUserPoints() {
 
   const fetchUserPoints = async () => {
     if (!currentAccount?.address) {
-      setPointsData({
-        currentPoints: 0,
-        lifetimePoints: 0,
-        votesCount: 0,
-        correctPredictions: 0,
-        nftSharesOwned: 0,
-        canUnlockAI: false,
-        balanceObjectId: null,
-        lastUpdated: 0,
-      });
       setIsLoading(false);
       return;
     }
@@ -74,19 +67,11 @@ export function useUserPoints() {
         },
       });
 
-      if (ownedObjects.data.length === 0) {
-        // User doesn't have a points balance yet
-        setPointsData({
-          currentPoints: 0,
-          lifetimePoints: 0,
-          votesCount: 0,
-          correctPredictions: 0,
-          nftSharesOwned: 0,
-          canUnlockAI: false,
+      if (!ownedObjects.data.length) {
+        setPointsData(prev => ({
+          ...prev,
           balanceObjectId: null,
-          lastUpdated: 0,
-        });
-        setIsLoading(false);
+        }));
         return;
       }
 
@@ -99,9 +84,26 @@ export function useUserPoints() {
       }
 
       const fields = (balanceObj.data.content as any).fields;
-
-      const currentPoints = Number(fields.points || 0);
       const aiUnlockThreshold = PULSE_POINTS_CONFIG.aiUnlockThreshold;
+      const currentPoints = Number(fields.points || 0);
+
+      // 🔁 Detect increase
+      if (
+        prevPointsRef.current !== null &&
+        currentPoints > prevPointsRef.current &&
+        !isAutoRefreshingRef.current
+      ) {
+        isAutoRefreshingRef.current = true;
+
+        // Small delay lets chain indexers settle
+        setTimeout(() => {
+          fetchUserPoints();
+          isAutoRefreshingRef.current = false;
+        }, 600);
+      }
+
+      prevPointsRef.current = currentPoints;
+
 
       setPointsData({
         currentPoints,
@@ -121,6 +123,15 @@ export function useUserPoints() {
     }
   };
 
+  const optimisticAddPoints = (amount: number) => {
+    setPointsData(prev => ({
+      ...prev,
+      currentPoints: prev.currentPoints + amount,
+      lifetimePoints: prev.lifetimePoints + amount,
+    }));
+  };
+
+
   useEffect(() => {
     fetchUserPoints();
   }, [currentAccount?.address]);
@@ -130,6 +141,7 @@ export function useUserPoints() {
     isLoading,
     error,
     refetch: fetchUserPoints,
+    optimisticAddPoints,
   };
 }
 

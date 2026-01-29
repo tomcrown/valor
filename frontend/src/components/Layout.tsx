@@ -7,6 +7,7 @@ import { useUserPoints } from "@/hooks/useUserPoints";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Button } from "@/components/ui/button";
 import { Coins, X } from "lucide-react";
+import { usePoints } from "@/context/PointsContext";
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,7 +15,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const currentAccount = useCurrentAccount();
-  const { pointsData, isLoading } = useUserPoints();
+  const { pointsData, isLoading } = usePoints();
   const { initializePointsBalance, isProcessing } = usePointsOperations();
   const [showPrompt, setShowPrompt] = useState(false);
 
@@ -48,6 +49,7 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen flex flex-col relative z-10 mt-0 md:mt-0">
+
       <Navbar />
 
       {/* Points Initialization Prompt */}

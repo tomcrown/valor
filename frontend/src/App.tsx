@@ -12,25 +12,28 @@ import "@mysten/dapp-kit/dist/index.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { SpaceNetworkBackground } from "./components/ThreeBg";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import { PointsProvider } from "./context/PointsContext";
 
 const App = () => (
   <BrowserRouter>
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      <SpaceNetworkBackground />
-      <Toaster />
+    <PointsProvider>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <SpaceNetworkBackground />
+        <Toaster />
 
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/players" element={<PlayersPage />} />
-        <Route path="/players/:id" element={<PlayerDetailPage />} />
-        <Route path="/portfolio" element={<PortfolioPage />} />
-        <Route path="/pulse" element={<PulsePage />} />
-        <Route path="*" element={<NotFound />} />
-        <Route path="/swap/success" element={<SwapSuccessPage />} />
-        <Route path="/swap/fail" element={<SwapFailedPage />} />
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
-      </Routes>
-    </ThemeProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/players" element={<PlayersPage />} />
+          <Route path="/players/:id" element={<PlayerDetailPage />} />
+          <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/pulse" element={<PulsePage />} />
+          <Route path="*" element={<NotFound />} />
+          <Route path="/swap/success" element={<SwapSuccessPage />} />
+          <Route path="/swap/fail" element={<SwapFailedPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+        </Routes>
+      </ThemeProvider>
+    </PointsProvider>
   </BrowserRouter>
 );
 

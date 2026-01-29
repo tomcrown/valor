@@ -9,6 +9,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { PULSE_POINTS_CONFIG } from "@/config/pulse-points.config";
+import { useEffect, useRef } from "react";
+import { usePoints } from "@/context/PointsContext";
 
 interface PointsBadgeProps {
   variant?: "full" | "compact" | "icon";
@@ -22,11 +24,12 @@ export function PointsBadge({
   className,
 }: PointsBadgeProps) {
   const currentAccount = useCurrentAccount();
-  const { pointsData, isLoading } = useUserPoints();
+  const { pointsData, isLoading, refetch } = usePoints();
 
   if (!currentAccount) {
     return null;
   }
+
 
   if (variant === "icon") {
     return (
@@ -133,11 +136,10 @@ export function PointsBadge({
             <div
               className="h-full bg-accent transition-all duration-300"
               style={{
-                width: `${
-                  (pointsData.currentPoints /
-                    PULSE_POINTS_CONFIG.aiUnlockThreshold) *
+                width: `${(pointsData.currentPoints /
+                  PULSE_POINTS_CONFIG.aiUnlockThreshold) *
                   100
-                }%`,
+                  }%`,
               }}
             />
           </div>

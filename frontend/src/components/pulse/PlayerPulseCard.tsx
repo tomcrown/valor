@@ -18,6 +18,8 @@ import { toast } from "@/hooks/use-toast";
 import { easeOutExpo } from "@/components/ui/motion";
 import { useVoteWithPoints } from "@/hooks/usePointsOperations";
 import { useUserPoints } from "@/hooks/useUserPoints";
+import { usePoints } from "@/context/PointsContext";
+import { PULSE_POINTS_CONFIG } from "@/config/pulse-points.config";
 
 interface PlayerPulseCardProps {
   player: {
@@ -42,7 +44,8 @@ export function PlayerPulseCard({
 }: PlayerPulseCardProps) {
   const currentAccount = useCurrentAccount();
   const { submitVoteWithPoints, isVoting } = useVoteWithPoints();
-  const { pointsData } = useUserPoints();
+  const { pointsData, optimisticAddPoints, refetch } = usePoints();
+
 
   const [selectedVote, setSelectedVote] = useState<"yes" | "no" | null>(null);
 
@@ -82,6 +85,7 @@ export function PlayerPulseCard({
     );
 
     if (success) {
+      optimisticAddPoints(PULSE_POINTS_CONFIG.votePoints);
       toast({
         title: "Vote submitted",
         description: `You voted ${vote.toUpperCase()} for ${player.name}`,

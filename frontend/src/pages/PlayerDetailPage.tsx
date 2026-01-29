@@ -36,6 +36,7 @@ import Layout from "@/components/Layout";
 import Chart from "@/components/Chart";
 import BuySellWidget from "@/components/BuySellWidget";
 import { cn } from "@/lib/utils";
+import { usePoints } from "@/context/PointsContext";
 
 const SEASON_LABELS = {
   early: "Early Season",
@@ -54,7 +55,8 @@ const PlayerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const account = useCurrentAccount();
-  const { pointsData } = useUserPoints();
+  const { pointsData, optimisticAddPoints, refetch } = usePoints();
+
 
   const [selectedSeason, setSelectedSeason] = useState<SeasonPeriod>(
     (location.state?.selectedSeason as SeasonPeriod) || "current",
@@ -239,7 +241,11 @@ const PlayerDetailPage = () => {
     checkOwnership();
   }, [account?.address, mergedPlayer?.onChainPlayerId]);
 
-  const handleTransactionComplete = () => {
+  const handleTransactionComplete = (earnedPoints: number = 0) => {
+    if (earnedPoints > 0) {
+      optimisticAddPoints(earnedPoints);
+    }
+
     refetchPlayer();
     // Re-check ownership after transaction
     if (account?.address && mergedPlayer?.id) {
@@ -598,7 +604,9 @@ const PlayerDetailPage = () => {
                 onChainPlayerId={mergedPlayer.onChainPlayerId}
                 playerName={mergedPlayer.name}
                 currentPrice={currentSeasonPrice}
-                onTransactionComplete={handleTransactionComplete}
+                onTransactionComplete={(pointsEarned: number) =>
+                  handleTransactionComplete(pointsEarned)
+                }
               />
               <div className="mt-4">
                 <button
