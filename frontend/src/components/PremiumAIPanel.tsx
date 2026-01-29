@@ -6,8 +6,11 @@ import {
   TrendingUp,
   Lightbulb,
   AlertCircle,
+  Coins,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   createSealClient,
   type PublicAIData,
@@ -15,10 +18,12 @@ import {
 } from "@/lib/sealClient";
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { useCurrentAccount, useSignPersonalMessage } from "@mysten/dapp-kit";
+import { usePointsOperations } from "@/hooks/usePointsOperations";
+import { PULSE_POINTS_CONFIG } from "@/config/pulse-points.config";
 import { cn } from "@/lib/utils";
 import type { SeasonPeriod } from "@/data/apiData";
 
-interface PremiumAIPanelProps {
+interface PremiumAIPanelEnhancedProps {
   publicData: PublicAIData;
   encryptedPremium: Uint8Array;
   playerId: string;
@@ -26,9 +31,13 @@ interface PremiumAIPanelProps {
   season: SeasonPeriod;
   userOwnsNFT: boolean;
   userShares: number;
+  userPoints: number;
+  userPointsBalanceId: string | null;
 }
 
-export function PremiumAIPanel({
+type UnlockMethod = "nft" | "points";
+
+export function PremiumAIPanelEnhanced({
   publicData,
   encryptedPremium,
   playerId,
@@ -36,14 +45,23 @@ export function PremiumAIPanel({
   season,
   userOwnsNFT,
   userShares,
-}: PremiumAIPanelProps) {
+  userPoints,
+  userPointsBalanceId,
+}: PremiumAIPanelEnhancedProps) {
   const account = useCurrentAccount();
   const [premiumData, setPremiumData] = useState<PremiumAIData | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [decryptError, setDecryptError] = useState<string | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<UnlockMethod>("nft");
   const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
+  const { spendPointsForAI, isProcessing } = usePointsOperations();
 
-  const handleUnlock = async () => {
+  const canUnlockWithNFT = userOwnsNFT;
+  const canUnlockWithPoints =
+    userPoints >= PULSE_POINTS_CONFIG.aiUnlockThreshold;
+  const canUnlock = canUnlockWithNFT || canUnlockWithPoints;
+
+  const handleUnlockWithNFT = async () => {
     if (!account?.address) {
       setDecryptError("Please connect your wallet first");
       return;
@@ -58,35 +76,22 @@ export function PremiumAIPanel({
     setDecryptError(null);
 
     try {
-      console.log("🔐 Preparing to unlock premium insights...");
-
       const suiClient = new SuiClient({
         url: getFullnodeUrl(import.meta.env.VITE_SUI_NETWORK || "testnet"),
       });
 
-      // ✅ Create a proper wallet client with all required methods
       const walletClient = {
         getAddress: async () => account.address,
-
         getPublicKey: async () => {
-          // Get the public key from the connected account
           if (!account.publicKey) {
             throw new Error("No public key available");
           }
-          // Return the public key bytes directly - Seal will handle the conversion
           return account.publicKey;
         },
-
         signPersonalMessage: async (input: Uint8Array) => {
-          console.log("   ✍️ Signing message of length:", input.length);
-
-          // @mysten/dapp-kit expects Uint8Array directly
           const result = await signPersonalMessage({
             message: input,
           });
-
-          console.log("   ✅ Message signed");
-
           return {
             signature: result.signature,
             bytes: result.bytes,
@@ -108,8 +113,6 @@ export function PremiumAIPanel({
         },
       };
 
-      console.log("🔓 Decrypting with wallet signer...");
-
       const decrypted = await sealClient.decryptPremiumAI(
         encryptedBlob,
         account.address,
@@ -119,13 +122,10 @@ export function PremiumAIPanel({
 
       if (decrypted) {
         setPremiumData(decrypted);
-        console.log("🎉 Premium insights unlocked!");
       } else {
         setDecryptError("Failed to decrypt premium data");
       }
     } catch (error: any) {
-      console.error("❌ Decryption error:", error);
-
       if (
         error.message?.includes("User rejected") ||
         error.message?.includes("rejected")
@@ -139,13 +139,40 @@ export function PremiumAIPanel({
     }
   };
 
+  const handleUnlockWithPoints = async () => {
+    if (!account?.address) {
+      setDecryptError("Please connect your wallet first");
+      return;
+    }
+
+    if (!userPointsBalanceId) {
+      setDecryptError("Points balance not initialized");
+      return;
+    }
+
+    if (!canUnlockWithPoints) {
+      setDecryptError(
+        `You need ${PULSE_POINTS_CONFIG.aiUnlockThreshold} points to unlock`,
+      );
+      return;
+    }
+
+    const success = await spendPointsForAI(userPointsBalanceId);
+
+    if (success) {
+      // After spending points, unlock with NFT method as fallback
+      // (Points give access permission, actual decryption uses Seal)
+      await handleUnlockWithNFT();
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Public Data - Always Visible */}
+      {/* Public Data */}
       <div className="glass-card p-6">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-5 h-5 text-accent" />
-          <h3 className="text-lg font-semibold">Performance Overview</h3>
+          <h3 className="font-semibold">Performance Overview</h3>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -189,19 +216,28 @@ export function PremiumAIPanel({
         )}
       </div>
 
-      {/* Premium Data - Locked/Unlocked */}
+      {/* Premium Data */}
       <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Lock className="w-5 h-5 text-warning" />
-            <h3 className="text-lg font-semibold">Premium Insights</h3>
+            <h3 className="font-semibold">Premium Insights</h3>
           </div>
 
-          {userOwnsNFT && (
-            <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full">
-              {userShares} {userShares === 1 ? "share" : "shares"} owned
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {userOwnsNFT && (
+              <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full flex items-center gap-1">
+                <Shield className="w-3 h-3" />
+                {userShares} NFT{userShares !== 1 ? "s" : ""}
+              </span>
+            )}
+            {canUnlockWithPoints && (
+              <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded-full flex items-center gap-1">
+                <Coins className="w-3 h-3" />
+                {userPoints} points
+              </span>
+            )}
+          </div>
         </div>
 
         {!premiumData ? (
@@ -216,27 +252,85 @@ export function PremiumAIPanel({
                   </p>
                 </div>
 
-                {userOwnsNFT ? (
-                  <Button
-                    onClick={handleUnlock}
-                    disabled={isDecrypting}
-                    className="w-full max-w-xs"
-                  >
-                    {isDecrypting ? (
-                      <>Decrypting...</>
-                    ) : (
-                      <>
-                        <Unlock className="w-4 h-4 mr-2" />
-                        Unlock with NFT
-                      </>
-                    )}
-                  </Button>
+                {canUnlock ? (
+                  <div className="space-y-4">
+                    <Tabs
+                      value={selectedMethod}
+                      onValueChange={(v) =>
+                        setSelectedMethod(v as UnlockMethod)
+                      }
+                    >
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="nft" disabled={!canUnlockWithNFT}>
+                          <Shield className="w-4 h-4 mr-2" />
+                          Use NFT
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="points"
+                          disabled={!canUnlockWithPoints}
+                        >
+                          <Coins className="w-4 h-4 mr-2" />
+                          Use Points
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="nft" className="mt-4">
+                        <Button
+                          onClick={handleUnlockWithNFT}
+                          disabled={isDecrypting || !canUnlockWithNFT}
+                          className="w-full"
+                        >
+                          {isDecrypting ? (
+                            <>Decrypting...</>
+                          ) : (
+                            <>
+                              <Unlock className="w-4 h-4 mr-2" />
+                              Unlock with NFT
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-center mt-2 text-muted-foreground">
+                          You own {userShares} share
+                          {userShares !== 1 ? "s" : ""}
+                        </p>
+                      </TabsContent>
+
+                      <TabsContent value="points" className="mt-4">
+                        <Button
+                          onClick={handleUnlockWithPoints}
+                          disabled={isProcessing || !canUnlockWithPoints}
+                          className="w-full"
+                          variant="secondary"
+                        >
+                          {isProcessing ? (
+                            <>Processing...</>
+                          ) : (
+                            <>
+                              <Coins className="w-4 h-4 mr-2" />
+                              Spend {PULSE_POINTS_CONFIG.aiUnlockThreshold}{" "}
+                              Points
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-center mt-2 text-muted-foreground">
+                          Balance: {userPoints} points
+                        </p>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     <p className="text-sm text-warning flex items-center justify-center gap-2">
                       <AlertCircle className="w-4 h-4" />
-                      Buy shares to access premium insights
+                      Choose an unlock method
                     </p>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• Buy shares to unlock with NFT</p>
+                      <p>
+                        • Earn {PULSE_POINTS_CONFIG.aiUnlockThreshold} points to
+                        unlock
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -265,7 +359,7 @@ export function PremiumAIPanel({
 
             {/* Prediction */}
             <div>
-              <h4 className="text-lg font-semibold mb-2 flex items-center gap-2">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-accent" />
                 Future Outlook
               </h4>
@@ -276,7 +370,7 @@ export function PremiumAIPanel({
 
             {/* Key Factors */}
             <div>
-              <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-warning" />
                 Key Factors
               </h4>
@@ -297,7 +391,7 @@ export function PremiumAIPanel({
 
             {/* Reasoning */}
             <div>
-              <h4 className="text-lg font-semibold mb-2">Expert Analysis</h4>
+              <h4 className="font-semibold mb-2">Expert Analysis</h4>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {premiumData.reasoning}
               </p>

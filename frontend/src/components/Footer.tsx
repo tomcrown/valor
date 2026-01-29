@@ -27,7 +27,7 @@ const Footer = () => {
 
           {/* Platform */}
           <div>
-            <h4 className="text-lg  font-semibold mb-4">Platform</h4>
+            <h4 className="  font-semibold mb-4">Platform</h4>
             <ul className="space-y-2">
               <li>
                 <Link
@@ -50,7 +50,7 @@ const Footer = () => {
 
           {/* Resources */}
           <div>
-            <h4 className=" text-lg font-semibold mb-4">Resources</h4>
+            <h4 className="  font-semibold mb-4">Resources</h4>
             <ul className="space-y-2">
               <li>
                 <a
@@ -81,7 +81,7 @@ const Footer = () => {
 
           {/* Social */}
           <div>
-            <h4 className=" text-lg  font-semibold mb-4">Community</h4>
+            <h4 className="  font-semibold mb-4">Community</h4>
             <div className="flex gap-4">
               <a
                 href="#"

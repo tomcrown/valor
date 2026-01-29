@@ -8,6 +8,8 @@ import { Transaction } from "@mysten/sui/transactions";
 import { SUI_CONFIG, suiToMist } from "@/config/sui.config";
 import { toast } from "@/hooks/use-toast";
 import { isEnokiWallet } from "@mysten/enoki";
+import { usePointsOperations } from "@/hooks/usePointsOperations";
+import { useUserPoints } from "@/hooks/useUserPoints";
 
 export interface BuySharesParams {
   playerId: string;
@@ -28,6 +30,8 @@ export interface SellSharesParams {
 export function useBuySellShares() {
   const currentAccount = useCurrentAccount();
   const { currentWallet } = useCurrentWallet();
+  const { mintNFTPoints } = usePointsOperations();
+  const { pointsData } = useUserPoints();
   const { mutateAsync: signAndExecuteTransaction } =
     useSignAndExecuteTransaction();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -83,6 +87,16 @@ export function useBuySellShares() {
       );
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      if (pointsData.balanceObjectId && params.shares > 0) {
+        try {
+          await mintNFTPoints(pointsData.balanceObjectId, params.shares);
+          // Points are minted automatically and toast is shown in the hook
+        } catch (error) {
+          console.error("Failed to mint NFT points:", error);
+          // Don't fail the main transaction if points minting fails
+        }
+      }
 
       toast({
         title: "Purchase Successful! ",

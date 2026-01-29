@@ -1,7 +1,8 @@
 import { useParams, Link, useLocation } from "react-router-dom";
 import { SwapModal } from "@/components/SwapModal";
 import { useState, useEffect } from "react";
-import { PremiumAIPanel } from "@/components/PremiumAIPanel";
+import { PremiumAIPanelEnhanced } from "@/components/PremiumAIPanel";
+import { useUserPoints } from "@/hooks/useUserPoints";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useOnChainPlayer } from "@/hooks/useOnChainPlayers";
 import {
@@ -53,6 +54,7 @@ const PlayerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const account = useCurrentAccount();
+  const { pointsData } = useUserPoints();
 
   const [selectedSeason, setSelectedSeason] = useState<SeasonPeriod>(
     (location.state?.selectedSeason as SeasonPeriod) || "current",
@@ -528,7 +530,7 @@ const PlayerDetailPage = () => {
                   </Button>
                 </div>
               ) : currentEncryptedAIBlob ? (
-                <PremiumAIPanel
+                <PremiumAIPanelEnhanced
                   publicData={currentEncryptedAIBlob.public_data}
                   encryptedPremium={currentEncryptedAIBlob.encrypted_premium}
                   playerId={mergedPlayer.onChainPlayerId || mergedPlayer.id}
@@ -536,6 +538,8 @@ const PlayerDetailPage = () => {
                   season={selectedSeason}
                   userOwnsNFT={userOwnsNFT}
                   userShares={userShares}
+                  userPoints={pointsData.currentPoints}
+                  userPointsBalanceId={pointsData.balanceObjectId}
                 />
               ) : (
                 <div className="text-center py-8 space-y-4">
