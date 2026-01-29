@@ -16,6 +16,8 @@ import { getPlayerQuestion, formatTimeRemaining } from "@/config/pulse.config";
 import type { PlayerSentiment } from "@/hooks/usePulseData";
 import { toast } from "@/hooks/use-toast";
 import { easeOutExpo } from "@/components/ui/motion";
+import { useVoteWithPoints } from "@/hooks/usePointsOperations";
+import { useUserPoints } from "@/hooks/useUserPoints";
 
 interface PlayerPulseCardProps {
   player: {
@@ -39,7 +41,8 @@ export function PlayerPulseCard({
   onVoteSuccess,
 }: PlayerPulseCardProps) {
   const currentAccount = useCurrentAccount();
-  const { submitVote, isVoting } = useVote();
+  const { submitVoteWithPoints, isVoting } = useVoteWithPoints();
+  const { pointsData } = useUserPoints();
 
   const [selectedVote, setSelectedVote] = useState<"yes" | "no" | null>(null);
 
@@ -71,7 +74,12 @@ export function PlayerPulseCard({
 
     setSelectedVote(vote);
 
-    const success = await submitVote(sentiment.objectId, vote, player.name);
+    const success = await submitVoteWithPoints(
+      sentiment.objectId,
+      vote,
+      player.name,
+      pointsData.balanceObjectId,
+    );
 
     if (success) {
       toast({
@@ -104,12 +112,8 @@ export function PlayerPulseCard({
         {/* Player Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-base truncate">
-              {player.name}
-            </h3>
-            {hasVoted && (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            )}
+            <h3 className="font-semibold text-base truncate">{player.name}</h3>
+            {hasVoted && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
           </div>
           <p className="text-xs text-muted-foreground">
             {player.club} · {player.position}
@@ -127,12 +131,8 @@ export function PlayerPulseCard({
       {totalVotes > 0 && (
         <div className="mt-4 space-y-2">
           <div className="flex justify-between text-xs">
-            <span className="text-emerald-400 font-medium">
-              YES {yes}%
-            </span>
-            <span className="text-rose-400 font-medium">
-              NO {no}%
-            </span>
+            <span className="text-emerald-400 font-medium">YES {yes}%</span>
+            <span className="text-rose-400 font-medium">NO {no}%</span>
           </div>
 
           <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
@@ -173,7 +173,7 @@ export function PlayerPulseCard({
               disabled={isVoting}
               className={cn(
                 "h-11 rounded-xl border border-emerald-500/30",
-                "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400"
+                "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400",
               )}
               variant="outline"
             >
@@ -186,7 +186,7 @@ export function PlayerPulseCard({
               disabled={isVoting}
               className={cn(
                 "h-11 rounded-xl border border-rose-500/30",
-                "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400"
+                "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400",
               )}
               variant="outline"
             >
@@ -199,9 +199,7 @@ export function PlayerPulseCard({
             You voted{" "}
             <span
               className={
-                userVote === "yes"
-                  ? "text-emerald-400"
-                  : "text-rose-400"
+                userVote === "yes" ? "text-emerald-400" : "text-rose-400"
               }
             >
               {userVote?.toUpperCase()}

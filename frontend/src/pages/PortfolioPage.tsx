@@ -19,6 +19,7 @@ import { useBuySellShares } from "@/hooks/useBuySellShares";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { PointsBadge } from "@/components/PointsBadge";
 
 const PortfolioPage = () => {
   const currentAccount = useCurrentAccount();
@@ -42,7 +43,7 @@ const PortfolioPage = () => {
     objectId: string,
     maxQuantity: number,
     playerName: string,
-    minPrice: number
+    minPrice: number,
   ) => {
     const amount = sellAmounts[objectId] || maxQuantity;
 
@@ -162,6 +163,8 @@ const PortfolioPage = () => {
           />
         </div>
 
+        {currentAccount && <PointsBadge variant="full" className="mb-8" />}
+
         {/* Portfolio Chart */}
         {summary.totalValue > 0 && (
           <div className="glass-card p-6 mb-8">
@@ -256,7 +259,7 @@ const PortfolioPage = () => {
                             "inline-flex items-center gap-1",
                             holding.pnl >= 0
                               ? "text-success"
-                              : "text-destructive"
+                              : "text-destructive",
                           )}
                         >
                           {holding.pnl >= 0 ? (
@@ -298,7 +301,7 @@ const PortfolioPage = () => {
                             holding.objectId,
                             holding.quantity,
                             holding.playerName,
-                            holding.currentPrice
+                            holding.currentPrice,
                           )
                         }
                         disabled={isProcessing}
@@ -403,7 +406,7 @@ const PortfolioPage = () => {
                               "inline-flex items-center gap-1 px-2 py-1 rounded-2xl",
                               positionPositive
                                 ? "bg-success/10 text-success"
-                                : "bg-destructive/10 text-destructive"
+                                : "bg-destructive/10 text-destructive",
                             )}
                           >
                             {positionPositive ? (
@@ -488,7 +491,7 @@ const PortfolioPage = () => {
                             "inline-flex items-center gap-1",
                             positionPositive
                               ? "text-success"
-                              : "text-destructive"
+                              : "text-destructive",
                           )}
                         >
                           {positionPositive ? (

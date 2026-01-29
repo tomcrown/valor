@@ -1,0 +1,52 @@
+{
+  "1": [
+    {
+      "playerId": "0xd37a3c89148f35ae4fa4a8563a7b1331e48ae0f44747138a619816337b899f46",
+      "playerName": "Kylian Mbappé",
+      "sentimentObjectId": "0x0ed86d55ea5b2f68f48e3d9ace53bb19501e92078cbe0de01585f0b649812f5b",
+      "week": 1
+    },
+    {
+      "playerId": "0xa174cf6afbeac33fd05e8841555c9ab5c198aeebba15dad64ab6c6cc61f3ab23",
+      "playerName": "Erling Haaland",
+      "sentimentObjectId": "0x22b1b4e46c9bcbcf919b266cd5fa79ba628ea0ddf56d710b87801ad84413efb6",
+      "week": 1
+    },
+    {
+      "playerId": "0x5500cf294534c99136d0b627b8eded2a1a77340c7639a4e5e0a56286f6cf8313",
+      "playerName": "Dominik Szoboszlai",
+      "sentimentObjectId": "0x3de47de5af51620730c95bff565f45cc255cc7e12034f5bcd2dda0b661a61fcb",
+      "week": 1
+    },
+    {
+      "playerId": "0x7c231306c09ac01edacc09dcd0217f0fd2826edb30c16f8046316e66a8d50594",
+      "playerName": "Jude Bellingham",
+      "sentimentObjectId": "0x71cde38ff7cb20ce6033c596bf23286362dc72ea971ca31b9884d961b2192d14",
+      "week": 1
+    },
+    {
+      "playerId": "0xcffd108b75dbfb8884c9f3d9ce6dc9e660b030a6fd66c3b8073cedf87856cb92",
+      "playerName": "Harry Maguire",
+      "sentimentObjectId": "0x888bda1442a8bd7b7cd7ee526c056af34ce4e59f6775cecb0077114b0e994777",
+      "week": 1
+    },
+    {
+      "playerId": "0x495945e002970b3aa7ded30a7fbdecf5126a6841325795c231ceac0d5dda3cc8",
+      "playerName": "Mohamed Salah",
+      "sentimentObjectId": "0xa6475374b73003ddcb26d7e9f8e7da7e3dba181a7ab39463a0861bf3524558d6",
+      "week": 1
+    },
+    {
+      "playerId": "0x89e06ac2673c652605ad6e1a42f313186dfcb8c773c98d29d71c38073b91a125",
+      "playerName": "Bukayo Saka",
+      "sentimentObjectId": "0xb0d40a0c9298b876cb6078355d4560e28a48104eb94e7c9c3923d1a7f3eab157",
+      "week": 1
+    },
+    {
+      "playerId": "0x5ac2f9ee7409fad0524e1b73d295828731e6cbde12fb4e43df8de1f46ac3cd60",
+      "playerName": "David Raya",
+      "sentimentObjectId": "0xd45d7222b4510d229871055a1908ae5c1dd7694cf5a1d9011c26f30f0c178a98",
+      "week": 1
+    }
+  ]
+}

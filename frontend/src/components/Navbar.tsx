@@ -34,11 +34,14 @@ import { toast } from "@/hooks/use-toast";
 import { isEnokiWallet } from "@mysten/enoki";
 import { easeOutExpo } from "./ui/motion";
 import { ThemeToggle } from "./ThemeToggle";
+import { PointsBadge } from "@/components/PointsBadge";
+import { Trophy } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/players", label: "Players" },
   { href: "/pulse", label: "Pulse", icon: Activity, highlight: true },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/portfolio", label: "Portfolio" },
 ];
 
@@ -92,12 +95,9 @@ const Navbar = () => {
         transition={{ duration: 0.6, ease: easeOutExpo }}
         className={cn(
           "md:fixed top-0 left-0 right-0 z-50 transition-colors duration-300",
-          isOpen
-            ? "backdrop-blur-xl border-border"
-            : "bg-transparent"
+          isOpen ? "backdrop-blur-xl border-border" : "bg-transparent",
         )}
       >
-
         <div className="mx-auto max-w-7xl px-6 py-3 transition-colors">
           <div className="md:glass-card  flex items-center justify-between px-6 py-3 ">
             {/* Logo */}
@@ -126,7 +126,7 @@ const Navbar = () => {
                     "nav-link text-sm font-medium py-2 flex items-center gap-1.5",
                     location.pathname === link.href && "nav-link-active",
 
-                    link.highlight && "relative"
+                    link.highlight && "relative",
                   )}
                 >
                   {link.icon && <link.icon className="w-4 h-4" />}
@@ -140,6 +140,7 @@ const Navbar = () => {
             {/* Auth Section */}
             <div className="hidden md:flex items-center gap-4">
               <ThemeToggle />
+              {currentAccount && <PointsBadge variant="icon" />}
 
               {/* Faucet Button */}
               <a
@@ -236,10 +237,7 @@ const Navbar = () => {
             <div className="md:hidden flex items-center gap-2">
               <ThemeToggle />
 
-              <button
-                className="p-2"
-                onClick={() => setIsOpen(!isOpen)}
-              >
+              <button className="p-2" onClick={() => setIsOpen(!isOpen)}>
                 {isOpen ? (
                   <X className="w-8 h-8" />
                 ) : (
@@ -247,13 +245,11 @@ const Navbar = () => {
                 )}
               </button>
             </div>
-
           </div>
 
           {/* Mobile Navigation */}
           {isOpen && (
             <div className="md:hidden backdrop-blur-2xl py-4 border-t border-border animate-fade-in">
-
               <div className="flex flex-col gap-4">
                 {navLinks.map((link) => (
                   <Link
@@ -263,7 +259,7 @@ const Navbar = () => {
                       " text-sm font-medium py-2 px-4 rounded-2xl transition-colors flex items-center gap-2",
                       location.pathname === link.href
                         ? "text-primary "
-                        : " hover:bg-muted/50"
+                        : " hover:bg-muted/50",
                     )}
                     onClick={() => setIsOpen(false)}
                   >
@@ -284,6 +280,12 @@ const Navbar = () => {
                 >
                   <Droplet className="w-4 h-4" /> Faucet
                 </a>
+
+                {currentAccount && (
+                  <div className="mb-4">
+                    <PointsBadge variant="compact" />
+                  </div>
+                )}
 
                 {!currentAccount ? (
                   <Button
