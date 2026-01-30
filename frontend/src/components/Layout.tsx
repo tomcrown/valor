@@ -3,7 +3,6 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 import { ValorAIAssistant } from "@/components/ValorAIAssistant";
 import { usePointsOperations } from "@/hooks/usePointsOperations";
-import { useUserPoints } from "@/hooks/useUserPoints";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Button } from "@/components/ui/button";
 import { Coins, X } from "lucide-react";
@@ -18,11 +17,15 @@ const Layout = ({ children }: LayoutProps) => {
   const currentAccount = useCurrentAccount();
   const { pointsData, isLoading } = usePoints();
   const { initializePointsBalance, isProcessing } = usePointsOperations();
+  const { isInitialized, markInitialized } = usePointsInitialization();
   const [showPrompt, setShowPrompt] = useState(false);
 
-  const { isInitialized, markInitialized } = usePointsInitialization();
-
   useEffect(() => {
+    // Only show prompt if:
+    // 1. User is connected
+    // 2. Not already initialized (checked via localStorage)
+    // 3. Not currently loading
+    // 4. No balance object exists on chain
     if (
       currentAccount?.address &&
       !isInitialized &&
@@ -40,6 +43,17 @@ const Layout = ({ children }: LayoutProps) => {
     pointsData?.balanceObjectId,
   ]);
 
+  // If user has a balance object but localStorage flag is not set, mark as initialized
+  useEffect(() => {
+    if (
+      currentAccount?.address &&
+      pointsData?.balanceObjectId &&
+      !isInitialized
+    ) {
+      markInitialized();
+    }
+  }, [currentAccount?.address, pointsData?.balanceObjectId, isInitialized, markInitialized]);
+
   const handleInitialize = async () => {
     const success = await initializePointsBalance();
     if (success) {
@@ -48,26 +62,20 @@ const Layout = ({ children }: LayoutProps) => {
     }
   };
 
+  // Allow dismissing prompt with Escape key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && showPrompt) {
         setShowPrompt(false);
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
-
-  useEffect(() => {
-    localStorage.removeItem("points_initialized");
-  }, [currentAccount?.address]);
-
-
+  }, [showPrompt]);
 
   return (
     <div className="min-h-screen flex flex-col relative z-10 mt-0 md:mt-0">
-
       <Navbar />
 
       {/* Points Initialization Prompt */}
@@ -83,6 +91,7 @@ const Layout = ({ children }: LayoutProps) => {
             <button
               onClick={() => setShowPrompt(false)}
               className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+              aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
@@ -111,7 +120,6 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
         </div>
       )}
-
 
       <main className="flex-1">{children}</main>
       <Footer />

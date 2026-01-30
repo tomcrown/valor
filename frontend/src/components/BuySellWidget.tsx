@@ -5,9 +5,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Loader2,
-  Wallet,
   Package,
-  Chrome,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,9 +18,9 @@ import {
   useCurrentWallet,
 } from "@mysten/dapp-kit";
 import { toast } from "@/hooks/use-toast";
-import { isEnokiWallet } from "@mysten/enoki";
 import { usePoints } from "@/context/PointsContext";
 import { PULSE_POINTS_CONFIG } from "@/config/pulse-points.config";
+import { useUserPoints } from "@/hooks/useUserPoints";
 
 interface BuySellWidgetProps {
   playerId: string;
@@ -43,7 +41,15 @@ const BuySellWidget = ({
   const { currentWallet } = useCurrentWallet();
   const [mode, setMode] = useState<"buy" | "sell">("buy");
   const [quantity, setQuantity] = useState(1);
-  const { pointsData, optimisticAddPoints, refetch } = usePoints();
+
+  // ✅ Get both the local hook and the context (same as voting)
+  const {
+    pointsData: localPointsData,
+    optimisticAddPoints: localAddPoints
+  } = useUserPoints();
+  const {
+    optimisticAddPoints: contextAddPoints
+  } = usePoints();
 
   const {
     buyShares,
@@ -90,13 +96,17 @@ const BuySellWidget = ({
     });
 
     if (result?.success) {
-      optimisticAddPoints(PULSE_POINTS_CONFIG.votePoints);
+      // ✅ Update BOTH local state and context (just like we did for voting)
+      const pointsToAdd = quantity * PULSE_POINTS_CONFIG.nftSharePoints; // Points per share purchased
+
+      localAddPoints(pointsToAdd);
+      contextAddPoints(pointsToAdd);
+
       setQuantity(1);
 
       setTimeout(() => {
-        refetch();
         refetchShares();
-        onTransactionComplete?.(0);
+        onTransactionComplete?.(pointsToAdd);
       }, 2000);
     }
   };
