@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useAnimationControls } from "framer-motion";
 import {
     staggerContainer,
     staggerItem,
@@ -6,6 +6,7 @@ import {
     fadeUpVariants,
 } from "@/components/ui/motion";
 import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const techStack = [
     {
@@ -30,27 +31,26 @@ const techStack = [
         gradient: "from-primary/20 to-orange-500/10",
     },
     {
-        image: "/zklogin.png",
-        name: "ZKLogin",
+        image: "/zklogin.avif",
+        name: "Enoki",
         description:
-            "Zero-knowledge login for secure and private user authentication.",
-        gradient: "from-primary/20 to-orange-500/10",
+            "Privacy-first authentication using zero-knowledge proofs.",
+        gradient: "from-[#6648fa] to-[#6648FA9C]",
     },
     {
         image: "/nautilus.png",
         name: "Nautilus sui",
         description:
             "A powerful Sui wallet that makes interacting with tokens, NFTs, and dApps simple and secure",
-        gradient: "from-primary/20 to-orange-500/10",
+        gradient: "from-[#80423b] to-[#874342]",
     },
     {
-        image: "/suins.png",
+        image: "/suins.avif",
         name: "SuiNS",
         description:
             "Human-readable names for easy wallet address management.",
-        gradient: "from-emerald-500/50 to-emerald-500/10 dark:from-emerald-400 dark:to-emerald-400/30",
+        gradient: "from-[#2D2545FF] to-[#2D25459C] dark:from-#2D2545FF-400 dark:to-#2D2545FF-400/30",
     },
-
     {
         image: "/seal.png",
         name: "Seal",
@@ -61,18 +61,143 @@ const techStack = [
 ];
 
 export const TechStackSection = () => {
-
-    const carouselRef = useRef<HTMLDivElement>(null);
+    const controls = useAnimationControls();
     const trackRef = useRef<HTMLDivElement>(null);
-    const [dragWidth, setDragWidth] = useState(0);
+    const [isHovered, setIsHovered] = useState(false);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Triple the array for seamless infinite scroll
+    const extendedStack = [...techStack, ...techStack, ...techStack];
+
+    // Detect mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Calculate dimensions based on screen size
+    const itemWidth = isMobile ? 280 : 336; // Smaller cards on mobile
+    const gap = 16;
+    const totalItemWidth = itemWidth + gap;
+    const totalDistance = techStack.length * totalItemWidth;
+    const animationDuration = techStack.length * 5;
 
     useEffect(() => {
-        if (carouselRef.current && trackRef.current) {
-            setDragWidth(
-                trackRef.current.scrollWidth - carouselRef.current.offsetWidth
-            );
+        if (isHovered || isMobile) return; // Disable auto-scroll on mobile
+
+        const animate = async () => {
+            await controls.start({
+                x: -totalDistance,
+                transition: {
+                    duration: animationDuration,
+                    repeat: Infinity,
+                    ease: "linear",
+                    repeatType: "loop",
+                },
+            });
+        };
+
+        animate();
+    }, [controls, animationDuration, totalDistance, isHovered, isMobile]);
+
+    const handleMouseEnter = () => {
+        if (isMobile) return;
+        setIsHovered(true);
+        controls.stop();
+    };
+
+    const handleMouseLeave = () => {
+        if (isMobile) return;
+        setIsHovered(false);
+
+        if (!trackRef.current) return;
+
+        const currentTransform = window.getComputedStyle(trackRef.current).transform;
+        const matrix = new DOMMatrix(currentTransform);
+        let currentX = matrix.m41;
+
+        while (currentX <= -totalDistance) {
+            currentX += totalDistance;
         }
-    }, []);
+        while (currentX > 0) {
+            currentX -= totalDistance;
+        }
+
+        const progress = Math.abs(currentX) / totalDistance;
+        const timeLeft = animationDuration * (1 - progress);
+
+        controls.set({ x: currentX });
+        controls.start({
+            x: -totalDistance,
+            transition: {
+                duration: timeLeft,
+                repeat: Infinity,
+                ease: "linear",
+                repeatType: "loop",
+            },
+        });
+    };
+
+    const handlePrevious = () => {
+        const newIndex = currentIndex === 0 ? techStack.length - 1 : currentIndex - 1;
+        setCurrentIndex(newIndex);
+
+        controls.start({
+            x: -newIndex * totalItemWidth,
+            transition: {
+                duration: 0.5,
+                ease: easeOutExpo,
+            },
+        });
+    };
+
+    const handleNext = () => {
+        const newIndex = currentIndex === techStack.length - 1 ? 0 : currentIndex + 1;
+        setCurrentIndex(newIndex);
+
+        controls.start({
+            x: -newIndex * totalItemWidth,
+            transition: {
+                duration: 0.5,
+                ease: easeOutExpo,
+            },
+        });
+    };
+
+    // Touch handling for mobile swipe
+    const [touchStart, setTouchStart] = useState(0);
+    const [touchEnd, setTouchEnd] = useState(0);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > 50;
+        const isRightSwipe = distance < -50;
+
+        if (isLeftSwipe) {
+            handleNext();
+        } else if (isRightSwipe) {
+            handlePrevious();
+        }
+
+        setTouchStart(0);
+        setTouchEnd(0);
+    };
+
     return (
         <section
             id="tech-stack"
@@ -132,99 +257,148 @@ export const TechStackSection = () => {
                             </p>
                         </motion.div>
 
-                        {/* Tech cards */}
-                        <motion.div
-                            ref={carouselRef}
-                            variants={staggerContainer}
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true, margin: "-100px" }}
-                            className="relative overflow-hidden"
-                        >
-                            <motion.div
-                                ref={trackRef}
-                                className="flex gap-8 cursor-grab active:cursor-grabbing"
-                                drag="x"
+                        {/* Tech cards carousel */}
+                        <div className="relative">
+                            {/* Gradient fade edges - hide on mobile */}
+                            <div className="hidden md:block absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background/80 to-transparent z-10 pointer-events-none" />
+                            <div className="hidden md:block absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background/80 to-transparent z-10 pointer-events-none" />
 
-                                dragConstraints={{ left: -dragWidth, right: 0 }}
-                                dragElastic={0.08}
-                                animate={{ x: [0, -dragWidth / 2, 0] }}
-                                transition={{
-                                    duration: 25,
-                                    repeat: Infinity,
-                                    ease: "linear",
-                                }}
+                            {/* Navigation arrows */}
+                            <button
+                                onClick={handlePrevious}
+                                className="absolute left-2 md:-left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-background/80 backdrop-blur border border-border/50 hover:bg-background hover:border-primary/50 transition-all duration-300 flex items-center justify-center group shadow-lg"
+                                aria-label="Previous"
                             >
-                                {[...techStack, ...techStack].map((tech, i) => (
-                                    <motion.div
-                                        key={`${tech.name}-${i}`}
-                                        variants={staggerItem}
-                                        whileHover={{ x: undefined }}
+                                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </button>
 
-                                        className="relative group min-w-[320px]"
-                                    >
+                            <button
+                                onClick={handleNext}
+                                className="absolute right-2 md:-right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-background/80 backdrop-blur border border-border/50 hover:bg-background hover:border-primary/50 transition-all duration-300 flex items-center justify-center group shadow-lg"
+                                aria-label="Next"
+                            >
+                                <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </button>
+
+                            <motion.div
+                                variants={staggerContainer}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, margin: "-100px" }}
+                                className="overflow-hidden px-2 md:px-0"
+                            >
+                                <motion.div
+                                    ref={trackRef}
+                                    className="flex gap-4"
+                                    animate={controls}
+                                    onMouseEnter={handleMouseEnter}
+                                    onMouseLeave={handleMouseLeave}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
+                                    style={{ width: "max-content" }}
+                                >
+                                    {(isMobile ? techStack : extendedStack).map((tech, i) => (
                                         <motion.div
-                                            className="p-8 text-center h-full relative overflow-hidden rounded-2xl bg-card"
-                                            whileHover={{
-                                                y: -8,
-                                                scale: 1.02,
+                                            key={`${tech.name}-${i}`}
+                                            variants={staggerItem}
+                                            className="relative group"
+                                        >
+                                            <motion.div
+                                                className="w-[280px] md:w-80 p-6 md:p-8 text-center h-[280px] md:h-80 relative overflow-hidden rounded-2xl bg-card border border-border/50"
+                                                whileHover={{
+                                                    y: -8,
+                                                    scale: 1.02,
+                                                    transition: {
+                                                        duration: 0.3,
+                                                        ease: easeOutExpo,
+                                                    },
+                                                }}
+                                            >
+                                                {/* Hover gradient overlay */}
+                                                <motion.div
+                                                    className={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 rounded-2xl`}
+                                                    whileHover={{ opacity: 1 }}
+                                                    transition={{ duration: 0.4 }}
+                                                />
+
+                                                {/* Image container */}
+                                                <motion.div
+                                                    className="relative mx-auto mb-4 md:mb-6 w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden"
+                                                    whileHover={{
+                                                        scale: 1.15,
+                                                        rotate: [0, -5, 5, 0],
+                                                        transition: { duration: 0.5 }
+                                                    }}
+                                                >
+                                                    <div
+                                                        className={`absolute inset-0 bg-gradient-to-br ${tech.gradient}`}
+                                                    />
+                                                    <div className="relative z-10 w-full h-full flex items-center justify-center bg-background/60 backdrop-blur rounded-2xl">
+                                                        <img
+                                                            src={tech.image}
+                                                            alt={tech.name}
+                                                            className="w-10 h-10 md:w-12 md:h-12 object-contain"
+                                                        />
+                                                    </div>
+                                                </motion.div>
+
+                                                <h3 className="relative text-lg md:text-xl font-bold mb-2 md:mb-3">
+                                                    {tech.name}
+                                                </h3>
+
+                                                <p className="relative text-muted-foreground text-xs md:text-sm leading-relaxed mx-auto">
+                                                    {tech.description}
+                                                </p>
+
+                                                {/* Animated border shimmer */}
+                                                <motion.div
+                                                    className="absolute inset-0 rounded-2xl border-2 border-transparent pointer-events-none"
+                                                    style={{
+                                                        background:
+                                                            "linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(135deg, transparent 0%, hsl(var(--primary) / 0.4) 50%, transparent 100%) border-box",
+                                                    }}
+                                                    animate={{
+                                                        opacity: [0, 0.8, 0],
+                                                        scale: [1, 1.02, 1]
+                                                    }}
+                                                    transition={{
+                                                        duration: 3,
+                                                        repeat: Infinity,
+                                                        delay: (i % techStack.length) * 0.3,
+                                                        ease: "easeInOut"
+                                                    }}
+                                                />
+                                            </motion.div>
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            </motion.div>
+
+                            {/* Dot indicators for mobile */}
+                            <div className="flex md:hidden justify-center gap-2 mt-6">
+                                {techStack.map((_, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => {
+                                            setCurrentIndex(index);
+                                            controls.start({
+                                                x: -index * totalItemWidth,
                                                 transition: {
-                                                    duration: 0.4,
+                                                    duration: 0.5,
                                                     ease: easeOutExpo,
                                                 },
-                                            }}
-                                        >
-                                            {/* Hover gradient */}
-                                            <div
-                                                className={`absolute inset-0 bg-gradient-to-br ${tech.gradient} opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-500`}
-                                            />
-
-                                            {/* Image */}
-                                            <motion.div
-                                                className="relative mx-auto mb-6 w-20 h-20 rounded-2xl overflow-hidden"
-                                                whileHover={{ scale: 1.1, rotate: 5 }}
-                                                transition={{ duration: 0.3 }}
-                                            >
-                                                <div
-                                                    className={`absolute inset-0 bg-gradient-to-br ${tech.gradient}`}
-                                                />
-                                                <div className="relative z-10 w-full h-full flex items-center justify-center bg-background/60 backdrop-blur rounded-2xl">
-                                                    <img
-                                                        src={tech.image}
-                                                        alt={tech.name}
-                                                        className="w-12 h-12 object-contain"
-                                                    />
-                                                </div>
-                                            </motion.div>
-
-                                            <h3 className="relative text-xl font-bold mb-3">
-                                                {tech.name}
-                                            </h3>
-
-                                            <p className="relative text-muted-foreground text-sm">
-                                                {tech.description}
-                                            </p>
-
-                                            {/* Animated border */}
-                                            <motion.div
-                                                className="absolute inset-0 rounded-xl border-2 border-transparent pointer-events-none"
-                                                style={{
-                                                    background:
-                                                        "linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(135deg, transparent 0%, hsl(var(--primary) / 0.35) 50%, transparent 100%) border-box",
-                                                }}
-                                                animate={{ opacity: [0, 1, 0] }}
-                                                transition={{
-                                                    duration: 3,
-                                                    repeat: Infinity,
-                                                    delay: i * 0.4,
-                                                }}
-                                            />
-                                        </motion.div>
-                                    </motion.div>
+                                            });
+                                        }}
+                                        className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentIndex
+                                            ? 'bg-primary w-6'
+                                            : 'bg-muted-foreground/30'
+                                            }`}
+                                        aria-label={`Go to slide ${index + 1}`}
+                                    />
                                 ))}
-                            </motion.div>
-                        </motion.div>
-
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

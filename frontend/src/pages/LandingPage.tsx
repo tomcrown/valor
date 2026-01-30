@@ -161,48 +161,96 @@ const LandingPage = () => {
 
       {/* Leaderboard Preview Section */}
       <section className="relative py-24 overflow-hidden mt-6">
-        {/* Ambient glows (optional, matches style) */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-primary/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-secondary/10 rounded-full blur-[120px]" />
+        {/* Enhanced background effects */}
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/20 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[100px]" />
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="glass-card p-8 md:p-12 relative overflow-hidden bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 animate-gradient">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-center">
-              Leaderboard
-            </h2>
-            <div className="flex flex-col gap-4 md:flex-row items-center justify-between mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-primary" />
-                Top Performers
+          <div className="glass-card p-8 md:p-12 relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+            {/* Decorative elements */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+            <div className="absolute -top-24 -right-24 w-48 h-48 border border-primary/20 rounded-full" />
+            <div className="absolute -bottom-24 -left-24 w-48 h-48 border border-secondary/20 rounded-full" />
+
+            {/* Header */}
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Live Rankings</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-3 bg-primary bg-clip-text text-transparent">
+                Leaderboard
               </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Celebrating our top performers and their outstanding achievements
+              </p>
+            </div>
+
+            {/* Leaderboard entries */}
+            <div className="space-y-3 mb-8">
+              {leaderboard.slice(0, 5).map((entry, index) => (
+                <div
+                  key={entry.address}
+                  className="group relative overflow-hidden rounded-2xl bg-gradient-to-r from-background/80 to-background/60 hover:from-background/90 hover:to-background/80 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {/* Rank indicator gradient */}
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${index === 0 ? 'bg-gradient-to-b from-yellow-400 to-yellow-600' :
+                    index === 1 ? 'bg-gradient-to-b from-gray-300 to-gray-500' :
+                      index === 2 ? 'bg-gradient-to-b from-amber-600 to-amber-800' :
+                        'bg-gradient-to-b from-primary/50 to-primary'
+                    }`} />
+
+                  {/* Hover effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                  <div className="relative flex items-center justify-between p-5 md:p-6">
+                    <div className="flex items-center gap-4 md:gap-6 flex-1">
+                      {/* Rank badge */}
+                      <div className={`flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl font-bold text-lg md:text-xl ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-yellow-950 shadow-lg shadow-yellow-500/50' :
+                        index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-gray-950 shadow-lg shadow-gray-400/50' :
+                          index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-800 text-amber-50 shadow-lg shadow-amber-600/50' :
+                            'bg-primary/20 text-primary border border-primary/30'
+                        } transition-all duration-300 group-hover:scale-110`}>
+                        {index === 0 ? '👑' : `#${entry.rank}`}
+                      </div>
+
+                      {/* Address */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-mono text-sm md:text-base font-medium truncate group-hover:text-primary transition-colors">
+                          {formatAddressWithName(entry.address)}
+                        </div>
+                        {index < 3 && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {index === 0 ? '🏆 Champion' : index === 1 ? '🥈 Runner-up' : '🥉 Third Place'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Points */}
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="font-bold text-lg md:text-xl bg-primary bg-clip-text text-transparent">
+                        {entry.lifetimePoints.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-medium">
+                        points
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* View all link */}
+            <div className="text-center pt-4">
               <Link
                 to="/leaderboard"
-                className="text-primary hover:underline flex items-center gap-1"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-all duration-300 hover:gap-3 border border-primary/20 hover:border-primary/40"
               >
                 View Full Leaderboard
                 <ArrowRight className="w-4 h-4" />
               </Link>
-            </div>
-
-            <div className="space-y-4">
-              {leaderboard.slice(0, 5).map((entry) => (
-                <div
-                  key={entry.address}
-                  className="flex items-center justify-between p-4 rounded-xl bg-background/60 hover:bg-background/80 transition"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="text-lg font-bold text-primary">
-                      #{entry.rank}
-                    </div>
-                    <div className="font-mono text-sm">
-                      {formatAddressWithName(entry.address)}
-                    </div>
-                  </div>
-                  <div className="font-semibold">
-                    {entry.lifetimePoints.toLocaleString()} pts
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
