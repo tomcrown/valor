@@ -85,7 +85,6 @@ export function usePointsOperations() {
 
       return !!result.digest;
     } catch (error: any) {
-      console.error("Failed to mint vote points:", error);
       return false;
     } finally {
       setIsProcessing(false);
@@ -130,7 +129,6 @@ export function usePointsOperations() {
 
       return false;
     } catch (error: any) {
-      console.error("Failed to mint NFT points:", error);
       return false;
     } finally {
       setIsProcessing(false);

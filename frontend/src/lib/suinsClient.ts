@@ -84,7 +84,6 @@ export async function resolveAddressToName(
         const reversedLabels = [...labels].reverse();
         defaultName = reversedLabels.join(".");
 
-        console.log(`[SuiNS] Resolved ${address} to ${defaultName}`);
       }
     }
 
@@ -115,7 +114,6 @@ export async function resolveAddressToName(
 
     // Only log unexpected errors (not "not found")
     if (!error?.message?.includes("Invalid SuiNS name")) {
-      console.warn("Failed to resolve address to name:", error.message);
     }
 
     // Cache negative result to avoid repeated failures
@@ -172,7 +170,6 @@ export async function resolveNameToAddress(
       return null;
     }
 
-    console.warn("Failed to resolve name to address:", error.message);
 
     // Cache negative result
     if (SUINS_CONFIG.cache.enabled) {

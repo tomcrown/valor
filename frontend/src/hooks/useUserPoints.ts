@@ -43,6 +43,8 @@ export function useUserPoints() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+
+
   const fetchUserPoints = async () => {
     if (!currentAccount?.address) {
       setIsLoading(false);
@@ -55,7 +57,6 @@ export function useUserPoints() {
 
       const client = new SuiClient({ url: SUI_CONFIG.rpcUrl });
 
-      // Get user's PointsBalance NFT
       const ownedObjects = await client.getOwnedObjects({
         owner: currentAccount.address,
         filter: {
@@ -87,7 +88,6 @@ export function useUserPoints() {
       const aiUnlockThreshold = PULSE_POINTS_CONFIG.aiUnlockThreshold;
       const currentPoints = Number(fields.points || 0);
 
-      // 🔁 Detect increase
       if (
         prevPointsRef.current !== null &&
         currentPoints > prevPointsRef.current &&
@@ -95,7 +95,6 @@ export function useUserPoints() {
       ) {
         isAutoRefreshingRef.current = true;
 
-        // Small delay lets chain indexers settle
         setTimeout(() => {
           fetchUserPoints();
           isAutoRefreshingRef.current = false;
@@ -116,7 +115,6 @@ export function useUserPoints() {
         lastUpdated: Number(fields.last_updated || 0),
       });
     } catch (err: any) {
-      console.error("Error fetching user points:", err);
       setError(err.message || "Failed to fetch points");
     } finally {
       setIsLoading(false);
@@ -128,6 +126,16 @@ export function useUserPoints() {
       ...prev,
       currentPoints: prev.currentPoints + amount,
       lifetimePoints: prev.lifetimePoints + amount,
+
+    }));
+  };
+
+  const optimisticAddVote = () => {
+    setPointsData(prev => ({
+      ...prev,
+      votesCount: prev.votesCount + 1,
+      currentPoints: prev.currentPoints + 1,
+      lifetimePoints: prev.lifetimePoints + 1,
     }));
   };
 
@@ -142,6 +150,7 @@ export function useUserPoints() {
     error,
     refetch: fetchUserPoints,
     optimisticAddPoints,
+    optimisticAddVote,
   };
 }
 
@@ -215,7 +224,6 @@ export function useLeaderboard(limit: number = 50) {
 
       setLeaderboard(sortedUsers);
     } catch (err: any) {
-      console.error("Error fetching leaderboard:", err);
       setError(err.message || "Failed to fetch leaderboard");
     } finally {
       setIsLoading(false);

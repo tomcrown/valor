@@ -33,7 +33,7 @@ import { AddressDisplay } from "@/components/AddressDisplay";
 import { useBulkSuiNSNames } from "@/hooks/useSuiNsName";
 
 type LeaderboardType = "lifetime" | "engagement" | "investor";
-const MIN_OVERLAY_TIME = 500; // 👈 prevents flicker
+const MIN_OVERLAY_TIME = 500;
 
 const LeaderboardPage = () => {
   const currentAccount = useCurrentAccount();
@@ -60,7 +60,6 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Fetch SuiNS names for all leaderboard addresses
   const addresses = leaderboard.map((entry) => entry.address);
   const { names: suinsNames, isLoading: isLoadingNames } =
     useBulkSuiNSNames(addresses);
@@ -69,19 +68,18 @@ const LeaderboardPage = () => {
     handleRefetch();
   }, [selectedTab]);
 
-  // In leaderboard page
   useEffect(() => {
-    if (pointsData && pointsData.currentPoints > 0) {
-      handleRefetch();
-    }
-  }, [pointsData?.currentPoints]);
+    const id = setInterval(refetch, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+
   const formatAddress = (address: string) => {
-    // Check if we have a SuiNS name first
     const suinsName = suinsNames.get(address);
     if (suinsName && typeof suinsName === "string") {
       return suinsName;
     }
-    // Fallback to truncated address
+
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
