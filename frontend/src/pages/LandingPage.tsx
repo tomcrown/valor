@@ -99,8 +99,7 @@ const LandingPage = () => {
               style={{ animationDelay: "500ms" }}
             >
               AI-driven player scoring, seasonal performance tracking, community
-              sentiment voting, and NFT share certificates. The future of
-              fantasy football is here.
+              sentiment voting, and NFT share certificates.
             </p>
 
             {/* CTA */}
@@ -162,7 +161,10 @@ const LandingPage = () => {
       {/* Leaderboard Preview Section */}
       <section className="relative py-24 overflow-hidden mt-6">
         {/* Enhanced background effects */}
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/20 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div
+          className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/20 rounded-full blur-[150px] animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[100px]" />
 
         <div className="container mx-auto px-4 relative z-10">
@@ -176,13 +178,16 @@ const LandingPage = () => {
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-primary">Live Rankings</span>
+                <span className="text-sm font-medium text-primary">
+                  Live Rankings
+                </span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-3 bg-primary bg-clip-text text-transparent">
                 Leaderboard
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Celebrating our top performers and their outstanding achievements
+                Celebrating our top performers and their outstanding
+                achievements
               </p>
             </div>
 
@@ -195,11 +200,17 @@ const LandingPage = () => {
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   {/* Rank indicator gradient */}
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${index === 0 ? 'bg-gradient-to-b from-yellow-400 to-yellow-600' :
-                    index === 1 ? 'bg-gradient-to-b from-gray-300 to-gray-500' :
-                      index === 2 ? 'bg-gradient-to-b from-amber-600 to-amber-800' :
-                        'bg-gradient-to-b from-primary/50 to-primary'
-                    }`} />
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      index === 0
+                        ? "bg-gradient-to-b from-yellow-400 to-yellow-600"
+                        : index === 1
+                          ? "bg-gradient-to-b from-gray-300 to-gray-500"
+                          : index === 2
+                            ? "bg-gradient-to-b from-amber-600 to-amber-800"
+                            : "bg-gradient-to-b from-primary/50 to-primary"
+                    }`}
+                  />
 
                   {/* Hover effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -207,12 +218,18 @@ const LandingPage = () => {
                   <div className="relative flex items-center justify-between p-5 md:p-6">
                     <div className="flex items-center gap-4 md:gap-6 flex-1">
                       {/* Rank badge */}
-                      <div className={`flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl font-bold text-lg md:text-xl ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-yellow-950 shadow-lg shadow-yellow-500/50' :
-                        index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-gray-950 shadow-lg shadow-gray-400/50' :
-                          index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-800 text-amber-50 shadow-lg shadow-amber-600/50' :
-                            'bg-primary/20 text-primary border border-primary/30'
-                        } transition-all duration-300 group-hover:scale-110`}>
-                        {index === 0 ? '👑' : `#${entry.rank}`}
+                      <div
+                        className={`flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl font-bold text-lg md:text-xl ${
+                          index === 0
+                            ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-yellow-950 shadow-lg shadow-yellow-500/50"
+                            : index === 1
+                              ? "bg-gradient-to-br from-gray-300 to-gray-500 text-gray-950 shadow-lg shadow-gray-400/50"
+                              : index === 2
+                                ? "bg-gradient-to-br from-amber-600 to-amber-800 text-amber-50 shadow-lg shadow-amber-600/50"
+                                : "bg-primary/20 text-primary border border-primary/30"
+                        } transition-all duration-300 group-hover:scale-110`}
+                      >
+                        {index === 0 ? "👑" : `#${entry.rank}`}
                       </div>
 
                       {/* Address */}
@@ -222,7 +239,11 @@ const LandingPage = () => {
                         </div>
                         {index < 3 && (
                           <div className="text-xs text-muted-foreground mt-1">
-                            {index === 0 ? '🏆 Champion' : index === 1 ? '🥈 Runner-up' : '🥉 Third Place'}
+                            {index === 0
+                              ? "🏆 Champion"
+                              : index === 1
+                                ? "🥈 Runner-up"
+                                : "🥉 Third Place"}
                           </div>
                         )}
                       </div>
