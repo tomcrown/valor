@@ -307,32 +307,35 @@ const LeaderboardPage = () => {
                   <Users className="w-4 h-4 text-primary" />
                   Vote & Engage
                 </p>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• 1 point per vote</li>
-                  <li>• 5 points per correct prediction</li>
-                  <li>• Bonus for milestones</li>
+                <ul className="space-y-1 text-muted-foreground text-sm">
+                  <li>• Earn 1 point per vote</li>
+                  <li>• Earn 5 points for correct predictions</li>
+                  <li>• Bonus points for voting milestones</li>
                 </ul>
+
               </div>
               <div>
                 <p className="font-semibold mb-2 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-secondary" />
+                  <TrendingUp className="w-4 h-4 text-primary" />
                   Invest in NFTs
                 </p>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• 3 points per NFT share</li>
-                  <li>• Accumulate holdings</li>
-                  <li>• Collector bonuses</li>
+                <ul className="space-y-1 text-muted-foreground text-sm">
+                  <li>• Earn 3 points per NFT share</li>
+                  <li>• Points accumulate as your holdings grow</li>
+                  <li>• Collector bonuses unlock at milestones</li>
+                  <li>• Earn 15 bonus points for owning 10 NFTs</li>
                 </ul>
+
               </div>
               <div>
                 <p className="font-semibold mb-2 flex items-center gap-2">
                   <Award className="w-4 h-4 text-accent" />
                   Unlock Benefits
                 </p>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• 10 points = AI unlock</li>
-                  <li>• Achievement bonuses</li>
-                  <li>• Leaderboard rewards</li>
+                <ul className="space-y-1 text-muted-foreground text-sm">
+                  <li>• Unlock AI features at 10 points</li>
+                  <li>• Earn achievement-based bonuses</li>
+                  <li>• Compete for leaderboard rewards</li>
                 </ul>
               </div>
             </div>
