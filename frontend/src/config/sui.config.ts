@@ -29,19 +29,19 @@ export const SUI_CONFIG = {
   contracts: {
     packageId:
       getEnv("VITE_PACKAGE_ID") ||
-      "0x91c1cb8f6079b95e161948024351d98f64f04b89612262edea22f82fefa8eef3",
+      "0xefa176c71da674b46125add13701be72e5550a9c54f9164f830c0cd2bcdfc743",
 
     platformObjectId:
       getEnv("VITE_PLATFORM_ID") ||
-      "0xc0801fd0b7224b61685c7f517ee2a9e69f83f2e4354488a7655718f7056b5985",
+      "0x45c3686342e51f92b274b016579cee651f360d38189d0de38e46afa434d046c1",
 
     adminCapId:
       getEnv("VITE_ADMIN_CAP_ID") ||
-      "0x5da72bd920f20257811a3c950244a018455b544bc295aa28cd0cdb58784d64a6",
+      "0x5a6bcd76f576cf5e4f0c9fe54d8563feeda5d1433d6fd151078a9717883899d9",
 
     nftRegistryObjectId:
       getEnv("VITE_NFT_REGISTRY_ID") ||
-      "0xb44b9db07a1aca9e91b64d3cfc46cbd7b7f99257fbecdb4a55bff4bd26f79c48",
+      "0xd8dff55c791ca8a0119d4e5051dbec0f9d1cb55de3f4c4fd9d76d3be30f372a8",
   },
 
   gas: {

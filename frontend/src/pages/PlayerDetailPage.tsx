@@ -15,6 +15,7 @@ import {
   getSeasonBaseValue,
   getSeasonPerformanceScore,
   getSeasonWalrusBlobId,
+  getSeasonNautilusSignature,
   getCurrentSeasonBaseValue,
 } from "@/lib/suiDataFetcher";
 import type { SeasonPeriod } from "@/data/apiData";
@@ -29,6 +30,7 @@ import {
   Loader2,
   RefreshCw,
   AlertCircle,
+  CheckCircle,
   Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -57,6 +59,10 @@ const PlayerDetailPage = () => {
   const account = useCurrentAccount();
   const { pointsData, optimisticAddPoints, refetch } = usePoints();
 
+  const truncateSignature = (signature: string): string => {
+    if (!signature || signature.length <= 20) return signature;
+    return `${signature.slice(0, 10)}...${signature.slice(-10)}`;
+  };
 
   const [selectedSeason, setSelectedSeason] = useState<SeasonPeriod>(
     (location.state?.selectedSeason as SeasonPeriod) || "current",
@@ -300,6 +306,10 @@ const PlayerDetailPage = () => {
     selectedSeason,
   );
   const seasonWalrusBlobId = getSeasonWalrusBlobId(
+    mergedPlayer as any,
+    selectedSeason,
+  );
+  const seasonNautilusSignature = getSeasonNautilusSignature(
     mergedPlayer as any,
     selectedSeason,
   );
@@ -551,28 +561,49 @@ const PlayerDetailPage = () => {
             </div>
 
             {/* Walrus Verification - now season-aware */}
+            {/* ✅ ENHANCED Walrus + Nautilus Verification Card */}
             <div className="glass-card p-6 border border-accent/30">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-6 h-6 text-accent" />
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-6 h-6 text-accent" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold mb-1">
+                      Verified & Attested Data
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {SEASON_LABELS[selectedSeason]} performance data is
+                      cryptographically secured and hardware-attested
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold mb-1">
-                    {currentEncryptedAIBlob
-                      ? "🔐 Seal Encrypted"
-                      : "Walrus Verified"}{" "}
-                    Data
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {currentEncryptedAIBlob
-                      ? "Premium AI insights are encrypted with Seal. Only NFT holders can decrypt."
-                      : `${SEASON_LABELS[selectedSeason]} performance data stored on Walrus.`}
-                  </p>
+
+                {/* Walrus Storage Section */}
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-accent" />
+                    <h4 className="text-sm font-semibold text-accent">
+                      Walrus Decentralized Storage
+                    </h4>
+                  </div>
                   {seasonWalrusBlobId ? (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-muted font-mono text-xs break-all">
-                      <span className="text-muted-foreground">Blob ID:</span>
-                      <span className="text-accent">{seasonWalrusBlobId}</span>
-                    </div>
+                    <>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {currentEncryptedAIBlob
+                          ? " Seal encrypted AI insights stored on Walrus. Only NFT holders can decrypt premium analysis."
+                          : "Performance data and AI analysis stored on decentralized Walrus network."}
+                      </p>
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/50 border border-border/30">
+                        <span className="text-xs text-muted-foreground">
+                          Blob ID:
+                        </span>
+                        <code className="text-xs font-mono text-accent break-all">
+                          {seasonWalrusBlobId}
+                        </code>
+                      </div>
+                    </>
                   ) : (
                     <p className="text-xs text-muted-foreground italic">
                       No Walrus blob ID available for{" "}
@@ -580,6 +611,60 @@ const PlayerDetailPage = () => {
                     </p>
                   )}
                 </div>
+
+                {/* ✅ NEW: Nautilus Hardware Attestation Section */}
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-4 h-4 text-success" />
+                    <h4 className="text-sm font-semibold text-success">
+                      Nautilus Hardware Attestation
+                    </h4>
+                  </div>
+                  {seasonNautilusSignature ? (
+                    <>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        AI analysis and price recommendations verified by secure
+                        enclave. Signature proves authenticity and prevents
+                        tampering.
+                      </p>
+                      <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/50 border border-border/30">
+                          <span className="text-xs text-muted-foreground">
+                            Signature:
+                          </span>
+                          <code className="text-xs font-mono text-success break-all">
+                            {truncateSignature(seasonNautilusSignature)}
+                          </code>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <CheckCircle className="w-3 h-3 text-success" />
+                          <span className="text-muted-foreground">
+                            Hardware-attested • Tamper-proof • Cryptographically
+                            signed
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      No Nautilus attestation signature available for{" "}
+                      {SEASON_LABELS[selectedSeason].toLowerCase()}
+                    </p>
+                  )}
+                </div>
+
+                {/* Info footer */}
+                {(seasonWalrusBlobId || getSeasonNautilusSignature) && (
+                  <div className="flex items-start gap-2 pt-2">
+                    <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-muted-foreground">
+                      This data is secured by blockchain-based storage (Walrus)
+                      and hardware attestation (Nautilus), ensuring
+                      transparency, immutability, and verifiable AI-generated
+                      insights.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
