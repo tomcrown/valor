@@ -3,9 +3,10 @@ import { resolveAddressToName } from "@/lib/suinsClient";
 
 /**
  * Hook to resolve a Sui address to its SuiNS name
- * @param address - The Sui address to resolve
- * @param enabled - Whether to enable the resolution (default: true)
+ * @param address
+ * @param enabled
  */
+
 export function useSuiNSName(
   address: string | undefined | null,
   enabled: boolean = true,
@@ -15,7 +16,6 @@ export function useSuiNSName(
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Reset state if address is invalid or disabled
     if (!address || !enabled) {
       setName(null);
       setIsLoading(false);
@@ -84,7 +84,6 @@ export function useBulkSuiNSNames(addresses: string[]) {
       try {
         const nameMap = new Map<string, string | null>();
 
-        // Resolve all addresses in parallel
         const results = await Promise.allSettled(
           addresses.map(async (address) => {
             const name = await resolveAddressToName(address);
@@ -92,12 +91,10 @@ export function useBulkSuiNSNames(addresses: string[]) {
           }),
         );
 
-        // Process results
         results.forEach((result, index) => {
           if (result.status === "fulfilled") {
             nameMap.set(result.value.address, result.value.name);
           } else {
-            // If resolution failed, set to null
             nameMap.set(addresses[index], null);
           }
         });

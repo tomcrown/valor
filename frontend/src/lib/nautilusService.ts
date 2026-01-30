@@ -82,7 +82,6 @@ class NautilusService {
       });
 
       if (!response.ok) {
-        console.error("Nautilus request failed:", response.statusText);
         return null;
       }
 
@@ -97,7 +96,6 @@ class NautilusService {
         },
       };
     } catch (error) {
-      console.error("Failed to fetch Nautilus data:", error);
       return null;
     }
   }

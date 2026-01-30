@@ -67,10 +67,8 @@ export const TechStackSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Triple the array for seamless infinite scroll
   const extendedStack = [...techStack, ...techStack, ...techStack];
 
-  // Detect mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -80,15 +78,14 @@ export const TechStackSection = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Calculate dimensions based on screen size
-  const itemWidth = isMobile ? 280 : 336; // Smaller cards on mobile
+  const itemWidth = isMobile ? 280 : 336;
   const gap = 16;
   const totalItemWidth = itemWidth + gap;
   const totalDistance = techStack.length * totalItemWidth;
   const animationDuration = techStack.length * 5;
 
   useEffect(() => {
-    if (isHovered || isMobile) return; // Disable auto-scroll on mobile
+    if (isHovered || isMobile) return;
 
     const animate = async () => {
       await controls.start({
@@ -173,7 +170,6 @@ export const TechStackSection = () => {
     });
   };
 
-  // Touch handling for mobile swipe
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
 

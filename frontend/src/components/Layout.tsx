@@ -21,11 +21,6 @@ const Layout = ({ children }: LayoutProps) => {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    // Only show prompt if:
-    // 1. User is connected
-    // 2. Not already initialized (checked via localStorage)
-    // 3. Not currently loading
-    // 4. No balance object exists on chain
     if (
       currentAccount?.address &&
       !isInitialized &&
@@ -43,7 +38,6 @@ const Layout = ({ children }: LayoutProps) => {
     pointsData?.balanceObjectId,
   ]);
 
-  // If user has a balance object but localStorage flag is not set, mark as initialized
   useEffect(() => {
     if (
       currentAccount?.address &&
@@ -52,7 +46,12 @@ const Layout = ({ children }: LayoutProps) => {
     ) {
       markInitialized();
     }
-  }, [currentAccount?.address, pointsData?.balanceObjectId, isInitialized, markInitialized]);
+  }, [
+    currentAccount?.address,
+    pointsData?.balanceObjectId,
+    isInitialized,
+    markInitialized,
+  ]);
 
   const handleInitialize = async () => {
     const success = await initializePointsBalance();
@@ -62,7 +61,6 @@ const Layout = ({ children }: LayoutProps) => {
     }
   };
 
-  // Allow dismissing prompt with Escape key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape" && showPrompt) {

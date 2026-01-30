@@ -7,14 +7,11 @@ module valor::valor_seal {
     const ENoNFTOwnership: u64 = 2;
     const EInvalidPlayer: u64 = 3;
     
-    /// Global registry to track NFT ownership by player
     public struct NFTRegistry has key {
         id: UID,
-        /// Maps player_id -> (owner_address -> shares_owned)
         ownership: Table<ID, Table<address, u64>>,
     }
     
-    /// Premium AI data access record
     public struct PremiumAccess has key, store {
         id: UID,
         player_id: ID,
@@ -31,7 +28,6 @@ module valor::valor_seal {
         transfer::share_object(registry);
     }
     
-    /// Register NFT ownership (called when buying shares)
     public entry fun register_nft_ownership(
         registry: &mut NFTRegistry,
         player_id: ID,
@@ -55,7 +51,6 @@ module valor::valor_seal {
         };
     }
     
-    /// Reduce NFT ownership (called when selling shares)
     public entry fun reduce_nft_ownership(
         registry: &mut NFTRegistry,
         player_id: ID,
@@ -76,7 +71,6 @@ module valor::valor_seal {
         };
     }
     
-    /// Check if user has any NFT ownership for a player
     public fun has_nft_ownership(
         registry: &NFTRegistry,
         player_id: ID,
@@ -95,7 +89,6 @@ module valor::valor_seal {
         *shares > 0
     }
     
-    /// Get user's share count for a player
     public fun get_user_shares(
         registry: &NFTRegistry,
         player_id: ID,
@@ -121,32 +114,14 @@ module valor::valor_seal {
     ) {
         let caller = ctx.sender();
         
-        // Parse the ID to extract player_id
-        // ID format: [player_id bytes][season byte]
-        // For simplicity, we'll assume the player_id is embedded
-        // In production, you'd parse this properly
-        
-        // This is a simplified check - in production, parse the ID properly
-        // For now, we'll check against a known player ID from the transaction
-        
-        // The enclave will call this with the proper player_id in the transaction
-        // For the MVP, we verify caller has >0 shares for ANY player
+ 
         let mut has_any_shares = false;
         
-        // In production, parse player_id from `id` bytes
-        // For MVP, we check if user owns any NFTs at all
-        // This is simplified - you should parse the actual player_id from `id`
-        
         assert!(id.length() > 0, ENoAccess);
-        
-        // TODO: Parse player_id from `id` bytes and check specific ownership
-        // For now, this is a placeholder that will be improved
-        
+    
         assert!(has_any_shares || caller == @0x0, ENoAccess);
     }
-    
-    /// Simplified seal_approve that takes player_id explicitly
-    /// This is the one we'll actually use
+
     entry fun seal_approve_with_player(
         _id: vector<u8>,
         registry: &NFTRegistry,

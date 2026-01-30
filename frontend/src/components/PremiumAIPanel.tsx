@@ -160,8 +160,6 @@ export function PremiumAIPanelEnhanced({
     const success = await spendPointsForAI(userPointsBalanceId);
 
     if (success) {
-      // After spending points, unlock with NFT method as fallback
-      // (Points give access permission, actual decryption uses Seal)
       await handleUnlockWithNFT();
     }
   };

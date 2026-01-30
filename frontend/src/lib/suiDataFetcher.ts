@@ -291,30 +291,6 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
     }
   }
 
-  console.log("📊 Extracted season data:");
-  console.log("  Early:", {
-    baseValueSui: earlyBaseValueSui,
-    score: earlyScore,
-    blobId: earlyBlobId || "NOT FOUND",
-    signature: earlySignature
-      ? `${earlySignature.slice(0, 20)}...`
-      : "NOT FOUND",
-  });
-  console.log("  Mid:", {
-    baseValueSui: midBaseValueSui,
-    score: midScore,
-    blobId: midBlobId || "NOT FOUND",
-    signature: midSignature ? `${midSignature.slice(0, 20)}...` : "NOT FOUND",
-  });
-  console.log("  Current:", {
-    baseValueSui: currentBaseValueSui,
-    score: currentScore,
-    blobId: currentBlobId || "NOT FOUND",
-    signature: currentSignature
-      ? `${currentSignature.slice(0, 20)}...`
-      : "NOT FOUND",
-  });
-
   return {
     early: {
       baseValueSui: earlyBaseValueSui,
@@ -509,7 +485,6 @@ export function getSeasonWalrusBlobId(
     const blobId = player.onChainSeasonData[season].walrusBlobId;
 
     if (!blobId) {
-      console.warn(`⚠️ No blob ID found for ${season} season`);
       return "";
     }
 
@@ -520,7 +495,6 @@ export function getSeasonWalrusBlobId(
     return player.walrusProofId;
   }
 
-  console.warn(`⚠️ No blob ID found for ${season} season`);
   return "";
 }
 
@@ -533,14 +507,12 @@ export function getSeasonNautilusSignature(
     const signature = player.onChainSeasonData[season].nautilusSignature;
 
     if (!signature) {
-      console.warn(`⚠️ No Nautilus signature found for ${season} season`);
       return "";
     }
 
     return signature;
   }
 
-  console.warn(`⚠️ No Nautilus signature found for ${season} season`);
   return "";
 }
 

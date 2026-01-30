@@ -31,7 +31,6 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
   const account = useCurrentAccount();
   const isLoggedIn = !!account;
 
-  // State for Walrus AI data
   const [encryptedAIBlob, setEncryptedAIBlob] =
     useState<EncryptedAIBlob | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -39,7 +38,6 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
   const seasonStats = player.seasonalStats[selectedSeason];
   const displayPrice = getSeasonBaseValue(player as any, selectedSeason);
 
-  // Fetch encrypted AI from Walrus
   useEffect(() => {
     const loadEncryptedAI = async () => {
       const seasonBlobId = getSeasonWalrusBlobId(player as any, selectedSeason);
@@ -72,11 +70,9 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
     loadEncryptedAI();
   }, [player, selectedSeason]);
 
-  // Use AI score from Walrus if available, otherwise fallback to player.aiScore
   const displayAiScore =
     encryptedAIBlob?.public_data?.performance_score ?? player.aiScore;
 
-  // Use trend from Walrus if available
   const displayTrend = encryptedAIBlob?.public_data?.performance_trend
     ? encryptedAIBlob.public_data.performance_trend === "improving"
       ? "up"

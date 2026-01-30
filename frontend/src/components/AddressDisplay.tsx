@@ -4,21 +4,13 @@ import { cn } from "@/lib/utils";
 
 interface AddressDisplayProps {
   address: string;
-  /** Whether to show the full address or truncated version when no name is found */
   truncate?: boolean;
-  /** Custom className for styling */
   className?: string;
-  /** Whether to show loading skeleton while resolving */
   showLoader?: boolean;
-  /** Whether to attempt SuiNS resolution */
   enableSuiNS?: boolean;
-  /** Custom format function for address when no name is found */
   formatAddress?: (address: string) => string;
 }
 
-/**
- * Format address to shortened version
- */
 export function formatAddress(
   address: string,
   truncate: boolean = true,
@@ -28,9 +20,6 @@ export function formatAddress(
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-/**
- * Component to display Sui address with optional SuiNS name resolution
- */
 export function AddressDisplay({
   address,
   truncate = true,
@@ -41,12 +30,10 @@ export function AddressDisplay({
 }: AddressDisplayProps) {
   const { name, isLoading } = useSuiNSName(address, enableSuiNS);
 
-  // Show loading skeleton if enabled and still loading
   if (isLoading && showLoader) {
     return <Skeleton className={cn("h-4 w-32", className)} />;
   }
 
-  // Show SuiNS name if available
   if (name) {
     return (
       <span className={cn("font-medium", className)} title={address}>
@@ -55,7 +42,6 @@ export function AddressDisplay({
     );
   }
 
-  // Fallback to formatted address
   const displayAddress = customFormat
     ? customFormat(address)
     : formatAddress(address, truncate);
@@ -67,9 +53,6 @@ export function AddressDisplay({
   );
 }
 
-/**
- * Utility component for displaying address in different variants
- */
 export function AddressWithCopy({
   address,
   showCopy = true,
@@ -78,8 +61,7 @@ export function AddressWithCopy({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(address);
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   return (

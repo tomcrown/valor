@@ -5,23 +5,19 @@ module valor::pulse_points {
     use std::string::{Self, String};
     use sui::clock::{Self, Clock};
 
-    // Error codes
     const EInsufficientPoints: u64 = 1;
     const EInvalidAmount: u64 = 2;
     const EUnauthorized: u64 = 3;
 
-    // Point rewards
     const VOTE_POINTS: u64 = 1;
     const CORRECT_PREDICTION_POINTS: u64 = 5;
     const NFT_SHARE_POINTS: u64 = 3;
     const AI_UNLOCK_THRESHOLD: u64 = 10;
 
-    // Admin capability
     public struct PointsAdminCap has key, store {
         id: UID,
     }
 
-    // Main points platform
     public struct PointsPlatform has key {
         id: UID,
         admin: address,
@@ -31,7 +27,6 @@ module valor::pulse_points {
         active: bool,
     }
 
-    // User's point balance NFT (transferable)
     public struct PointsBalance has key, store {
         id: UID,
         owner: address,
@@ -43,7 +38,6 @@ module valor::pulse_points {
         last_updated: u64,
     }
 
-    // Events
     public struct PointsMinted has copy, drop {
         user: address,
         amount: u64,
@@ -87,7 +81,6 @@ module valor::pulse_points {
         transfer::share_object(platform);
     }
 
-    // Mint points for voting
     public entry fun mint_vote_points(
         platform: &mut PointsPlatform,
         balance: &mut PointsBalance,
@@ -109,25 +102,21 @@ module valor::pulse_points {
 
         balance.votes_count = balance.votes_count + 1;
 
-        // Achievement: First vote
         if (balance.votes_count == 1) {
             emit_achievement(user, b"First Vote!", 2, clock);
         };
 
-        // Achievement: 10 votes
         if (balance.votes_count == 10) {
             emit_achievement(user, b"Active Voter", 5, clock);
             mint_points_internal(platform, balance, 5, b"Achievement Bonus", clock, ctx);
         };
 
-        // Achievement: 100 votes
         if (balance.votes_count == 100) {
             emit_achievement(user, b"Pulse Champion", 20, clock);
             mint_points_internal(platform, balance, 20, b"Achievement Bonus", clock, ctx);
         };
     }
 
-    // Mint points for correct prediction
     public entry fun mint_prediction_points(
         _: &PointsAdminCap,
         platform: &mut PointsPlatform,
@@ -150,19 +139,16 @@ module valor::pulse_points {
 
         balance.correct_predictions = balance.correct_predictions + 1;
 
-        // Achievement: First correct prediction
         if (balance.correct_predictions == 1) {
             emit_achievement(user, b"Oracle Awakened", 3, clock);
         };
 
-        // Achievement: 10 correct predictions
         if (balance.correct_predictions == 10) {
             emit_achievement(user, b"Prediction Master", 10, clock);
             mint_points_internal(platform, balance, 10, b"Achievement Bonus", clock, ctx);
         };
     }
 
-    // Mint points for NFT ownership (called when user buys shares)
     public entry fun mint_nft_points(
         platform: &mut PointsPlatform,
         balance: &mut PointsBalance,
@@ -188,19 +174,16 @@ module valor::pulse_points {
 
         balance.nft_shares_owned = balance.nft_shares_owned + shares_amount;
 
-        // Achievement: First NFT
         if (balance.nft_shares_owned == shares_amount) {
             emit_achievement(user, b"First Investment", 5, clock);
         };
 
-        // Achievement: 10 NFTs
         if (balance.nft_shares_owned >= 10 && balance.nft_shares_owned - shares_amount < 10) {
             emit_achievement(user, b"Collector", 15, clock);
             mint_points_internal(platform, balance, 15, b"Achievement Bonus", clock, ctx);
         };
     }
 
-    // Spend points to unlock AI insights
     public entry fun spend_points_for_ai(
         platform: &mut PointsPlatform,
         balance: &mut PointsBalance,
@@ -215,7 +198,6 @@ module valor::pulse_points {
         balance.points = balance.points - AI_UNLOCK_THRESHOLD;
         balance.last_updated = clock::timestamp_ms(clock);
 
-        // Update platform table
         if (table::contains(&platform.user_points, user)) {
             let user_total = table::borrow_mut(&mut platform.user_points, user);
             *user_total = balance.points;
@@ -230,7 +212,6 @@ module valor::pulse_points {
         });
     }
 
-    // Initialize points balance for new user
     public entry fun initialize_balance(
         platform: &mut PointsPlatform,
         clock: &Clock,
@@ -238,7 +219,6 @@ module valor::pulse_points {
     ) {
         let user = tx_context::sender(ctx);
         
-        // Check if user already has balance in platform
         if (!table::contains(&platform.user_points, user)) {
             table::add(&mut platform.user_points, user, 0);
             platform.total_users = platform.total_users + 1;
@@ -258,7 +238,6 @@ module valor::pulse_points {
         transfer::transfer(balance, user);
     }
 
-    // Internal function to mint points
     fun mint_points_internal(
         platform: &mut PointsPlatform,
         balance: &mut PointsBalance,
@@ -275,7 +254,6 @@ module valor::pulse_points {
 
         let user = tx_context::sender(ctx);
 
-        // Update platform table
         if (table::contains(&platform.user_points, user)) {
             let user_total = table::borrow_mut(&mut platform.user_points, user);
             *user_total = balance.points;
@@ -306,7 +284,6 @@ module valor::pulse_points {
         });
     }
 
-    // Admin functions
     public entry fun set_active(
         _: &PointsAdminCap,
         platform: &mut PointsPlatform,
@@ -316,7 +293,6 @@ module valor::pulse_points {
         platform.active = active;
     }
 
-    // View functions
     public fun get_user_points(balance: &PointsBalance): u64 {
         balance.points
     }

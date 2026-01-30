@@ -193,7 +193,6 @@ export function usePointsOperations() {
   };
 }
 
-// Enhanced vote hook that integrates points
 export function useVoteWithPoints() {
   const { mintVotePoints } = usePointsOperations();
   const currentAccount = useCurrentAccount();
@@ -217,7 +216,6 @@ export function useVoteWithPoints() {
       const tx = new Transaction();
       const clockId = "0x6";
 
-      // Import PULSE_CONFIG
       const PULSE_CONFIG = {
         packageId: import.meta.env.VITE_PULSE_PACKAGE_ID,
         platformObjectId: import.meta.env.VITE_PULSE_PLATFORM_ID,
@@ -237,7 +235,6 @@ export function useVoteWithPoints() {
         ],
       });
 
-      // If user has points balance, mint vote points in same transaction
       if (balanceObjectId) {
         tx.moveCall({
           target: `${PULSE_POINTS_CONFIG.packageId}::pulse_points::mint_vote_points`,

@@ -12,7 +12,9 @@ interface Node {
   connections: number[];
 }
 
-export const SpaceNetworkBackground = ({ className = "" }: NetworkBackgroundProps) => {
+export const SpaceNetworkBackground = ({
+  className = "",
+}: NetworkBackgroundProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const nodes = useMemo(() => {
@@ -54,7 +56,6 @@ export const SpaceNetworkBackground = ({ className = "" }: NetworkBackgroundProp
       const width = window.innerWidth;
       const height = window.innerHeight;
 
-      // Update node positions
       nodes.forEach((node) => {
         node.x += node.vx;
         node.y += node.vy;
@@ -66,7 +67,6 @@ export const SpaceNetworkBackground = ({ className = "" }: NetworkBackgroundProp
         node.y = Math.max(0, Math.min(1, node.y));
       });
 
-      // Draw connections
       const connectionDistance = 0.18;
 
       for (let i = 0; i < nodes.length; i++) {
@@ -87,7 +87,6 @@ export const SpaceNetworkBackground = ({ className = "" }: NetworkBackgroundProp
         }
       }
 
-      // Draw nodes
       nodes.forEach((node) => {
         ctx.beginPath();
         ctx.arc(node.x * width, node.y * height, 2, 0, Math.PI * 2);
@@ -95,14 +94,13 @@ export const SpaceNetworkBackground = ({ className = "" }: NetworkBackgroundProp
         ctx.fill();
       });
 
-      // Draw colored accent dots
       const accentNodes = nodes.slice(0, 12);
       const colors = [
-        "hsla(6, 85%, 62%, 0.6)",   // Primary coral
-        "hsla(200, 80%, 55%, 0.6)", // Secondary blue
-        "hsla(280, 60%, 65%, 0.6)", // Accent purple
-        "hsla(150, 60%, 50%, 0.6)", // Green
-        "hsla(45, 90%, 55%, 0.6)",  // Yellow
+        "hsla(6, 85%, 62%, 0.6)",
+        "hsla(200, 80%, 55%, 0.6)",
+        "hsla(280, 60%, 65%, 0.6)",
+        "hsla(150, 60%, 50%, 0.6)",
+        "hsla(45, 90%, 55%, 0.6)",
       ];
 
       accentNodes.forEach((node, i) => {

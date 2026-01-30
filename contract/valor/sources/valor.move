@@ -1,5 +1,3 @@
-// Enhanced Valor Contract with Season-Specific Nautilus Attestation Signatures
-// Now stores signature strings for each season for better transparency
 
 #[allow(lint(public_entry), unused_const)]
 module valor::valor {
@@ -87,12 +85,10 @@ module valor::valor {
         current_season_walrus_blob_id: String,
         walrus_blob_id: String,
         
-        // 🔥 NEW: Season-specific Nautilus attestation signatures (hex strings for easy display)
         early_season_nautilus_signature: String,
         mid_season_nautilus_signature: String,
         current_season_nautilus_signature: String,
         
-        // Legacy/current attestation fields (kept for backward compatibility)
         nautilus_signature: vector<u8>,
         nautilus_public_key: vector<u8>,
         nautilus_timestamp: u64,
@@ -141,7 +137,7 @@ module valor::valor {
         total_shares: u64,
         walrus_blob_id: String,
         nautilus_verified: bool,
-        nautilus_signature: String, // 🔥 NEW: Display signature in events
+        nautilus_signature: String,
         timestamp: u64,
     }
 
@@ -186,7 +182,7 @@ module valor::valor {
         rating: u64,
         walrus_blob_id: String,
         nautilus_verified: bool,
-        nautilus_signature: String, // 🔥 NEW: Display signature in events
+        nautilus_signature: String,
         timestamp: u64,
     }
 
@@ -443,7 +439,6 @@ module valor::valor {
         player.active = true;
     }
 
-    // Standard registration (backward compatible)
     public entry fun register_player(
         _: &AdminCap,
         platform: &mut Platform,
@@ -470,14 +465,13 @@ module valor::valor {
             walrus_blob_id,
             vector::empty(),
             vector::empty(),
-            string::utf8(b""), // Empty signature string
+            string::utf8(b""), 
             false,
             clock,
             ctx
         )
     }
 
-    // 🔥 ENHANCED: Register with Nautilus attestation
     public entry fun register_player_verified(
         _: &AdminCap,
         platform: &mut Platform,
@@ -491,7 +485,7 @@ module valor::valor {
         walrus_blob_id: vector<u8>,
         nautilus_signature: vector<u8>,
         nautilus_public_key: vector<u8>,
-        nautilus_signature_hex: vector<u8>, // 🔥 NEW: Signature as hex string for display
+        nautilus_signature_hex: vector<u8>,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -514,7 +508,6 @@ module valor::valor {
         )
     }
 
-    // Internal registration function
     fun register_player_internal(
         platform: &mut Platform,
         name: vector<u8>,
@@ -566,12 +559,10 @@ module valor::valor {
             current_season_walrus_blob_id: string::utf8(b""),
             walrus_blob_id: blob_id_string,
             
-            // 🔥 NEW: Store season-specific signatures
             early_season_nautilus_signature: nautilus_signature_hex,
             mid_season_nautilus_signature: string::utf8(b""),
             current_season_nautilus_signature: string::utf8(b""),
             
-            // Legacy fields
             nautilus_signature,
             nautilus_public_key,
             nautilus_timestamp: clock::timestamp_ms(clock),
@@ -601,12 +592,11 @@ module valor::valor {
             total_shares,
             walrus_blob_id: blob_id_string,
             nautilus_verified,
-            nautilus_signature: nautilus_signature_hex, // 🔥 NEW: Emit signature in event
+            nautilus_signature: nautilus_signature_hex, 
             timestamp: clock::timestamp_ms(clock),
         });
     }
 
-    // Standard update (backward compatible)
     public entry fun update_base_value(
         _: &AdminCap,
         platform: &mut Platform,
@@ -637,13 +627,12 @@ module valor::valor {
             walrus_blob_id,
             vector::empty(),
             vector::empty(),
-            string::utf8(b""), // Empty signature
+            string::utf8(b""),
             false,
             clock
         )
     }
 
-    // 🔥 ENHANCED: Update with Nautilus attestation
     public entry fun update_base_value_verified(
         _: &AdminCap,
         platform: &mut Platform,
@@ -659,7 +648,7 @@ module valor::valor {
         walrus_blob_id: vector<u8>,
         nautilus_signature: vector<u8>,
         nautilus_public_key: vector<u8>,
-        nautilus_signature_hex: vector<u8>, // 🔥 NEW: Signature as hex string
+        nautilus_signature_hex: vector<u8>,
         clock: &Clock,
         _ctx: &mut TxContext
     ) {
@@ -683,7 +672,6 @@ module valor::valor {
         )
     }
 
-    // Internal update function
     fun update_base_value_internal(
         platform: &mut Platform,
         player_id: ID,
@@ -720,7 +708,6 @@ module valor::valor {
         let player = table::borrow_mut(&mut platform.players, player_id);
         assert!(player.active, EUnauthorized);
 
-        // 🔥 NEW: Store season-specific signature
         if (season == SEASON_MID) {
             player.mid_season_base_value = new_base_value;
             player.mid_season_walrus_blob_id = blob_id_string;
@@ -738,7 +725,6 @@ module valor::valor {
         player.base_value = new_base_value;
         player.walrus_blob_id = blob_id_string;
 
-        // Update legacy fields
         if (nautilus_verified) {
             player.nautilus_signature = nautilus_signature;
             player.nautilus_public_key = nautilus_public_key;
@@ -829,13 +815,10 @@ module valor::valor {
             rating,
             walrus_blob_id: blob_id_string,
             nautilus_verified,
-            nautilus_signature: nautilus_signature_hex, // 🔥 NEW: Emit signature in event
+            nautilus_signature: nautilus_signature_hex,
             timestamp: current_time,
         });
     }
-
-    // ... (Keep ALL trading functions exactly as they were - buy_shares, sell_shares, transfer_shares, split_shares, merge_shares)
-    // They don't need any changes
 
     public entry fun buy_shares(
         platform: &mut Platform,
@@ -1137,7 +1120,6 @@ module valor::valor {
         object::delete(id);
     }
 
-    // ... (Keep all existing getter functions)
     public fun get_market_price(platform: &Platform, player_id: ID): u64 {
         let player = table::borrow(&platform.players, player_id);
         calculate_market_price(
@@ -1347,7 +1329,6 @@ module valor::valor {
         player.current_season_walrus_blob_id
     }
 
-    // Nautilus attestation getters (existing)
     public fun is_nautilus_verified(platform: &Platform, player_id: ID): bool {
         let player = table::borrow(&platform.players, player_id);
         player.nautilus_verified
@@ -1381,7 +1362,6 @@ module valor::valor {
         )
     }
 
-    // 🔥 NEW: Season-specific Nautilus signature getters
     public fun get_early_season_nautilus_signature(
         platform: &Platform,
         player_id: ID
@@ -1406,7 +1386,6 @@ module valor::valor {
         player.current_season_nautilus_signature
     }
 
-    // 🔥 NEW: Get all season data including signatures
     public fun get_season_data(
         platform: &Platform,
         player_id: ID,

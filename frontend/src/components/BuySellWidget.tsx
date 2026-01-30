@@ -85,8 +85,6 @@ const BuySellWidget = ({
     });
 
     if (result?.success) {
-      // ✅ Calculate points for callback, but DON'T add optimistically
-      // The auto-refresh in useUserPoints will detect the on-chain change
       const pointsToAdd = quantity * PULSE_POINTS_CONFIG.nftSharePoints;
 
       setQuantity(1);
@@ -117,7 +115,7 @@ const BuySellWidget = ({
 
       const sharesToSellFromThisObject = Math.min(
         remainingToSell,
-        shareObj.shares
+        shareObj.shares,
       );
 
       sellOperations.push({
@@ -166,7 +164,7 @@ const BuySellWidget = ({
             "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all",
             mode === "buy"
               ? "bg-green-500 text-white shadow-lg"
-              : "text-gray-500 hover:text-foreground"
+              : "text-gray-500 hover:text-foreground",
           )}
         >
           <ArrowUpRight className="w-4 h-4" />
@@ -178,7 +176,7 @@ const BuySellWidget = ({
             "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all",
             mode === "sell"
               ? "bg-red-400 text-white shadow-lg"
-              : "text-gray-500 hover:text-foreground"
+              : "text-gray-500 hover:text-foreground",
           )}
         >
           <ArrowDownRight className="w-4 h-4" />
@@ -293,7 +291,7 @@ const BuySellWidget = ({
                 "w-full py-6 text-lg font-semibold transition-all",
                 mode === "buy"
                   ? "bg-green-500 hover:bg-green/90 text-white"
-                  : "bg-red-400 hover:bg-red/90 text-white"
+                  : "bg-red-400 hover:bg-red/90 text-white",
               )}
             >
               {isProcessing ? (
