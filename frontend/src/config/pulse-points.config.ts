@@ -9,7 +9,7 @@ function getEnv(key: string, fallback: string = ""): string {
 export const PULSE_POINTS_CONFIG = {
   packageId:
     getEnv("VITE_PULSE_POINTS_PACKAGE_ID") ||
-    "0xf5b1034c40ab3b1f778e0f44b917ea2f27e2352fc76960203e26b2e31c8c8e18",
+    "0x91c1cb8f6079b95e161948024351d98f64f04b89612262edea22f82fefa8eef3",
 
   platformObjectId: getEnv("VITE_PULSE_POINTS_PLATFORM_ID") || "",
 

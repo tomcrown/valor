@@ -11,14 +11,14 @@ function getEnv(key: string, fallback: string = ""): string {
 export const PULSE_CONFIG = {
   packageId:
     getEnv("VITE_PULSE_PACKAGE_ID") ||
-    "0xf5b1034c40ab3b1f778e0f44b917ea2f27e2352fc76960203e26b2e31c8c8e18",
+    "0x91c1cb8f6079b95e161948024351d98f64f04b89612262edea22f82fefa8eef3",
   moduleName: "pulse",
   platformObjectId:
     getEnv("VITE_PULSE_PLATFORM_ID") ||
-    "0x114794c3eafd36af0da2326c308c17d13592316c1acfd2429abed984051cf48d",
+    "0x73552c99e4ba90ce23efb114cce1a8d84d13056acb5a17681a072b58cf0f29ce",
   registryObjectId:
     getEnv("VITE_PULSE_REGISTRY_ID") ||
-    "0x19ac0a4d06858ebd9002507a38bb3e59c73c877d64539a8568b7564b5ff47d5d",
+    "0xb44b9db07a1aca9e91b64d3cfc46cbd7b7f99257fbecdb4a55bff4bd26f79c48",
 
   ui: {
     refreshIntervalSeconds: 30,
