@@ -78,10 +78,6 @@ export const TechStackSection = () => {
             id="tech-stack"
             className="relative md:pt-24 overflow-hidden"
         >
-            {/* Section dividers */}
-            {/* <div className="absolute top-0 left-0 w-full h-px bg-border/40" />
-            <div className="absolute bottom-0 left-0 w-full h-px bg-border/40" /> */}
-
             {/* Ambient glows */}
             <div className="absolute top-0 right-0 w-72 h-72 bg-primary/10 rounded-full blur-[120px]" />
             <div className="absolute bottom-0 left-0 w-72 h-72 bg-secondary/10 rounded-full blur-[120px]" />

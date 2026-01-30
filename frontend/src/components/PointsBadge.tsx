@@ -1,5 +1,4 @@
 import { Coins, Sparkles, TrendingUp } from "lucide-react";
-import { useUserPoints } from "@/hooks/useUserPoints";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { cn } from "@/lib/utils";
 import {
@@ -9,7 +8,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { PULSE_POINTS_CONFIG } from "@/config/pulse-points.config";
-import { useEffect, useRef } from "react";
 import { usePoints } from "@/context/PointsContext";
 
 interface PointsBadgeProps {
@@ -24,7 +22,7 @@ export function PointsBadge({
   className,
 }: PointsBadgeProps) {
   const currentAccount = useCurrentAccount();
-  const { pointsData, isLoading, refetch } = usePoints();
+  const { pointsData } = usePoints();
 
   if (!currentAccount) {
     return null;
@@ -178,9 +176,9 @@ export function PointsEarnedAnimation({
 
 export function InitializePointsPrompt() {
   const currentAccount = useCurrentAccount();
-  const { pointsData } = useUserPoints();
+  const { pointsData } = usePoints();
 
-  // Only show if user is connected and doesn't have a balance
+
   if (!currentAccount || pointsData.balanceObjectId) {
     return null;
   }
@@ -199,8 +197,6 @@ export function InitializePointsPrompt() {
         <button
           className="btn-gradient px-6 py-2 rounded-xl font-semibold"
           onClick={() => {
-            // This will be handled by the integration
-            console.log("Initialize points balance");
           }}
         >
           Get Started

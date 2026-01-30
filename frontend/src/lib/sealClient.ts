@@ -64,34 +64,27 @@ export class ValorSealClient {
     });
   }
 
-  /**
-   * Encrypt premium AI analysis fields
-   */
+
   async encryptPremiumAI(
     playerId: string,
     season: "early" | "mid" | "current",
     fullAnalysis: AIAnalysis,
   ): Promise<EncryptedAIBlob> {
-    // Extract premium fields
     const premiumData: PremiumAIData = {
       prediction: fullAnalysis.prediction,
       key_factors: fullAnalysis.key_factors,
       reasoning: fullAnalysis.reasoning,
     };
 
-    // Create encryption ID: [player_id][season]
     const encryptionId = this.createEncryptionId(playerId, season);
 
-    // Convert encryptionId (Uint8Array) to hex string
     const encryptionIdHex = Array.from(encryptionId)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    // Encrypt the premium data
     const premiumJson = JSON.stringify(premiumData);
     const premiumBytes = new TextEncoder().encode(premiumJson);
 
-    // CRITICAL FIX: Use valorPackageId, not the Seal protocol package
     const { encryptedObject } = await this.sealClient.encrypt({
       threshold: 1,
       packageId: this.valorPackageId, // YOUR package with seal_approve functions
@@ -99,7 +92,6 @@ export class ValorSealClient {
       data: premiumBytes,
     });
 
-    // Create public data (never encrypted)
     const publicData: PublicAIData = {
       performance_score: fullAnalysis.performance_score,
       performance_trend: fullAnalysis.performance_trend,
@@ -109,7 +101,6 @@ export class ValorSealClient {
       season_context: fullAnalysis.season_context,
     };
 
-    // Return the complete encrypted blob
     return {
       public_data: publicData,
       encrypted_premium: encryptedObject,
@@ -123,9 +114,7 @@ export class ValorSealClient {
     };
   }
 
-  /**
-   * Decrypt premium AI analysis (requires NFT ownership)
-   */
+
   async decryptPremiumAI(
     encryptedBlob: EncryptedAIBlob,
     userAddress: string,
@@ -133,49 +122,33 @@ export class ValorSealClient {
     signer: any,
   ): Promise<PremiumAIData | null> {
     try {
-      console.log("🔓 Starting decryption...");
-      console.log("   User:", userAddress);
-      console.log("   Player ID:", encryptedBlob.player_id);
 
-      // Pre-fetch and cache the public key before creating the wrapper
+
       const publicKeyBytes = await signer.getPublicKey();
-      console.log("   🔑 Public key bytes (length):", publicKeyBytes.length);
 
-      // Handle the case where the public key has a 1-byte prefix (33 bytes total)
       let cleanPublicKeyBytes = publicKeyBytes;
       if (publicKeyBytes.length === 33) {
         cleanPublicKeyBytes = publicKeyBytes.slice(1);
-        console.log("   🔪 Removed prefix byte, now 32 bytes");
+
       } else if (publicKeyBytes.length !== 32) {
         throw new Error(
           `Invalid public key length: ${publicKeyBytes.length}. Expected 32 or 33 bytes.`,
         );
       }
 
-      // Create the public key object ONCE before the wrapper
       const cachedPublicKey = new Ed25519PublicKey(cleanPublicKeyBytes);
-      console.log("   ✅ Public key object created and cached");
-      console.log("   🔍 Has toSuiAddress:", "toSuiAddress" in cachedPublicKey);
-      console.log("   ✅ Test toSuiAddress():", cachedPublicKey.toSuiAddress());
 
-      // ✅ Create a full Signer implementation wrapper
       const wrappedSigner = {
-        // Required for SessionKey.create
         getAddress: async () => {
           const address = await signer.getAddress();
-          console.log("   📍 Address requested:", address);
           return address;
         },
 
-        // Make this SYNCHRONOUS - return the cached key immediately
         getPublicKey: () => {
-          console.log("   🔄 getPublicKey() called, returning cached key");
           return cachedPublicKey;
         },
 
         signPersonalMessage: async (input: Uint8Array) => {
-          console.log("   ✍️ Signing message...");
-          console.log("   📏 Message length:", input?.length);
 
           if (!input || !input.length) {
             throw new Error(
@@ -186,8 +159,6 @@ export class ValorSealClient {
           // Pass the Uint8Array directly - don't convert to base64
           // The wallet will handle the format it needs
           const result = await signer.signPersonalMessage(input);
-          console.log("   ✅ Message signed");
-          console.log("   🔑 Result:", result);
 
           return result;
         },
@@ -230,23 +201,10 @@ export class ValorSealClient {
         signer: wrappedSigner as any, // Cast to 'any' to bypass strict type checking
       });
 
-      console.log("   ✅ Session key created");
 
       // Create PTB
       const tx = new Transaction();
       const playerId = encryptedBlob.player_id;
-
-      console.log("   📦 Building PTB for seal_approve...");
-      console.log(
-        "   🎯 Target:",
-        `${this.valorPackageId}::valor_seal::seal_approve_with_player`,
-      );
-      console.log(
-        "   🔑 Encryption ID:",
-        this.createEncryptionId(playerId, encryptedBlob.season),
-      );
-      console.log("   🏛️  NFT Registry:", nftRegistryId);
-      console.log("   👤 Player ID:", playerId);
 
       tx.moveCall({
         target: `${this.valorPackageId}::valor_seal::seal_approve_with_player`,
@@ -265,9 +223,6 @@ export class ValorSealClient {
         onlyTransactionKind: true,
       });
 
-      console.log("   ✅ PTB built, transaction bytes length:", txBytes.length);
-
-      console.log("   🔐 Decrypting...");
 
       const decryptedBytes = await this.sealClient.decrypt({
         data: encryptedBlob.encrypted_premium,
@@ -278,10 +233,8 @@ export class ValorSealClient {
       const decryptedJson = new TextDecoder().decode(decryptedBytes);
       const premiumData: PremiumAIData = JSON.parse(decryptedJson);
 
-      console.log("   🎊 Unlocked!");
       return premiumData;
     } catch (error) {
-      console.error("❌ Decryption failed:", error);
       return null;
     }
   }
@@ -328,7 +281,6 @@ export async function checkNFTOwnership(
     // TODO: Implement proper on-chain check
     return { hasOwnership: true, shares: 1 };
   } catch (error) {
-    console.error("Failed to check NFT ownership:", error);
     return { hasOwnership: false, shares: 0 };
   }
 }

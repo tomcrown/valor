@@ -59,7 +59,6 @@ const Navbar = () => {
 
   const isEnoki = currentWallet && isEnokiWallet(currentWallet);
 
-  // Get SuiNS name for the connected account
   const { name: suinsName, isLoading: isLoadingSuiNS } = useSuiNSName(
     currentAccount?.address,
   );
@@ -93,7 +92,6 @@ const Navbar = () => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  // Get display name - prioritize SuiNS name, fallback to formatted address
   const getDisplayName = () => {
     if (!currentAccount?.address) return "";
     if (isLoadingSuiNS) return formatAddress(currentAccount.address);

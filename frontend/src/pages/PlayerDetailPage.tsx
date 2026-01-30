@@ -68,7 +68,6 @@ const PlayerDetailPage = () => {
     (location.state?.selectedSeason as SeasonPeriod) || "current",
   );
 
-  // Seal integration state - now per-season
   const [encryptedAIBlobs, setEncryptedAIBlobs] = useState<{
     early: EncryptedAIBlob | null;
     mid: EncryptedAIBlob | null;
@@ -124,7 +123,6 @@ const PlayerDetailPage = () => {
     const seasonBlobId = getSeasonWalrusBlobId(mergedPlayer as any, season);
 
     if (!seasonBlobId) {
-      console.log(`ℹ️ No Walrus blob ID for ${season} season`);
       setEncryptedAIBlobs((prev) => ({ ...prev, [season]: null }));
       setIsLoadingAI((prev) => ({ ...prev, [season]: false }));
       setAiLoadError((prev) => ({
@@ -138,11 +136,7 @@ const PlayerDetailPage = () => {
     setAiLoadError((prev) => ({ ...prev, [season]: null }));
 
     try {
-      console.log(`📥 Loading encrypted AI from Walrus`);
-      console.log(`   Season: ${season}`);
-      console.log(`   Blob ID: ${seasonBlobId}`);
 
-      // Download with retry logic (up to 5 attempts with exponential backoff)
       const blob = await downloadEncryptedAI(seasonBlobId, {
         maxRetries: 5,
         silent: false,
@@ -151,11 +145,7 @@ const PlayerDetailPage = () => {
       if (blob && validateEncryptedBlob(blob)) {
         setEncryptedAIBlobs((prev) => ({ ...prev, [season]: blob }));
         setAiLoadError((prev) => ({ ...prev, [season]: null }));
-        console.log(`✅ ${season} season encrypted AI loaded from Walrus`);
-        console.log(`   Public score: ${blob.public_data.performance_score}`);
-        console.log(`   Trend: ${blob.public_data.performance_trend}`);
       } else {
-        console.warn(`⚠️ Invalid or missing encrypted AI blob for ${season}`);
         setEncryptedAIBlobs((prev) => ({ ...prev, [season]: null }));
         setAiLoadError((prev) => ({
           ...prev,
@@ -163,7 +153,6 @@ const PlayerDetailPage = () => {
         }));
       }
     } catch (error: any) {
-      console.error(`❌ Failed to load ${season} season encrypted AI:`, error);
       setEncryptedAIBlobs((prev) => ({ ...prev, [season]: null }));
 
       // Provide user-friendly error messages
@@ -236,7 +225,6 @@ const PlayerDetailPage = () => {
         setUserOwnsNFT(result.ownsNFT);
         setUserShares(result.shareCount);
       } catch (error) {
-        console.error("❌ Failed to check NFT ownership:", error);
         setUserOwnsNFT(false);
         setUserShares(0);
       } finally {

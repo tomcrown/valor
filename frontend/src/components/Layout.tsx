@@ -8,6 +8,7 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Button } from "@/components/ui/button";
 import { Coins, X } from "lucide-react";
 import { usePoints } from "@/context/PointsContext";
+import { usePointsInitialization } from "@/hooks/usePointsInitialization";
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,18 +20,30 @@ const Layout = ({ children }: LayoutProps) => {
   const { initializePointsBalance, isProcessing } = usePointsOperations();
   const [showPrompt, setShowPrompt] = useState(false);
 
+  const { isInitialized, markInitialized } = usePointsInitialization();
+
   useEffect(() => {
-    if (currentAccount?.address && !pointsData.balanceObjectId && !isLoading) {
-      console.log("User needs to initialize points balance");
+    if (
+      currentAccount?.address &&
+      !isInitialized &&
+      !isLoading &&
+      !pointsData?.balanceObjectId
+    ) {
       setShowPrompt(true);
     } else {
       setShowPrompt(false);
     }
-  }, [currentAccount?.address, pointsData.balanceObjectId, isLoading]);
+  }, [
+    currentAccount?.address,
+    isInitialized,
+    isLoading,
+    pointsData?.balanceObjectId,
+  ]);
 
   const handleInitialize = async () => {
     const success = await initializePointsBalance();
     if (success) {
+      markInitialized();
       setShowPrompt(false);
     }
   };
@@ -45,6 +58,11 @@ const Layout = ({ children }: LayoutProps) => {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  useEffect(() => {
+    localStorage.removeItem("points_initialized");
+  }, [currentAccount?.address]);
+
 
 
   return (

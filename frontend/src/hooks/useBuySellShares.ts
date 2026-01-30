@@ -63,7 +63,7 @@ export function useBuySellShares() {
         target: `${SUI_CONFIG.contracts.packageId}::valor::buy_shares`,
         arguments: [
           tx.object(SUI_CONFIG.contracts.platformObjectId),
-          tx.object(SUI_CONFIG.contracts.nftRegistryObjectId), // ← ADD THIS
+          tx.object(SUI_CONFIG.contracts.nftRegistryObjectId),
           tx.pure.address(params.playerId),
           tx.pure.u64(params.shares),
           tx.pure.u64(suiToMist(params.maxPricePerShare)),
@@ -92,10 +92,7 @@ export function useBuySellShares() {
       if (pointsData.balanceObjectId && params.shares > 0) {
         try {
           await mintNFTPoints(pointsData.balanceObjectId, params.shares);
-          // Points are minted automatically and toast is shown in the hook
         } catch (error) {
-          console.error("Failed to mint NFT points:", error);
-          // Don't fail the main transaction if points minting fails
         }
       }
 
@@ -175,7 +172,7 @@ export function useBuySellShares() {
           target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
           arguments: [
             tx.object(SUI_CONFIG.contracts.platformObjectId),
-            tx.object(SUI_CONFIG.contracts.nftRegistryObjectId), // ← ADD THIS
+            tx.object(SUI_CONFIG.contracts.nftRegistryObjectId),
             tx.object(operation.objectId),
             tx.pure.u64(operation.amount),
             tx.pure.u64(suiToMist(params.minPricePerShare)),

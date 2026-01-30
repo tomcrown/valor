@@ -43,7 +43,6 @@ export async function checkPlayerNFTOwnership(
       shareCount: totalShares,
     };
   } catch (error) {
-    console.error("Error checking NFT ownership:", error);
     return { ownsNFT: false, shareCount: 0 };
   }
 }

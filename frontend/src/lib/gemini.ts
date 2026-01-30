@@ -143,7 +143,7 @@ export async function analyzePlayer(
   const seasonContext = SEASON_CONTEXT[playerStats.season];
   const positionGuidelines =
     POSITION_GUIDELINES[
-      playerStats.position as keyof typeof POSITION_GUIDELINES
+    playerStats.position as keyof typeof POSITION_GUIDELINES
     ] || POSITION_GUIDELINES.Attacker;
 
   const goalsPerMatch =
@@ -323,8 +323,6 @@ RESPONSE FORMAT (no markdown, no backticks):
 }`;
 
   try {
-    console.log(`   🤖 Calling Gemini 2.0 Flash with Google Search...`);
-    console.log(`   🔍 Researching: ${playerStats.name} (${playerStats.team})`);
 
     const startTime = Date.now();
 
@@ -339,7 +337,6 @@ RESPONSE FORMAT (no markdown, no backticks):
     });
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(`   ⏱️  Analysis completed in ${duration}s`);
 
     // Handle different response formats
     let responseText: string;
@@ -366,19 +363,13 @@ RESPONSE FORMAT (no markdown, no backticks):
     try {
       analysis = JSON.parse(jsonStr);
     } catch (err) {
-      console.error(`   ❌ Failed to parse Gemini JSON:`);
-      console.error(`   Raw response:`, responseText.substring(0, 200));
-      console.error(`   Cleaned:`, jsonStr.substring(0, 200));
       throw err;
     }
 
     // Verify we got real data
     if (!analysis.prediction || !analysis.key_factors || !analysis.reasoning) {
-      console.warn(`   ⚠️  Warning: AI returned incomplete analysis`);
     } else {
-      console.log(
-        `   ✅ Full AI analysis received (${analysis.key_factors.length} key factors)`,
-      );
+
     }
 
     return {
@@ -386,10 +377,7 @@ RESPONSE FORMAT (no markdown, no backticks):
       season_context: seasonLabel,
     } as AIAnalysis;
   } catch (error: any) {
-    console.error(
-      `   ❌ Gemini analysis error:`,
-      error.message || JSON.stringify(error),
-    );
+
 
     // If Gemini fails, throw error instead of returning fallback
     throw new Error(

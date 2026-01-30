@@ -100,10 +100,6 @@ export class WalrusClient {
       const jsonData = JSON.stringify(data, null, 2);
       const jsonSize = new Blob([jsonData]).size;
 
-      console.log(
-        `   📤 Uploading ${Math.round(jsonSize / 1024)}KB to Walrus...`,
-      );
-
       const response = await axios.put(
         `${this.publisherUrl}/v1/blobs`,
         jsonData,
@@ -130,32 +126,20 @@ export class WalrusClient {
 
       // Log status
       if (result.newlyCreated) {
-        console.log(`   ✅ New blob created: ${blobId}`);
-        console.log(`   💾 Stored for ${this.epochs} epochs`);
-        console.log(`   ⏳ Note: Blob may take a few seconds to propagate`);
       } else if (result.alreadyCertified) {
-        console.log(`   ♻️  Blob already exists: ${blobId}`);
       }
 
       return blobId;
     } catch (error: any) {
       if (error.response) {
-        console.error(`   ❌ Walrus API error: ${error.response.status}`);
-        console.error(`   📄 Response:`, error.response.data);
       } else if (error.request) {
-        console.error(`   ❌ Network error: No response from Walrus`);
       } else {
-        console.error(`   ❌ Upload error:`, error.message);
       }
 
       throw new Error(`Walrus upload failed: ${error.message}`);
     }
   }
 
-  /**
-   * Download JSON with automatic retry logic for 404 errors
-   * This handles the case where blobs are uploaded but not yet propagated
-   */
   async downloadJSON<T = any>(
     blobId: string,
     options?: {
@@ -182,51 +166,40 @@ export class WalrusClient {
           },
         );
 
-        // Success!
+
         if (attempt > 0 && !silent) {
-          console.log(`   ✅ Download succeeded on attempt ${attempt + 1}`);
         }
 
         return response.data as T;
       } catch (error: any) {
         lastError = error;
 
-        // Only retry on 404 errors (blob not yet propagated)
         if (error.response?.status === 404 && attempt < maxRetries) {
-          // Calculate exponential backoff delay
           const delay = Math.min(
             initialRetryDelay * Math.pow(1.5, attempt),
             this.maxRetryDelayMs,
           );
 
           if (!silent) {
-            console.log(
-              `   ⏳ Blob not ready (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${Math.round(delay / 1000)}s...`,
-            );
+
           }
 
           await sleep(delay);
           continue;
         }
 
-        // For other errors or max retries reached, break and throw
         break;
       }
     }
 
-    // All retries exhausted
     if (lastError) {
       if (
         (lastError as any).response?.status === 404 &&
         maxRetries > 0 &&
         !silent
       ) {
-        console.error(
-          `   ❌ Blob still not available after ${maxRetries + 1} attempts`,
-        );
-        console.error(
-          `   💡 Tip: The blob may still be propagating. Try again in a minute.`,
-        );
+
+
       }
 
       throw new Error(`Walrus download failed: ${lastError.message}`);

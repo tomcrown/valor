@@ -79,7 +79,6 @@ export function AddressWithCopy({
     try {
       await navigator.clipboard.writeText(address);
     } catch (error) {
-      console.error("Failed to copy address:", error);
     }
   };
 

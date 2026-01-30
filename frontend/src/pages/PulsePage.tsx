@@ -78,7 +78,8 @@ const REGISTERED_PLAYERS = [
 const PulsePage = () => {
   const currentAccount = useCurrentAccount();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const { platformState, sentiments, isLoading, refetch } = usePulseData();
+  const { platformState, sentiments: remoteSentiments, isLoading, refetch } = usePulseData();
+  const [sentiments, setSentiments] = useState(remoteSentiments);
 
   useEffect(() => {
     if (platformState.active) {
@@ -86,6 +87,41 @@ const PulsePage = () => {
       return () => clearInterval(interval);
     }
   }, [platformState.active, refetch]);
+
+  useEffect(() => {
+    setSentiments(remoteSentiments);
+  }, [remoteSentiments]);
+
+
+  const handleVoteSuccess = (vote: "yes" | "no", sentimentId: string) => {
+    setSentiments(prev =>
+      prev.map(s => {
+        if (s.objectId !== sentimentId) return s;
+
+        const totalVotes = s.totalVotes + 1;
+
+        const yesVotes =
+          vote === "yes"
+            ? Math.round((s.yesPercentage / 100) * s.totalVotes) + 1
+            : Math.round((s.yesPercentage / 100) * s.totalVotes);
+
+        const noVotes = totalVotes - yesVotes;
+
+        return {
+          ...s,
+          totalVotes,
+          yesPercentage: Math.round((yesVotes / totalVotes) * 100),
+          noPercentage: Math.round((noVotes / totalVotes) * 100),
+          userHasVoted: true,
+          userVote: vote,
+        };
+      })
+    );
+
+    // Optional background sync
+    setTimeout(refetch, 1500);
+  };
+
 
   const activeVoters = sentiments.filter((s) => s.totalVotes > 0).length;
 
@@ -181,7 +217,7 @@ const PulsePage = () => {
                 sentiment={sentiment}
                 weekEndTime={platformState.weekEndTime}
                 isVotingActive={platformState.active}
-                onVoteSuccess={refetch}
+                onVoteSuccess={handleVoteSuccess}
               />
             );
           })}

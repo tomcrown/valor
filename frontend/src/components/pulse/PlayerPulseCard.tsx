@@ -32,7 +32,7 @@ interface PlayerPulseCardProps {
   sentiment: PlayerSentiment | null;
   weekEndTime: number;
   isVotingActive: boolean;
-  onVoteSuccess: () => void;
+  onVoteSuccess: (vote: "yes" | "no", sentimentId: string) => void;
 }
 
 export function PlayerPulseCard({
@@ -44,7 +44,10 @@ export function PlayerPulseCard({
 }: PlayerPulseCardProps) {
   const currentAccount = useCurrentAccount();
   const { submitVoteWithPoints, isVoting } = useVoteWithPoints();
-  const { pointsData, optimisticAddPoints, refetch } = usePoints();
+
+
+  const { pointsData: localPointsData, optimisticAddPoints: localAddPoints, optimisticAddVote: localAddVote } = useUserPoints();
+  const { optimisticAddPoints: contextAddPoints, optimisticAddVote: contextAddVote } = usePoints();
 
 
   const [selectedVote, setSelectedVote] = useState<"yes" | "no" | null>(null);
@@ -81,18 +84,20 @@ export function PlayerPulseCard({
       sentiment.objectId,
       vote,
       player.name,
-      pointsData.balanceObjectId,
+      localPointsData.balanceObjectId,
     );
 
     if (success) {
-      optimisticAddPoints(PULSE_POINTS_CONFIG.votePoints);
+
+      localAddVote();
+      contextAddVote()
+
+      onVoteSuccess(vote, sentiment.objectId);
+
       toast({
         title: "Vote submitted",
         description: `You voted ${vote.toUpperCase()} for ${player.name}`,
       });
-      onVoteSuccess();
-    } else {
-      setSelectedVote(null);
     }
   };
 
@@ -157,7 +162,7 @@ export function PlayerPulseCard({
           <div className="flex justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
-              This week’s conviction
+              This week's conviction
             </span>
             <span>{totalVotes.toLocaleString()} votes</span>
           </div>

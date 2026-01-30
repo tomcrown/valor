@@ -63,7 +63,6 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
           setEncryptedAIBlob(null);
         }
       } catch (error) {
-        console.error(`Failed to load AI for ${player.name}:`, error);
         setEncryptedAIBlob(null);
       } finally {
         setIsLoadingAI(false);
