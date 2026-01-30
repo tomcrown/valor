@@ -8,6 +8,7 @@ interface SeasonContractData {
   baseValueSui: number;
   performanceScore: number;
   walrusBlobId: string;
+  nautilusSignature: string; // 🔥 NEW: Hardware attestation signature
 }
 
 const getPlayerDataQuery = graphql(`
@@ -33,10 +34,15 @@ interface OnChainPlayerData {
   mid_season_base_value: string;
   current_season_base_value: string;
 
-  // 🔥 NEW: Separate blob IDs for each season
+  // Walrus blob IDs for each season
   early_season_walrus_blob_id: string;
   mid_season_walrus_blob_id: string;
   current_season_walrus_blob_id: string;
+
+  // 🔥 NEW: Nautilus signatures for each season
+  early_season_nautilus_signature: string;
+  mid_season_nautilus_signature: string;
+  current_season_nautilus_signature: string;
 
   total_shares: string;
   circulating_shares: string;
@@ -46,6 +52,9 @@ interface OnChainPlayerData {
   lifetime_volume: string;
   all_time_high: string;
   all_time_low: string;
+
+  // Legacy fields
+  nautilus_verified: boolean;
 }
 
 interface OnChainPerformanceRecord {
@@ -214,7 +223,7 @@ async function fetchPlayerContractData(
   }
 }
 
-// 🔥 FIXED: Now reads dedicated blob ID fields from contract
+// 🔥 ENHANCED: Now reads Nautilus signatures for each season
 function extractSeasonalContractData(onChainData: OnChainPlayerData): {
   early: SeasonContractData;
   mid: SeasonContractData;
@@ -241,15 +250,20 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
   let midScore = 0;
   let currentScore = 0;
 
-  // 🔥 NEW: Read blob IDs directly from dedicated fields
+  // Read blob IDs directly from dedicated fields
   const earlyBlobId = onChainData.early_season_walrus_blob_id || "";
   const midBlobId = onChainData.mid_season_walrus_blob_id || "";
   const currentBlobId =
     onChainData.current_season_walrus_blob_id ||
     onChainData.walrus_blob_id ||
-    ""; // Fallback to main field
+    "";
 
-  // Match performance records to get scores (optional - scores may not be in history)
+  // 🔥 NEW: Read Nautilus signatures directly from dedicated fields
+  const earlySignature = onChainData.early_season_nautilus_signature || "";
+  const midSignature = onChainData.mid_season_nautilus_signature || "";
+  const currentSignature = onChainData.current_season_nautilus_signature || "";
+
+  // Match performance records to get scores
   const earlyBaseValueMist = BigInt(onChainData.early_season_base_value || "0");
   const midBaseValueMist = BigInt(onChainData.mid_season_base_value || "0");
   const currentBaseValueMist = BigInt(
@@ -261,28 +275,18 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
       const recordBaseValue = BigInt(record.base_value || "0");
       const score = Number(record.score || 0);
 
-      // Match by base_value to determine which season this record belongs to
       if (recordBaseValue === earlyBaseValueMist && earlyBaseValueMist > 0n) {
         earlyScore = score;
-        console.log(
-          `✅ Found EARLY season performance record with score: ${score}`,
-        );
       } else if (
         recordBaseValue === midBaseValueMist &&
         midBaseValueMist > 0n
       ) {
         midScore = score;
-        console.log(
-          `✅ Found MID season performance record with score: ${score}`,
-        );
       } else if (
         recordBaseValue === currentBaseValueMist &&
         currentBaseValueMist > 0n
       ) {
         currentScore = score;
-        console.log(
-          `✅ Found CURRENT season performance record with score: ${score}`,
-        );
       }
     }
   }
@@ -290,21 +294,25 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
   console.log("📊 Extracted season data:");
   console.log("  Early:", {
     baseValueSui: earlyBaseValueSui,
-    baseValueMist: earlyBaseValueMist.toString(),
     score: earlyScore,
     blobId: earlyBlobId || "NOT FOUND",
+    signature: earlySignature
+      ? `${earlySignature.slice(0, 20)}...`
+      : "NOT FOUND",
   });
   console.log("  Mid:", {
     baseValueSui: midBaseValueSui,
-    baseValueMist: midBaseValueMist.toString(),
     score: midScore,
     blobId: midBlobId || "NOT FOUND",
+    signature: midSignature ? `${midSignature.slice(0, 20)}...` : "NOT FOUND",
   });
   console.log("  Current:", {
     baseValueSui: currentBaseValueSui,
-    baseValueMist: currentBaseValueMist.toString(),
     score: currentScore,
     blobId: currentBlobId || "NOT FOUND",
+    signature: currentSignature
+      ? `${currentSignature.slice(0, 20)}...`
+      : "NOT FOUND",
   });
 
   return {
@@ -312,16 +320,19 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
       baseValueSui: earlyBaseValueSui,
       performanceScore: earlyScore,
       walrusBlobId: earlyBlobId,
+      nautilusSignature: earlySignature,
     },
     mid: {
       baseValueSui: midBaseValueSui,
       performanceScore: midScore,
       walrusBlobId: midBlobId,
+      nautilusSignature: midSignature,
     },
     current: {
       baseValueSui: currentBaseValueSui,
       performanceScore: currentScore,
       walrusBlobId: currentBlobId,
+      nautilusSignature: currentSignature,
     },
   };
 }
@@ -490,17 +501,12 @@ export function getSeasonPerformanceScore(
   return player.aiScore;
 }
 
-// 🔥 FIXED: Now reads from dedicated season blob ID fields
 export function getSeasonWalrusBlobId(
   player: Player & { onChainSeasonData?: any },
   season: SeasonPeriod,
 ): string {
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
     const blobId = player.onChainSeasonData[season].walrusBlobId;
-    console.log(
-      `🔍 getSeasonWalrusBlobId for ${season}:`,
-      blobId || "NOT FOUND",
-    );
 
     if (!blobId) {
       console.warn(`⚠️ No blob ID found for ${season} season`);
@@ -510,16 +516,31 @@ export function getSeasonWalrusBlobId(
     return blobId;
   }
 
-  // Only current season can fallback to main blob
   if (season === "current" && player.walrusProofId) {
-    console.log(
-      `🔍 Fallback to main walrusProofId for current:`,
-      player.walrusProofId,
-    );
     return player.walrusProofId;
   }
 
   console.warn(`⚠️ No blob ID found for ${season} season`);
+  return "";
+}
+
+// 🔥 NEW: Get Nautilus signature for a specific season
+export function getSeasonNautilusSignature(
+  player: Player & { onChainSeasonData?: any },
+  season: SeasonPeriod,
+): string {
+  if (player.onChainSeasonData && player.onChainSeasonData[season]) {
+    const signature = player.onChainSeasonData[season].nautilusSignature;
+
+    if (!signature) {
+      console.warn(`⚠️ No Nautilus signature found for ${season} season`);
+      return "";
+    }
+
+    return signature;
+  }
+
+  console.warn(`⚠️ No Nautilus signature found for ${season} season`);
   return "";
 }
 

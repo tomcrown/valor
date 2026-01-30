@@ -1,5 +1,5 @@
-// Enhanced Valor Contract with Nautilus Attestation Support
-// This adds attestation fields WITHOUT breaking existing functionality
+// Enhanced Valor Contract with Season-Specific Nautilus Attestation Signatures
+// Now stores signature strings for each season for better transparency
 
 #[allow(lint(public_entry), unused_const)]
 module valor::valor {
@@ -87,7 +87,12 @@ module valor::valor {
         current_season_walrus_blob_id: String,
         walrus_blob_id: String,
         
-        // 🔥 NEW: Nautilus attestation fields
+        // 🔥 NEW: Season-specific Nautilus attestation signatures (hex strings for easy display)
+        early_season_nautilus_signature: String,
+        mid_season_nautilus_signature: String,
+        current_season_nautilus_signature: String,
+        
+        // Legacy/current attestation fields (kept for backward compatibility)
         nautilus_signature: vector<u8>,
         nautilus_public_key: vector<u8>,
         nautilus_timestamp: u64,
@@ -112,7 +117,6 @@ module valor::valor {
         clean_sheets: u64,    
         walrus_blob_id: String,
         base_value: u64,
-        // 🔥 NEW: Track which updates are Nautilus-verified
         nautilus_verified: bool,
     }
 
@@ -136,8 +140,8 @@ module valor::valor {
         base_value: u64,
         total_shares: u64,
         walrus_blob_id: String,
-        // 🔥 NEW: Indicate if registered with Nautilus
         nautilus_verified: bool,
+        nautilus_signature: String, // 🔥 NEW: Display signature in events
         timestamp: u64,
     }
 
@@ -181,12 +185,11 @@ module valor::valor {
         assists: u64,
         rating: u64,
         walrus_blob_id: String,
-        // 🔥 NEW: Track Nautilus verification in events
         nautilus_verified: bool,
+        nautilus_signature: String, // 🔥 NEW: Display signature in events
         timestamp: u64,
     }
 
-    // ... (keep all your other events - SharesTransferred, PlatformPaused, etc.)
     public struct SharesTransferred has copy, drop {
         from: address,
         to: address,
@@ -301,7 +304,6 @@ module valor::valor {
         transfer::share_object(platform);
     }
     
-    // ... (keep all your existing helper functions)
     public fun calculate_market_price(
         base_value: u64,
         total_shares: u64,
@@ -441,7 +443,7 @@ module valor::valor {
         player.active = true;
     }
 
-    // 🔥 ENHANCED: Standard registration (backward compatible)
+    // Standard registration (backward compatible)
     public entry fun register_player(
         _: &AdminCap,
         platform: &mut Platform,
@@ -466,15 +468,16 @@ module valor::valor {
             early_season_base_value,
             total_shares,
             walrus_blob_id,
-            vector::empty(), // empty signature
-            vector::empty(), // empty public key
-            false, // not Nautilus verified
+            vector::empty(),
+            vector::empty(),
+            string::utf8(b""), // Empty signature string
+            false,
             clock,
             ctx
         )
     }
 
-    // 🔥 NEW: Register with Nautilus attestation
+    // 🔥 ENHANCED: Register with Nautilus attestation
     public entry fun register_player_verified(
         _: &AdminCap,
         platform: &mut Platform,
@@ -488,6 +491,7 @@ module valor::valor {
         walrus_blob_id: vector<u8>,
         nautilus_signature: vector<u8>,
         nautilus_public_key: vector<u8>,
+        nautilus_signature_hex: vector<u8>, // 🔥 NEW: Signature as hex string for display
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -503,13 +507,14 @@ module valor::valor {
             walrus_blob_id,
             nautilus_signature,
             nautilus_public_key,
-            true, // Nautilus verified
+            string::utf8(nautilus_signature_hex),
+            true,
             clock,
             ctx
         )
     }
 
-    // Internal registration function (DRY principle)
+    // Internal registration function
     fun register_player_internal(
         platform: &mut Platform,
         name: vector<u8>,
@@ -522,6 +527,7 @@ module valor::valor {
         walrus_blob_id: vector<u8>,
         nautilus_signature: vector<u8>,
         nautilus_public_key: vector<u8>,
+        nautilus_signature_hex: String,
         nautilus_verified: bool,
         clock: &Clock,
         ctx: &mut TxContext
@@ -560,7 +566,12 @@ module valor::valor {
             current_season_walrus_blob_id: string::utf8(b""),
             walrus_blob_id: blob_id_string,
             
-            // 🔥 NEW: Store Nautilus attestation
+            // 🔥 NEW: Store season-specific signatures
+            early_season_nautilus_signature: nautilus_signature_hex,
+            mid_season_nautilus_signature: string::utf8(b""),
+            current_season_nautilus_signature: string::utf8(b""),
+            
+            // Legacy fields
             nautilus_signature,
             nautilus_public_key,
             nautilus_timestamp: clock::timestamp_ms(clock),
@@ -589,12 +600,13 @@ module valor::valor {
             base_value: early_season_base_value,
             total_shares,
             walrus_blob_id: blob_id_string,
-            nautilus_verified, // 🔥 NEW
+            nautilus_verified,
+            nautilus_signature: nautilus_signature_hex, // 🔥 NEW: Emit signature in event
             timestamp: clock::timestamp_ms(clock),
         });
     }
 
-    // 🔥 ENHANCED: Standard update (backward compatible)
+    // Standard update (backward compatible)
     public entry fun update_base_value(
         _: &AdminCap,
         platform: &mut Platform,
@@ -623,14 +635,15 @@ module valor::valor {
             minutes_played,
             clean_sheets,
             walrus_blob_id,
-            vector::empty(), // empty signature
-            vector::empty(), // empty public key
-            false, // not Nautilus verified
+            vector::empty(),
+            vector::empty(),
+            string::utf8(b""), // Empty signature
+            false,
             clock
         )
     }
 
-    // 🔥 NEW: Update with Nautilus attestation
+    // 🔥 ENHANCED: Update with Nautilus attestation
     public entry fun update_base_value_verified(
         _: &AdminCap,
         platform: &mut Platform,
@@ -646,6 +659,7 @@ module valor::valor {
         walrus_blob_id: vector<u8>,
         nautilus_signature: vector<u8>,
         nautilus_public_key: vector<u8>,
+        nautilus_signature_hex: vector<u8>, // 🔥 NEW: Signature as hex string
         clock: &Clock,
         _ctx: &mut TxContext
     ) {
@@ -663,7 +677,8 @@ module valor::valor {
             walrus_blob_id,
             nautilus_signature,
             nautilus_public_key,
-            true, // Nautilus verified
+            string::utf8(nautilus_signature_hex),
+            true,
             clock
         )
     }
@@ -683,6 +698,7 @@ module valor::valor {
         walrus_blob_id: vector<u8>,
         nautilus_signature: vector<u8>,
         nautilus_public_key: vector<u8>,
+        nautilus_signature_hex: String,
         nautilus_verified: bool,
         clock: &Clock
     ) {
@@ -704,18 +720,25 @@ module valor::valor {
         let player = table::borrow_mut(&mut platform.players, player_id);
         assert!(player.active, EUnauthorized);
 
+        // 🔥 NEW: Store season-specific signature
         if (season == SEASON_MID) {
             player.mid_season_base_value = new_base_value;
             player.mid_season_walrus_blob_id = blob_id_string;
+            if (nautilus_verified) {
+                player.mid_season_nautilus_signature = nautilus_signature_hex;
+            };
         } else if (season == SEASON_CURRENT) {
             player.current_season_base_value = new_base_value;
             player.current_season_walrus_blob_id = blob_id_string;
+            if (nautilus_verified) {
+                player.current_season_nautilus_signature = nautilus_signature_hex;
+            };
         };
 
         player.base_value = new_base_value;
         player.walrus_blob_id = blob_id_string;
 
-        // 🔥 NEW: Update Nautilus attestation
+        // Update legacy fields
         if (nautilus_verified) {
             player.nautilus_signature = nautilus_signature;
             player.nautilus_public_key = nautilus_public_key;
@@ -783,7 +806,7 @@ module valor::valor {
             clean_sheets,
             walrus_blob_id: blob_id_string,
             base_value: new_base_value,
-            nautilus_verified, // 🔥 NEW
+            nautilus_verified,
         };
 
         if (vector::length(&player.performance_history) >= MAX_HISTORY_RECORDS) {
@@ -805,13 +828,14 @@ module valor::valor {
             assists,
             rating,
             walrus_blob_id: blob_id_string,
-            nautilus_verified, // 🔥 NEW
+            nautilus_verified,
+            nautilus_signature: nautilus_signature_hex, // 🔥 NEW: Emit signature in event
             timestamp: current_time,
         });
     }
 
-    // ... (Keep ALL your existing trading functions - buy_shares, sell_shares, etc.)
-    // I'll include them for completeness but they don't change
+    // ... (Keep ALL trading functions exactly as they were - buy_shares, sell_shares, transfer_shares, split_shares, merge_shares)
+    // They don't need any changes
 
     public entry fun buy_shares(
         platform: &mut Platform,
@@ -1113,7 +1137,7 @@ module valor::valor {
         object::delete(id);
     }
 
-    // ... (Keep all your existing getter functions)
+    // ... (Keep all existing getter functions)
     public fun get_market_price(platform: &Platform, player_id: ID): u64 {
         let player = table::borrow(&platform.players, player_id);
         calculate_market_price(
@@ -1323,7 +1347,7 @@ module valor::valor {
         player.current_season_walrus_blob_id
     }
 
-    // 🔥 NEW: Nautilus attestation getter functions
+    // Nautilus attestation getters (existing)
     public fun is_nautilus_verified(platform: &Platform, player_id: ID): bool {
         let player = table::borrow(&platform.players, player_id);
         player.nautilus_verified
@@ -1344,7 +1368,6 @@ module valor::valor {
         player.nautilus_timestamp
     }
 
-    // 🔥 NEW: Get full attestation data in one call
     public fun get_nautilus_attestation(
         platform: &Platform, 
         player_id: ID
@@ -1356,5 +1379,59 @@ module valor::valor {
             player.nautilus_public_key,
             player.nautilus_timestamp
         )
+    }
+
+    // 🔥 NEW: Season-specific Nautilus signature getters
+    public fun get_early_season_nautilus_signature(
+        platform: &Platform,
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.early_season_nautilus_signature
+    }
+
+    public fun get_mid_season_nautilus_signature(
+        platform: &Platform,
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.mid_season_nautilus_signature
+    }
+
+    public fun get_current_season_nautilus_signature(
+        platform: &Platform,
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.current_season_nautilus_signature
+    }
+
+    // 🔥 NEW: Get all season data including signatures
+    public fun get_season_data(
+        platform: &Platform,
+        player_id: ID,
+        season: u8
+    ): (u64, String, String) {
+        let player = table::borrow(&platform.players, player_id);
+        
+        if (season == SEASON_EARLY) {
+            (
+                player.early_season_base_value,
+                player.early_season_walrus_blob_id,
+                player.early_season_nautilus_signature
+            )
+        } else if (season == SEASON_MID) {
+            (
+                player.mid_season_base_value,
+                player.mid_season_walrus_blob_id,
+                player.mid_season_nautilus_signature
+            )
+        } else {
+            (
+                player.current_season_base_value,
+                player.current_season_walrus_blob_id,
+                player.current_season_nautilus_signature
+            )
+        }
     }
 }
