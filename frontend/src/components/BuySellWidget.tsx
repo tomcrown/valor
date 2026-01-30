@@ -18,9 +18,7 @@ import {
   useCurrentWallet,
 } from "@mysten/dapp-kit";
 import { toast } from "@/hooks/use-toast";
-import { usePoints } from "@/context/PointsContext";
 import { PULSE_POINTS_CONFIG } from "@/config/pulse-points.config";
-import { useUserPoints } from "@/hooks/useUserPoints";
 
 interface BuySellWidgetProps {
   playerId: string;
@@ -41,15 +39,6 @@ const BuySellWidget = ({
   const { currentWallet } = useCurrentWallet();
   const [mode, setMode] = useState<"buy" | "sell">("buy");
   const [quantity, setQuantity] = useState(1);
-
-  // ✅ Get both the local hook and the context (same as voting)
-  const {
-    pointsData: localPointsData,
-    optimisticAddPoints: localAddPoints
-  } = useUserPoints();
-  const {
-    optimisticAddPoints: contextAddPoints
-  } = usePoints();
 
   const {
     buyShares,
@@ -96,11 +85,9 @@ const BuySellWidget = ({
     });
 
     if (result?.success) {
-      // ✅ Update BOTH local state and context (just like we did for voting)
-      const pointsToAdd = quantity * PULSE_POINTS_CONFIG.nftSharePoints; // Points per share purchased
-
-      localAddPoints(pointsToAdd);
-      contextAddPoints(pointsToAdd);
+      // ✅ Calculate points for callback, but DON'T add optimistically
+      // The auto-refresh in useUserPoints will detect the on-chain change
+      const pointsToAdd = quantity * PULSE_POINTS_CONFIG.nftSharePoints;
 
       setQuantity(1);
 
