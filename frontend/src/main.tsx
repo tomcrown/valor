@@ -13,7 +13,7 @@ import "@mysten/dapp-kit/dist/index.css";
 import { TooltipProvider } from "./components/ui/tooltip.tsx";
 import { useEffect } from "react";
 import { isEnokiNetwork, registerEnokiWallets } from "@mysten/enoki";
-import { ThemeProvider } from "./components/ThemeProvider.tsx";
+// import { ThemeProvider } from "./components/ThemeProvider.tsx";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +51,6 @@ function RegisterEnokiWallets() {
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
-
     <SuiClientProvider networks={networks} defaultNetwork="testnet">
       <RegisterEnokiWallets />
       <WalletProvider autoConnect>
@@ -64,7 +63,5 @@ createRoot(document.getElementById("root")!).render(
         </TooltipProvider>
       </WalletProvider>
     </SuiClientProvider>
-
-
-  </QueryClientProvider>
+  </QueryClientProvider>,
 );
