@@ -33,7 +33,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { isEnokiWallet } from "@mysten/enoki";
 import { easeOutExpo } from "./ui/motion";
-// import { ThemeToggle } from "./ThemeToggle";
+import { ThemeToggle } from "./ThemeToggle";
 import { PointsBadge } from "@/components/PointsBadge";
 import { Trophy } from "lucide-react";
 import { AddressDisplay } from "@/components/AddressDisplay";
@@ -193,10 +193,7 @@ const Navbar = () => {
                       <ChevronDown className="w-4 h-4 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="w-56 bg-background"
-                  >
+                  <DropdownMenuContent align="end" className="w-56 bg-background">
                     <div className="px-2 py-1.5">
                       <p className="text-sm font-medium">
                         {isEnoki ? "zkLogin Account" : "Connected Wallet"}
@@ -245,12 +242,12 @@ const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              {/* <ThemeToggle /> */}
+              <ThemeToggle />
             </div>
 
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center gap-2">
-              {/* <ThemeToggle /> */}
+              <ThemeToggle />
 
               <button className="p-2" onClick={() => setIsOpen(!isOpen)}>
                 {isOpen ? (
