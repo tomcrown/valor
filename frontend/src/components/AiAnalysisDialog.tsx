@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-// import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
+import { AIAnalysisPanel } from "@/components/AiAnalysisPanel";
 import { useAutoAIAnalysis } from "@/hooks/useAutoAIAnalysis";
 import type { Player, SeasonPeriod } from "@/data/apiData";
 
@@ -139,7 +139,7 @@ export function AIAnalysisDialog({
             {/* Analysis Result */}
             {analysis && (
               <div className="space-y-6">
-                {/* <AIAnalysisPanel analysis={analysis} playerName={player.name} /> */}
+                <AIAnalysisPanel analysis={analysis} playerName={player.name} />
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 justify-center pt-4">
