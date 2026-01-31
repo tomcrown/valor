@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -8,10 +9,16 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AIAnalysisDialog } from "@/components/AiAnalysisDialog";
-import { useAutoAIAnalysis } from "@/hooks/useAutoAIAnalysis";
-import { getSeasonBaseValue } from "@/lib/suiDataFetcher";
+import {
+  getSeasonBaseValue,
+  getSeasonWalrusBlobId,
+} from "@/lib/suiDataFetcher";
+import {
+  downloadEncryptedAI,
+  validateEncryptedBlob,
+} from "@/lib/encryptAIAnalysis";
 import type { Player, SeasonPeriod } from "@/data/apiData";
+import type { EncryptedAIBlob } from "@/lib/sealClient";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
 interface PlayerCardProps {
@@ -21,29 +28,62 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
-  const { analysis: aiAnalysis, isAnalyzing } = useAutoAIAnalysis({
-    player,
-    selectedSeason,
-    autoRun: true,
-  });
-
   const account = useCurrentAccount();
   const isLoggedIn = !!account;
 
+  const [encryptedAIBlob, setEncryptedAIBlob] =
+    useState<EncryptedAIBlob | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+
   const seasonStats = player.seasonalStats[selectedSeason];
   const displayPrice = getSeasonBaseValue(player as any, selectedSeason);
-  const displayAiScore = aiAnalysis?.performance_score ?? player.aiScore;
-  const displayTrend = aiAnalysis?.performance_trend
-    ? aiAnalysis.performance_trend === "improving"
+
+  useEffect(() => {
+    const loadEncryptedAI = async () => {
+      const seasonBlobId = getSeasonWalrusBlobId(player as any, selectedSeason);
+
+      if (!seasonBlobId) {
+        setEncryptedAIBlob(null);
+        return;
+      }
+
+      setIsLoadingAI(true);
+
+      try {
+        const blob = await downloadEncryptedAI(seasonBlobId, {
+          maxRetries: 3,
+          silent: true,
+        });
+
+        if (blob && validateEncryptedBlob(blob)) {
+          setEncryptedAIBlob(blob);
+        } else {
+          setEncryptedAIBlob(null);
+        }
+      } catch (error) {
+        setEncryptedAIBlob(null);
+      } finally {
+        setIsLoadingAI(false);
+      }
+    };
+
+    loadEncryptedAI();
+  }, [player, selectedSeason]);
+
+  const displayAiScore =
+    encryptedAIBlob?.public_data?.performance_score ?? player.aiScore;
+
+  const displayTrend = encryptedAIBlob?.public_data?.performance_trend
+    ? encryptedAIBlob.public_data.performance_trend === "improving"
       ? "up"
-      : aiAnalysis.performance_trend === "declining"
-      ? "down"
-      : "stable"
+      : encryptedAIBlob.public_data.performance_trend === "declining"
+        ? "down"
+        : "stable"
     : player.weeklyChange > 5
-    ? "up"
-    : player.weeklyChange < -5
-    ? "down"
-    : "stable";
+      ? "up"
+      : player.weeklyChange < -5
+        ? "down"
+        : "stable";
 
   const isPositive = player.weeklyChange >= 0;
 
@@ -104,32 +144,32 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
           <div
             className={cn(
               "absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm border transition-all",
-              aiAnalysis
+              encryptedAIBlob
                 ? "bg-black/80 border-accent"
-                : isAnalyzing
-                ? "bg-card/80 border-primary/50 animate-pulse"
-                : "bg-card/80 border-border/50"
+                : isLoadingAI
+                  ? "bg-card/80 border-primary/50 animate-pulse"
+                  : "bg-card/80 border-border/50",
             )}
           >
-            {isAnalyzing ? (
+            {isLoadingAI ? (
               <Sparkles className="w-3.5 h-3.5 text-accent animate-spin" />
             ) : (
               <Zap
                 className={cn(
                   "w-3.5 h-3.5",
-                  aiAnalysis ? "text-white" : "text-warning"
+                  encryptedAIBlob ? "text-white" : "text-warning",
                 )}
               />
             )}
             <span
               className={cn(
                 "text-xs font-semibold",
-                aiAnalysis ? "text-white" : ""
+                encryptedAIBlob ? "text-white" : "",
               )}
             >
               {displayAiScore}
             </span>
-            {aiAnalysis && (
+            {encryptedAIBlob && (
               <span className="text-[10px] text-white/80 ml-0.5">AI</span>
             )}
           </div>
@@ -146,12 +186,12 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
             <div
               className={cn(
                 "absolute bottom-3 left-3 z-20 flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-sm border text-xs font-semibold transition-all",
-                getTrendColor()
+                getTrendColor(),
               )}
             >
               {getTrendIcon()}
               <span className="uppercase text-[10px]">
-                {aiAnalysis ? "FORM" : "TREND"}
+                {encryptedAIBlob ? "FORM" : "TREND"}
               </span>
             </div>
           )}
@@ -167,8 +207,7 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
           </div>
 
           {/* Season Stats */}
-
-          <div className="flex items-center  mb-4">
+          <div className="flex items-center mb-4">
             <div className="mb-4 max-w-full">
               <p className="text-xs text-muted-foreground mb-0.5">
                 {selectedSeason === "current"

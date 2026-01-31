@@ -188,7 +188,7 @@ export function ValorAIAssistant() {
   };
 
   return (
-    <div className="fixed bottom-10 right-10 z-50">
+    <div className="fixed bottom-10 right-10 z-50 ">
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -227,7 +227,7 @@ export function ValorAIAssistant() {
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-[380px] h-[600px] p-0 mr-4 mb-2"
+          className="w-[380px] h-[560px] p-0 mr-4 mb-2"
           align="end"
           side="top"
         >
@@ -249,7 +249,7 @@ export function ValorAIAssistant() {
             </div>
           </div>
 
-          <ScrollArea className="h-[500px] bg-white">
+          <ScrollArea className="h-[500px] bg-background">
             {currentAnswer ? (
               <div className="p-6">
                 <Button onClick={handleBack} className="mb-4">

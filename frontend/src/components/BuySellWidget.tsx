@@ -5,9 +5,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Loader2,
-  Wallet,
   Package,
-  Chrome,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,14 +18,14 @@ import {
   useCurrentWallet,
 } from "@mysten/dapp-kit";
 import { toast } from "@/hooks/use-toast";
-import { isEnokiWallet } from "@mysten/enoki";
+import { PULSE_POINTS_CONFIG } from "@/config/pulse-points.config";
 
 interface BuySellWidgetProps {
   playerId: string;
   onChainPlayerId?: string;
   playerName: string;
   currentPrice: number;
-  onTransactionComplete?: () => void;
+  onTransactionComplete: (pointsEarned: number) => void;
 }
 
 const BuySellWidget = ({
@@ -41,6 +39,7 @@ const BuySellWidget = ({
   const { currentWallet } = useCurrentWallet();
   const [mode, setMode] = useState<"buy" | "sell">("buy");
   const [quantity, setQuantity] = useState(1);
+
   const {
     buyShares,
     sellShares,
@@ -86,11 +85,13 @@ const BuySellWidget = ({
     });
 
     if (result?.success) {
+      const pointsToAdd = quantity * PULSE_POINTS_CONFIG.nftSharePoints;
+
       setQuantity(1);
 
       setTimeout(() => {
         refetchShares();
-        onTransactionComplete?.();
+        onTransactionComplete?.(pointsToAdd);
       }, 2000);
     }
   };
@@ -114,7 +115,7 @@ const BuySellWidget = ({
 
       const sharesToSellFromThisObject = Math.min(
         remainingToSell,
-        shareObj.shares
+        shareObj.shares,
       );
 
       sellOperations.push({
@@ -136,7 +137,7 @@ const BuySellWidget = ({
 
       setTimeout(() => {
         refetchShares();
-        onTransactionComplete?.();
+        onTransactionComplete?.(0);
       }, 2000);
     }
   };
@@ -163,7 +164,7 @@ const BuySellWidget = ({
             "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all",
             mode === "buy"
               ? "bg-green-500 text-white shadow-lg"
-              : "text-gray-500 hover:text-foreground"
+              : "text-gray-500 hover:text-foreground",
           )}
         >
           <ArrowUpRight className="w-4 h-4" />
@@ -175,7 +176,7 @@ const BuySellWidget = ({
             "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all",
             mode === "sell"
               ? "bg-red-400 text-white shadow-lg"
-              : "text-gray-500 hover:text-foreground"
+              : "text-gray-500 hover:text-foreground",
           )}
         >
           <ArrowDownRight className="w-4 h-4" />
@@ -290,7 +291,7 @@ const BuySellWidget = ({
                 "w-full py-6 text-lg font-semibold transition-all",
                 mode === "buy"
                   ? "bg-green-500 hover:bg-green/90 text-white"
-                  : "bg-red-400 hover:bg-red/90 text-white"
+                  : "bg-red-400 hover:bg-red/90 text-white",
               )}
             >
               {isProcessing ? (

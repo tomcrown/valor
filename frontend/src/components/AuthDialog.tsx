@@ -58,7 +58,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md bg-white">
+      <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-lg border border-border/50">
         <DialogHeader>
           <div className="flex items-center justify-center mb-4">
             <div className="w-16 h-16 rounded-2xl  flex items-center justify-center">
@@ -69,7 +69,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
           <DialogTitle className="text-center text-2xl font-bold">
             Welcome to VALOR
           </DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground">
+          <DialogDescription className="text-center">
             Choose your preferred login method to start trading
           </DialogDescription>
         </DialogHeader>
@@ -90,7 +90,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
                 <div className="relative py-2">
                   <div className="absolute inset-0 flex items-center"></div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">
+                    <span className="bg-card px-2 ">
                       Or
                     </span>
                   </div>
@@ -98,7 +98,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
 
                 <Button
                   onClick={() => setAuthMethod("wallet")}
-                  className="w-full h-12 btn-gradient text-primary-foreground font-semibold flex items-center justify-center gap-3"
+                  className="w-full h-12 btn-gradient  font-semibold flex items-center justify-center gap-3"
                 >
                   <Wallet className="w-5 h-5" />
                   Connect Sui Wallet
@@ -112,7 +112,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
                       <p className="text-sm font-medium mb-1">
                         No wallet? No problem!
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs ">
                         Use Google to create a Sui address instantly with
                         zkLogin - no seed phrases or extensions needed
                       </p>

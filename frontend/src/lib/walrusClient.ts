@@ -1,6 +1,6 @@
 import axios from "axios";
 import { SUI_CONFIG } from "../config/sui.config.ts";
-import type { AIAnalysis } from "./openai.ts";
+import type { AIAnalysis } from "./gemini.ts";
 import type { SeasonPeriod } from "@/data/apiData.ts";
 
 export interface WalrusUploadResponse {
@@ -72,10 +72,22 @@ export interface PlayerPerformanceBlob {
   uploaded_by: string;
 }
 
+/**
+ * Utility function to sleep for a specified duration
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export class WalrusClient {
   private publisherUrl: string;
   private aggregatorUrl: string;
   private epochs: number;
+
+  // Retry configuration
+  private maxRetries: number = 5;
+  private retryDelayMs: number = 2000; // Start with 2 seconds
+  private maxRetryDelayMs: number = 10000; // Max 10 seconds
 
   constructor() {
     this.publisherUrl = SUI_CONFIG.walrus.publisherUrl;
@@ -99,7 +111,7 @@ export class WalrusClient {
             epochs: this.epochs,
           },
           timeout: 30000,
-        }
+        },
       );
 
       const result = response.data as WalrusUploadResponse;
@@ -112,8 +124,12 @@ export class WalrusClient {
         throw new Error("No blob ID returned from Walrus");
       }
 
+      // Log status
       if (result.newlyCreated) {
-      } else if (result.alreadyCertified) return blobId;
+      } else if (result.alreadyCertified) {
+      }
+
+      return blobId;
     } catch (error: any) {
       if (error.response) {
       } else if (error.request) {
@@ -124,34 +140,97 @@ export class WalrusClient {
     }
   }
 
-  async downloadJSON<T = any>(blobId: string): Promise<T> {
-    try {
-      const response = await axios.get(`${this.aggregatorUrl}/v1/${blobId}`, {
-        timeout: 30000,
-        headers: {
-          Accept: "application/json",
-        },
-      });
+  async downloadJSON<T = any>(
+    blobId: string,
+    options?: {
+      maxRetries?: number;
+      retryDelayMs?: number;
+      silent?: boolean;
+    },
+  ): Promise<T> {
+    const maxRetries = options?.maxRetries ?? this.maxRetries;
+    const initialRetryDelay = options?.retryDelayMs ?? this.retryDelayMs;
+    const silent = options?.silent ?? false;
 
-      const dataSize = JSON.stringify(response.data).length;
+    let lastError: Error | null = null;
 
-      return response.data as T;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-      } else if (error.response) {
-      } else {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await axios.get(
+          `${this.aggregatorUrl}/v1/blobs/${blobId}`,
+          {
+            timeout: 30000,
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
+
+
+        if (attempt > 0 && !silent) {
+        }
+
+        return response.data as T;
+      } catch (error: any) {
+        lastError = error;
+
+        if (error.response?.status === 404 && attempt < maxRetries) {
+          const delay = Math.min(
+            initialRetryDelay * Math.pow(1.5, attempt),
+            this.maxRetryDelayMs,
+          );
+
+          if (!silent) {
+
+          }
+
+          await sleep(delay);
+          continue;
+        }
+
+        break;
+      }
+    }
+
+    if (lastError) {
+      if (
+        (lastError as any).response?.status === 404 &&
+        maxRetries > 0 &&
+        !silent
+      ) {
+
+
       }
 
-      throw new Error(`Walrus download failed: ${error.message}`);
+      throw new Error(`Walrus download failed: ${lastError.message}`);
     }
+
+    throw new Error("Walrus download failed: Unknown error");
   }
 
-  async verifyBlob(blobId: string): Promise<boolean> {
+  /**
+   * Check if a blob is available without throwing errors
+   */
+  async verifyBlob(
+    blobId: string,
+    waitForPropagation: boolean = false,
+  ): Promise<boolean> {
     try {
-      await axios.head(`${this.aggregatorUrl}/v1/${blobId}`, {
-        timeout: 10000,
-      });
-      return true;
+      if (waitForPropagation) {
+        // Use retry logic when checking availability
+        await this.downloadJSON(blobId, {
+          maxRetries: 3,
+          retryDelayMs: 1000,
+          silent: true,
+        });
+        return true;
+      } else {
+        // Quick check without retries
+        await axios.head(`${this.aggregatorUrl}/v1/blobs/${blobId}`, {
+          timeout: 10000,
+        });
+        return true;
+      }
     } catch (error) {
       return false;
     }
@@ -176,7 +255,7 @@ export class WalrusClient {
     },
     aiAnalysis: AIAnalysis,
     baseValueMist: number,
-    uploadedBy: string = "admin"
+    uploadedBy: string = "admin",
   ): Promise<string> {
     const seasonLabels = {
       early: "Early Season (Matches 1-3)",
@@ -228,13 +307,13 @@ export class WalrusClient {
   }
 
   async downloadPlayerPerformance(
-    blobId: string
+    blobId: string,
   ): Promise<PlayerPerformanceBlob> {
     return await this.downloadJSON<PlayerPerformanceBlob>(blobId);
   }
 
   getBlobUrl(blobId: string): string {
-    return `${this.aggregatorUrl}/v1/${blobId}`;
+    return `${this.aggregatorUrl}/v1/blobs/${blobId}`;
   }
 
   async verifyMultipleBlobs(blobIds: string[]): Promise<Map<string, boolean>> {
@@ -244,7 +323,7 @@ export class WalrusClient {
       blobIds.map(async (blobId) => {
         const exists = await this.verifyBlob(blobId);
         results.set(blobId, exists);
-      })
+      }),
     );
 
     return results;
@@ -252,9 +331,12 @@ export class WalrusClient {
 
   async getBlobInfo(blobId: string): Promise<any> {
     try {
-      const response = await axios.head(`${this.aggregatorUrl}/v1/${blobId}`, {
-        timeout: 10000,
-      });
+      const response = await axios.head(
+        `${this.aggregatorUrl}/v1/blobs/${blobId}`,
+        {
+          timeout: 10000,
+        },
+      );
 
       return {
         exists: true,
@@ -311,7 +393,7 @@ export async function uploadPulseVotes(
   playerId: string,
   playerName: string,
   votes: PulseVoteRecord[],
-  uploadedBy: string = "admin"
+  uploadedBy: string = "admin",
 ): Promise<string> {
   const yesVotes = votes.filter((v) => v.vote === "yes");
   const noVotes = votes.filter((v) => v.vote === "no");
@@ -340,7 +422,7 @@ export async function uploadPulseVotes(
 
     votes: votes.sort(
       (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
     ),
 
     verified: true,
@@ -353,7 +435,7 @@ export async function uploadPulseVotes(
 
 export async function downloadPulseVotes(
   walrusClient: WalrusClient,
-  blobId: string
+  blobId: string,
 ): Promise<PulseVoteBlob> {
   return await walrusClient.downloadJSON<PulseVoteBlob>(blobId);
 }
@@ -364,7 +446,7 @@ export async function initializePulseBlob(
   weekStart: string,
   weekEnd: string,
   playerId: string,
-  playerName: string
+  playerName: string,
 ): Promise<string> {
   return await uploadPulseVotes(
     walrusClient,
@@ -374,7 +456,7 @@ export async function initializePulseBlob(
     playerId,
     playerName,
     [],
-    "system"
+    "system",
   );
 }
 
@@ -386,7 +468,7 @@ export function shortenBlobId(blobId: string): string {
 }
 
 export function formatStorageDuration(epochs: number): string {
-  const days = epochs * 1; // Rough estimate: 1 epoch ≈ 1 day
+  const days = epochs * 1;
   if (days < 7) return `${days} days`;
   if (days < 30) return `${Math.floor(days / 7)} weeks`;
   return `${Math.floor(days / 30)} months`;

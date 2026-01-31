@@ -55,7 +55,6 @@ export function AIAnalysisButton({
 
       localStorage.setItem(storageKey, JSON.stringify(result));
 
-      console.log("AI KEY:", storageKey);
     } catch (err) {
     } finally {
       setIsAnalyzing(false);

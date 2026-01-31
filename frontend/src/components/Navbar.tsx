@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import {
   Menu,
@@ -31,11 +32,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import { isEnokiWallet } from "@mysten/enoki";
+import { easeOutExpo } from "./ui/motion";
+import { ThemeToggle } from "./ThemeToggle";
+import { PointsBadge } from "@/components/PointsBadge";
+import { Trophy } from "lucide-react";
+import { AddressDisplay } from "@/components/AddressDisplay";
+import { useSuiNSName } from "@/hooks/useSuiNsName";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/players", label: "Players" },
   { href: "/pulse", label: "Pulse", icon: Activity, highlight: true },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/portfolio", label: "Portfolio" },
 ];
 
@@ -50,6 +58,10 @@ const Navbar = () => {
   const { currentWallet } = useCurrentWallet();
 
   const isEnoki = currentWallet && isEnokiWallet(currentWallet);
+
+  const { name: suinsName, isLoading: isLoadingSuiNS } = useSuiNSName(
+    currentAccount?.address,
+  );
 
   const handleLogout = () => {
     disconnect();
@@ -80,20 +92,40 @@ const Navbar = () => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
+  const getDisplayName = () => {
+    if (!currentAccount?.address) return "";
+    if (isLoadingSuiNS) return formatAddress(currentAccount.address);
+    return suinsName || formatAddress(currentAccount.address);
+  };
+
   return (
     <>
-      <nav className="sticky top-0 z-50 glass-card border-b border-border/50 backdrop-blur-xl">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: easeOutExpo }}
+        className={cn(
+          "md:fixed top-0 left-0 right-0 z-50 transition-colors duration-300",
+          isOpen ? "backdrop-blur-xl border-border" : "bg-transparent",
+        )}
+      >
+        <div className="mx-auto max-w-[1480px] px-6 py-3 transition-colors">
+          <div className="md:bg-background rounded-full flex items-center justify-between px-6 py-3 ">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 rounded-xl from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
-                <img className="w-8 h-8 " src="/valor.png" alt="VALOR" />
-              </div>
-              <span className="font-bold md:text-4xl text-2xl sm:block">
-                <h1 className="text-foreground">VALOR</h1>
-              </span>
-            </Link>
+            <motion.div
+              className="flex items-center gap-2"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Link to="/" className="flex items-center gap-2 group">
+                <div className="w-10 h-10 rounded-xl from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <img className="w-8 h-8 " src="/valor.png" alt="VALOR" />
+                </div>
+                <span className="font-bold md:text-4xl text-2xl sm:block">
+                  <h1 className="text-dark">VALOR</h1>
+                </span>
+              </Link>
+            </motion.div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
@@ -104,7 +136,8 @@ const Navbar = () => {
                   className={cn(
                     "nav-link text-sm font-medium py-2 flex items-center gap-1.5",
                     location.pathname === link.href && "nav-link-active",
-                    link.highlight && "relative"
+
+                    link.highlight && "relative",
                   )}
                 >
                   {link.icon && <link.icon className="w-4 h-4" />}
@@ -115,23 +148,24 @@ const Navbar = () => {
                 </Link>
               ))}
             </div>
-
             {/* Auth Section */}
             <div className="hidden md:flex items-center gap-4">
+              {currentAccount && <PointsBadge variant="icon" />}
+
               {/* Faucet Button */}
               <a
                 href="https://faucet.testnet.sui.io"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-2 rounded-2xl  text-black font-medium transition-colors"
+                className="flex items-center gap-1 px-3 py-2 rounded-2xl font-medium transition-colors"
                 title="Get Test SUI from Faucet"
               >
-                <Droplet className="w-4 h-4 text-black" /> Faucet
+                <Droplet className="w-4 h-4" /> Faucet
               </a>
               {!currentAccount ? (
                 <Button
                   onClick={() => setIsAuthOpen(true)}
-                  className="btn-gradient text-primary-foreground font-semibold px-6"
+                  className="btn-gradient font-semibold px-6"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
                   Log In
@@ -147,27 +181,28 @@ const Navbar = () => {
                         {isEnoki ? (
                           <>
                             <Chrome className="w-4 h-4 text-blue-500" />
-                            <span className="font-mono text-sm">
-                              {formatAddress(currentAccount.address)}
-                            </span>
+                            <span className="text-sm">{getDisplayName()}</span>
                           </>
                         ) : (
                           <>
                             <Wallet className="w-4 h-4" />
-                            <span className="font-mono text-sm">
-                              {formatAddress(currentAccount.address)}
-                            </span>
+                            <span className="text-sm">{getDisplayName()}</span>
                           </>
                         )}
                       </div>
                       <ChevronDown className="w-4 h-4 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white">
+                  <DropdownMenuContent align="end" className="w-56 bg-background">
                     <div className="px-2 py-1.5">
                       <p className="text-sm font-medium">
                         {isEnoki ? "zkLogin Account" : "Connected Wallet"}
                       </p>
+                      {suinsName && (
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {suinsName}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground font-mono">
                         {formatAddress(currentAccount.address)}
                       </p>
@@ -207,34 +242,36 @@ const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+              <ThemeToggle />
             </div>
 
             {/* Mobile Menu Button */}
-            <button
-              className="md:hidden p-2 text-foreground"
-              onClick={() => setIsOpen(!isOpen)}
-            >
-              {isOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
+            <div className="md:hidden flex items-center gap-2">
+              <ThemeToggle />
+
+              <button className="p-2" onClick={() => setIsOpen(!isOpen)}>
+                {isOpen ? (
+                  <X className="w-8 h-8" />
+                ) : (
+                  <Menu className="w-8 h-8" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Mobile Navigation */}
           {isOpen && (
-            <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
+            <div className="md:hidden backdrop-blur-2xl py-4 border-t border-border animate-fade-in">
               <div className="flex flex-col gap-4">
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
                     to={link.href}
                     className={cn(
-                      "text-sm font-medium py-2 px-4 rounded-2xl transition-colors flex items-center gap-2",
+                      " text-sm font-medium py-2 px-4 rounded-2xl transition-colors flex items-center gap-2",
                       location.pathname === link.href
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        ? "text-primary "
+                        : " hover:bg-muted/50",
                     )}
                     onClick={() => setIsOpen(false)}
                   >
@@ -251,10 +288,16 @@ const Navbar = () => {
                   href="https://faucet.testnet.sui.io"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-2xl btn-gradientmr-2 text-black font-medium"
+                  className="flex items-center gap-2 px-4 py-2 rounded-2xl btn-gradientmr-2 font-medium"
                 >
                   <Droplet className="w-4 h-4" /> Faucet
                 </a>
+
+                {currentAccount && (
+                  <div className="mb-4">
+                    <PointsBadge variant="compact" />
+                  </div>
+                )}
 
                 {!currentAccount ? (
                   <Button
@@ -273,6 +316,9 @@ const Navbar = () => {
                       <p className="text-xs text-muted-foreground mb-1">
                         {isEnoki ? "zkLogin" : "Wallet"} Account
                       </p>
+                      {suinsName && (
+                        <p className="text-sm font-medium mb-1">{suinsName}</p>
+                      )}
                       <p className="text-xs font-mono">
                         {formatAddress(currentAccount.address)}
                       </p>
@@ -308,7 +354,7 @@ const Navbar = () => {
             </div>
           )}
         </div>
-      </nav>
+      </motion.header>
 
       <AuthDialog isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </>

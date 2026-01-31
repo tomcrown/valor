@@ -8,6 +8,9 @@ import { Transaction } from "@mysten/sui/transactions";
 import { SUI_CONFIG, suiToMist } from "@/config/sui.config";
 import { toast } from "@/hooks/use-toast";
 import { isEnokiWallet } from "@mysten/enoki";
+import { usePointsOperations } from "@/hooks/usePointsOperations";
+import { useUserPoints } from "@/hooks/useUserPoints";
+import { usePoints } from "@/context/PointsContext";
 
 export interface BuySharesParams {
   playerId: string;
@@ -28,6 +31,8 @@ export interface SellSharesParams {
 export function useBuySellShares() {
   const currentAccount = useCurrentAccount();
   const { currentWallet } = useCurrentWallet();
+  const { mintNFTPoints } = usePointsOperations();
+  const { pointsData } = usePoints();
   const { mutateAsync: signAndExecuteTransaction } =
     useSignAndExecuteTransaction();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -58,6 +63,7 @@ export function useBuySellShares() {
         target: `${SUI_CONFIG.contracts.packageId}::valor::buy_shares`,
         arguments: [
           tx.object(SUI_CONFIG.contracts.platformObjectId),
+          tx.object(SUI_CONFIG.contracts.nftRegistryObjectId),
           tx.pure.address(params.playerId),
           tx.pure.u64(params.shares),
           tx.pure.u64(suiToMist(params.maxPricePerShare)),
@@ -76,12 +82,19 @@ export function useBuySellShares() {
           transaction: tx,
         },
         {
-          onSuccess: (result) => {},
-          onError: (error) => {},
-        }
+          onSuccess: (result) => { },
+          onError: (error) => { },
+        },
       );
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      if (pointsData.balanceObjectId && params.shares > 0) {
+        try {
+          await mintNFTPoints(pointsData.balanceObjectId, params.shares);
+        } catch (error) {
+        }
+      }
 
       toast({
         title: "Purchase Successful! ",
@@ -149,7 +162,7 @@ export function useBuySellShares() {
     try {
       const totalShares = params.operations.reduce(
         (sum, op) => sum + op.amount,
-        0
+        0,
       );
 
       const tx = new Transaction();
@@ -159,6 +172,7 @@ export function useBuySellShares() {
           target: `${SUI_CONFIG.contracts.packageId}::valor::sell_shares`,
           arguments: [
             tx.object(SUI_CONFIG.contracts.platformObjectId),
+            tx.object(SUI_CONFIG.contracts.nftRegistryObjectId),
             tx.object(operation.objectId),
             tx.pure.u64(operation.amount),
             tx.pure.u64(suiToMist(params.minPricePerShare)),
@@ -177,9 +191,9 @@ export function useBuySellShares() {
           transaction: tx,
         },
         {
-          onSuccess: (result) => {},
-          onError: (error) => {},
-        }
+          onSuccess: (result) => { },
+          onError: (error) => { },
+        },
       );
 
       await new Promise((resolve) => setTimeout(resolve, 2000));

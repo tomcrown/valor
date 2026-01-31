@@ -1,14 +1,24 @@
+// Helper function to get env vars that works in both Vite and Node.js
+function getEnv(key: string, fallback: string = ""): string {
+  // In browser/Vite, use import.meta.env
+  if (typeof import.meta !== "undefined" && import.meta.env) {
+    return import.meta.env[key] ?? fallback;
+  }
+  // In Node.js, use process.env
+  return process.env[key] ?? fallback;
+}
+
 export const PULSE_CONFIG = {
   packageId:
-    import.meta.env.VITE_PULSE_PACKAGE_ID ||
-    "0x993a2cd3486801714c21a2f03bbe602e1ceed66dc482d8a63654b75a32ebaaab",
+    getEnv("VITE_PULSE_PACKAGE_ID") ||
+    "0xefa176c71da674b46125add13701be72e5550a9c54f9164f830c0cd2bcdfc743",
   moduleName: "pulse",
   platformObjectId:
-    import.meta.env.VITE_PULSE_PLATFORM_ID ||
-    "0x82448e088a6f648fac7ec48b7de0512df7d7b4b60d2108eab5633018f794cfc4",
+    getEnv("VITE_PULSE_PLATFORM_ID") ||
+    "0x280e1417bff0c58fc02a10ab5d573b2dd96bb74ee28655b084e3df20cf9f84ed",
   registryObjectId:
-    import.meta.env.VITE_PULSE_REGISTRY_ID ||
-    "0x4f2d0a475e48e8ca2f84d66f45b68e2b55a464f8601f19467158d2839e8bed52",
+    getEnv("VITE_PULSE_REGISTRY_ID") ||
+    "0xd276f7aded8c989d50f186f74dabfbc5c463690775270a36be4a7d9c800a7982",
 
   ui: {
     refreshIntervalSeconds: 30,
@@ -43,7 +53,7 @@ export function formatTimeRemaining(endTimeMs: number): string {
 
   const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
   const hours = Math.floor(
-    (remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)
+    (remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000),
   );
   const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
 

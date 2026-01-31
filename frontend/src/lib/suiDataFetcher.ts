@@ -8,6 +8,7 @@ interface SeasonContractData {
   baseValueSui: number;
   performanceScore: number;
   walrusBlobId: string;
+  nautilusSignature: string; // 🔥 NEW: Hardware attestation signature
 }
 
 const getPlayerDataQuery = graphql(`
@@ -32,6 +33,17 @@ interface OnChainPlayerData {
   early_season_base_value: string;
   mid_season_base_value: string;
   current_season_base_value: string;
+
+  // Walrus blob IDs for each season
+  early_season_walrus_blob_id: string;
+  mid_season_walrus_blob_id: string;
+  current_season_walrus_blob_id: string;
+
+  // 🔥 NEW: Nautilus signatures for each season
+  early_season_nautilus_signature: string;
+  mid_season_nautilus_signature: string;
+  current_season_nautilus_signature: string;
+
   total_shares: string;
   circulating_shares: string;
   performance_history: OnChainPerformanceRecord[];
@@ -40,6 +52,9 @@ interface OnChainPlayerData {
   lifetime_volume: string;
   all_time_high: string;
   all_time_low: string;
+
+  // Legacy fields
+  nautilus_verified: boolean;
 }
 
 interface OnChainPerformanceRecord {
@@ -52,6 +67,8 @@ interface OnChainPerformanceRecord {
   clean_sheets: string;
   walrus_blob_id: string;
   base_value: string;
+  season?: number | string;
+  season_period?: string;
 }
 
 let platformDataCache: any = null;
@@ -124,7 +141,7 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
     }
 
     const matchingField = fields.data.find(
-      (f) => String(f.name.value).toLowerCase() === playerName.toLowerCase()
+      (f) => String(f.name.value).toLowerCase() === playerName.toLowerCase(),
     );
 
     if (!matchingField) {
@@ -154,7 +171,7 @@ async function getPlayerObjectId(playerName: string): Promise<string | null> {
 }
 
 async function fetchPlayerContractData(
-  playerId: string
+  playerId: string,
 ): Promise<OnChainPlayerData | null> {
   try {
     const platformData = await fetchPlatformData();
@@ -206,52 +223,71 @@ async function fetchPlayerContractData(
   }
 }
 
+// 🔥 ENHANCED: Now reads Nautilus signatures for each season
 function extractSeasonalContractData(onChainData: OnChainPlayerData): {
   early: SeasonContractData;
   mid: SeasonContractData;
   current: SeasonContractData;
 } {
   const earlyBaseValueSui = mistToSui(
-    BigInt(onChainData.early_season_base_value || "0")
+    BigInt(onChainData.early_season_base_value || "0"),
   );
 
   const midBaseValueSui = mistToSui(
-    BigInt(onChainData.mid_season_base_value || "0")
+    BigInt(onChainData.mid_season_base_value || "0"),
   );
 
   const currentBaseValueSui = mistToSui(
     BigInt(
-      onChainData.current_season_base_value || onChainData.base_value || "0"
-    )
+      onChainData.current_season_base_value || onChainData.base_value || "0",
+    ),
   );
 
   const performanceHistory = onChainData.performance_history || [];
 
+  // Initialize scores
   let earlyScore = 0;
   let midScore = 0;
   let currentScore = 0;
-  let earlyBlobId = "";
-  let midBlobId = "";
-  let currentBlobId = onChainData.walrus_blob_id || "";
+
+  // Read blob IDs directly from dedicated fields
+  const earlyBlobId = onChainData.early_season_walrus_blob_id || "";
+  const midBlobId = onChainData.mid_season_walrus_blob_id || "";
+  const currentBlobId =
+    onChainData.current_season_walrus_blob_id ||
+    onChainData.walrus_blob_id ||
+    "";
+
+  // 🔥 NEW: Read Nautilus signatures directly from dedicated fields
+  const earlySignature = onChainData.early_season_nautilus_signature || "";
+  const midSignature = onChainData.mid_season_nautilus_signature || "";
+  const currentSignature = onChainData.current_season_nautilus_signature || "";
+
+  // Match performance records to get scores
+  const earlyBaseValueMist = BigInt(onChainData.early_season_base_value || "0");
+  const midBaseValueMist = BigInt(onChainData.mid_season_base_value || "0");
+  const currentBaseValueMist = BigInt(
+    onChainData.current_season_base_value || onChainData.base_value || "0",
+  );
 
   if (performanceHistory.length > 0) {
-    if (performanceHistory[0]) {
-      earlyScore = Math.round(Number(performanceHistory[0].score || 0) / 10);
-      earlyBlobId = performanceHistory[0].walrus_blob_id || "";
-    }
+    for (const record of performanceHistory) {
+      const recordBaseValue = BigInt(record.base_value || "0");
+      const score = Number(record.score || 0);
 
-    const midIndex = Math.floor(performanceHistory.length / 2);
-    if (performanceHistory[midIndex]) {
-      midScore = Math.round(
-        Number(performanceHistory[midIndex].score || 0) / 10
-      );
-      midBlobId = performanceHistory[midIndex].walrus_blob_id || "";
-    }
-
-    const latestRecord = performanceHistory[performanceHistory.length - 1];
-    if (latestRecord) {
-      currentScore = Math.round(Number(latestRecord.score || 0) / 10);
-      currentBlobId = latestRecord.walrus_blob_id || currentBlobId;
+      if (recordBaseValue === earlyBaseValueMist && earlyBaseValueMist > 0n) {
+        earlyScore = score;
+      } else if (
+        recordBaseValue === midBaseValueMist &&
+        midBaseValueMist > 0n
+      ) {
+        midScore = score;
+      } else if (
+        recordBaseValue === currentBaseValueMist &&
+        currentBaseValueMist > 0n
+      ) {
+        currentScore = score;
+      }
     }
   }
 
@@ -260,22 +296,25 @@ function extractSeasonalContractData(onChainData: OnChainPlayerData): {
       baseValueSui: earlyBaseValueSui,
       performanceScore: earlyScore,
       walrusBlobId: earlyBlobId,
+      nautilusSignature: earlySignature,
     },
     mid: {
-      baseValueSui: midBaseValueSui || earlyBaseValueSui,
-      performanceScore: midScore || earlyScore,
-      walrusBlobId: midBlobId || earlyBlobId,
+      baseValueSui: midBaseValueSui,
+      performanceScore: midScore,
+      walrusBlobId: midBlobId,
+      nautilusSignature: midSignature,
     },
     current: {
-      baseValueSui: currentBaseValueSui || earlyBaseValueSui,
-      performanceScore: currentScore || midScore || earlyScore,
+      baseValueSui: currentBaseValueSui,
+      performanceScore: currentScore,
       walrusBlobId: currentBlobId,
+      nautilusSignature: currentSignature,
     },
   };
 }
 
 function generateValueHistory(
-  baseValue: number
+  baseValue: number,
 ): { date: string; value: number }[] {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const history = [];
@@ -293,7 +332,7 @@ function generateValueHistory(
 }
 
 function calculateWeeklyChange(
-  valueHistory: { date: string; value: number }[]
+  valueHistory: { date: string; value: number }[],
 ): number {
   if (valueHistory.length < 2) return 0;
 
@@ -304,7 +343,7 @@ function calculateWeeklyChange(
 }
 
 export async function enrichPlayerWithContractData(
-  footballPlayer: FootballPlayerData
+  footballPlayer: FootballPlayerData,
 ): Promise<
   Player & {
     onChainSeasonData?: any;
@@ -384,7 +423,7 @@ export async function enrichAllPlayersWithContractData(): Promise<
   })[]
 > {
   const enrichedPlayers = await Promise.allSettled(
-    FOOTBALL_PLAYERS.map((player) => enrichPlayerWithContractData(player))
+    FOOTBALL_PLAYERS.map((player) => enrichPlayerWithContractData(player)),
   );
 
   return enrichedPlayers.map((result, index) => {
@@ -408,7 +447,7 @@ export async function enrichAllPlayersWithContractData(): Promise<
 
 export function getSeasonBaseValue(
   player: Player & { onChainSeasonData?: any },
-  season: SeasonPeriod
+  season: SeasonPeriod,
 ): number {
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
     return player.onChainSeasonData[season].baseValueSui;
@@ -418,7 +457,7 @@ export function getSeasonBaseValue(
 }
 
 export function getCurrentSeasonBaseValue(
-  player: Player & { onChainSeasonData?: any }
+  player: Player & { onChainSeasonData?: any },
 ): number {
   if (player.onChainSeasonData && player.onChainSeasonData.current) {
     return player.onChainSeasonData.current.baseValueSui;
@@ -429,7 +468,7 @@ export function getCurrentSeasonBaseValue(
 
 export function getSeasonPerformanceScore(
   player: Player & { onChainSeasonData?: any },
-  season: SeasonPeriod
+  season: SeasonPeriod,
 ): number {
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
     return player.onChainSeasonData[season].performanceScore;
@@ -440,13 +479,41 @@ export function getSeasonPerformanceScore(
 
 export function getSeasonWalrusBlobId(
   player: Player & { onChainSeasonData?: any },
-  season: SeasonPeriod
+  season: SeasonPeriod,
 ): string {
   if (player.onChainSeasonData && player.onChainSeasonData[season]) {
-    return player.onChainSeasonData[season].walrusBlobId;
+    const blobId = player.onChainSeasonData[season].walrusBlobId;
+
+    if (!blobId) {
+      return "";
+    }
+
+    return blobId;
   }
 
-  return player.walrusProofId;
+  if (season === "current" && player.walrusProofId) {
+    return player.walrusProofId;
+  }
+
+  return "";
+}
+
+// 🔥 NEW: Get Nautilus signature for a specific season
+export function getSeasonNautilusSignature(
+  player: Player & { onChainSeasonData?: any },
+  season: SeasonPeriod,
+): string {
+  if (player.onChainSeasonData && player.onChainSeasonData[season]) {
+    const signature = player.onChainSeasonData[season].nautilusSignature;
+
+    if (!signature) {
+      return "";
+    }
+
+    return signature;
+  }
+
+  return "";
 }
 
 export async function getPlayerById(id: string): Promise<Player | undefined> {

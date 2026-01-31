@@ -78,7 +78,8 @@ const REGISTERED_PLAYERS = [
 const PulsePage = () => {
   const currentAccount = useCurrentAccount();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const { platformState, sentiments, isLoading, refetch } = usePulseData();
+  const { platformState, sentiments: remoteSentiments, isLoading, refetch } = usePulseData();
+  const [sentiments, setSentiments] = useState(remoteSentiments);
 
   useEffect(() => {
     if (platformState.active) {
@@ -86,6 +87,41 @@ const PulsePage = () => {
       return () => clearInterval(interval);
     }
   }, [platformState.active, refetch]);
+
+  useEffect(() => {
+    setSentiments(remoteSentiments);
+  }, [remoteSentiments]);
+
+
+  const handleVoteSuccess = (vote: "yes" | "no", sentimentId: string) => {
+    setSentiments(prev =>
+      prev.map(s => {
+        if (s.objectId !== sentimentId) return s;
+
+        const totalVotes = s.totalVotes + 1;
+
+        const yesVotes =
+          vote === "yes"
+            ? Math.round((s.yesPercentage / 100) * s.totalVotes) + 1
+            : Math.round((s.yesPercentage / 100) * s.totalVotes);
+
+        const noVotes = totalVotes - yesVotes;
+
+        return {
+          ...s,
+          totalVotes,
+          yesPercentage: Math.round((yesVotes / totalVotes) * 100),
+          noPercentage: Math.round((noVotes / totalVotes) * 100),
+          userHasVoted: true,
+          userVote: vote,
+        };
+      })
+    );
+
+    // Optional background sync
+    setTimeout(refetch, 1500);
+  };
+
 
   const activeVoters = sentiments.filter((s) => s.totalVotes > 0).length;
 
@@ -123,7 +159,7 @@ const PulsePage = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 md:mt-16">
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-3 gradient-text">
@@ -166,7 +202,7 @@ const PulsePage = () => {
         )}
 
         {/* Player Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {REGISTERED_PLAYERS.map((player) => {
             const sentiment =
               sentiments.find((s) => s.playerId === player.id) || null;
@@ -181,7 +217,7 @@ const PulsePage = () => {
                 sentiment={sentiment}
                 weekEndTime={platformState.weekEndTime}
                 isVotingActive={platformState.active}
-                onVoteSuccess={refetch}
+                onVoteSuccess={handleVoteSuccess}
               />
             );
           })}
@@ -208,7 +244,7 @@ const PulsePage = () => {
           <h3 className="font-bold mb-3">How Valor Pulse Works</h3>
           <div className="grid md:grid-cols-3 gap-6 text-sm text-muted-foreground">
             <div>
-              <p className="font-semibold text-foreground mb-2">
+              <p className="font-semibold  mb-2">
                 Weekly Predictions
               </p>
               <p>
@@ -217,7 +253,7 @@ const PulsePage = () => {
               </p>
             </div>
             <div>
-              <p className="font-semibold text-foreground mb-2">
+              <p className="font-semibold mb-2">
                 One Vote Per Player
               </p>
               <p>
@@ -226,7 +262,7 @@ const PulsePage = () => {
               </p>
             </div>
             <div>
-              <p className="font-semibold text-foreground mb-2">
+              <p className="font-semibold  mb-2">
                 Community Insights
               </p>
               <p>

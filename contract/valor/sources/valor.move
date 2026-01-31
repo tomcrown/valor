@@ -1,3 +1,4 @@
+
 #[allow(lint(public_entry), unused_const)]
 module valor::valor {
 
@@ -11,6 +12,7 @@ module valor::valor {
     use sui::url::{Self, Url};
     use sui::display;
     use sui::package;
+    use valor::valor_seal;
 
     const EInvalidPrice: u64 = 1;
     const EInsufficientShares: u64 = 2;
@@ -71,15 +73,30 @@ module valor::valor {
         team: String,
         position: String,
         image_url: String,
-        nft_image_url: String, 
-        base_value: u64, 
-        early_season_base_value: u64, 
-        mid_season_base_value: u64,   
-        current_season_base_value: u64, 
-        total_shares: u64,      
+        nft_image_url: String,
+        
+        base_value: u64,
+        early_season_base_value: u64,
+        mid_season_base_value: u64,
+        current_season_base_value: u64,
+        
+        early_season_walrus_blob_id: String,
+        mid_season_walrus_blob_id: String,
+        current_season_walrus_blob_id: String,
+        walrus_blob_id: String,
+        
+        early_season_nautilus_signature: String,
+        mid_season_nautilus_signature: String,
+        current_season_nautilus_signature: String,
+        
+        nautilus_signature: vector<u8>,
+        nautilus_public_key: vector<u8>,
+        nautilus_timestamp: u64,
+        nautilus_verified: bool,
+        
+        total_shares: u64,
         circulating_shares: u64,
         performance_history: vector<PerformanceRecord>,
-        walrus_blob_id: String,
         active: bool,
         lifetime_volume: u64,
         all_time_high: u64,
@@ -96,6 +113,7 @@ module valor::valor {
         clean_sheets: u64,    
         walrus_blob_id: String,
         base_value: u64,
+        nautilus_verified: bool,
     }
 
     public struct PlayerSharesNFT has key, store {
@@ -117,6 +135,9 @@ module valor::valor {
         nft_image_url: String,
         base_value: u64,
         total_shares: u64,
+        walrus_blob_id: String,
+        nautilus_verified: bool,
+        nautilus_signature: String,
         timestamp: u64,
     }
 
@@ -160,6 +181,8 @@ module valor::valor {
         assists: u64,
         rating: u64,
         walrus_blob_id: String,
+        nautilus_verified: bool,
+        nautilus_signature: String,
         timestamp: u64,
     }
 
@@ -426,6 +449,79 @@ module valor::valor {
         nft_image_url: vector<u8>,
         early_season_base_value: u64,
         total_shares: u64,
+        walrus_blob_id: vector<u8>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        register_player_internal(
+            platform,
+            name,
+            team,
+            position,
+            image_url,
+            nft_image_url,
+            early_season_base_value,
+            total_shares,
+            walrus_blob_id,
+            vector::empty(),
+            vector::empty(),
+            string::utf8(b""), 
+            false,
+            clock,
+            ctx
+        )
+    }
+
+    public entry fun register_player_verified(
+        _: &AdminCap,
+        platform: &mut Platform,
+        name: vector<u8>,
+        team: vector<u8>,
+        position: vector<u8>,
+        image_url: vector<u8>,
+        nft_image_url: vector<u8>,
+        early_season_base_value: u64,
+        total_shares: u64,
+        walrus_blob_id: vector<u8>,
+        nautilus_signature: vector<u8>,
+        nautilus_public_key: vector<u8>,
+        nautilus_signature_hex: vector<u8>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        register_player_internal(
+            platform,
+            name,
+            team,
+            position,
+            image_url,
+            nft_image_url,
+            early_season_base_value,
+            total_shares,
+            walrus_blob_id,
+            nautilus_signature,
+            nautilus_public_key,
+            string::utf8(nautilus_signature_hex),
+            true,
+            clock,
+            ctx
+        )
+    }
+
+    fun register_player_internal(
+        platform: &mut Platform,
+        name: vector<u8>,
+        team: vector<u8>,
+        position: vector<u8>,
+        image_url: vector<u8>,
+        nft_image_url: vector<u8>,
+        early_season_base_value: u64,
+        total_shares: u64,
+        walrus_blob_id: vector<u8>,
+        nautilus_signature: vector<u8>,
+        nautilus_public_key: vector<u8>,
+        nautilus_signature_hex: String,
+        nautilus_verified: bool,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -433,7 +529,9 @@ module valor::valor {
         assert!(early_season_base_value <= MAX_BASE_VALUE, EInvalidPrice);
         assert!(total_shares > 0, EInvalidShareAmount);
         assert!(total_shares <= 1000000000, EInvalidShareAmount);
+        assert!(vector::length(&walrus_blob_id) > 0, EInvalidBlobId);
 
+        let blob_id_string = string::utf8(walrus_blob_id);
         let player_name = string::utf8(name);
         assert!(!table::contains(&platform.player_names, player_name), EPlayerAlreadyExists);
 
@@ -450,14 +548,29 @@ module valor::valor {
             position: string::utf8(position),
             image_url: string::utf8(image_url),
             nft_image_url: nft_url_string,
+            
             base_value: early_season_base_value,
             early_season_base_value,
             mid_season_base_value: 0,
             current_season_base_value: 0,
+            
+            early_season_walrus_blob_id: blob_id_string,
+            mid_season_walrus_blob_id: string::utf8(b""),
+            current_season_walrus_blob_id: string::utf8(b""),
+            walrus_blob_id: blob_id_string,
+            
+            early_season_nautilus_signature: nautilus_signature_hex,
+            mid_season_nautilus_signature: string::utf8(b""),
+            current_season_nautilus_signature: string::utf8(b""),
+            
+            nautilus_signature,
+            nautilus_public_key,
+            nautilus_timestamp: clock::timestamp_ms(clock),
+            nautilus_verified,
+            
             total_shares,
             circulating_shares: 0,
             performance_history: vector::empty(),
-            walrus_blob_id: string::utf8(b""),
             active: true,
             lifetime_volume: 0,
             all_time_high: early_season_base_value,
@@ -477,6 +590,9 @@ module valor::valor {
             nft_image_url: nft_url_string,
             base_value: early_season_base_value,
             total_shares,
+            walrus_blob_id: blob_id_string,
+            nautilus_verified,
+            nautilus_signature: nautilus_signature_hex, 
             timestamp: clock::timestamp_ms(clock),
         });
     }
@@ -497,6 +613,83 @@ module valor::valor {
         clock: &Clock,
         _ctx: &mut TxContext
     ) {
+        update_base_value_internal(
+            platform,
+            player_id,
+            season,
+            new_base_value,
+            performance_score,
+            goals,
+            assists,
+            rating,
+            minutes_played,
+            clean_sheets,
+            walrus_blob_id,
+            vector::empty(),
+            vector::empty(),
+            string::utf8(b""),
+            false,
+            clock
+        )
+    }
+
+    public entry fun update_base_value_verified(
+        _: &AdminCap,
+        platform: &mut Platform,
+        player_id: ID,
+        season: u8,
+        new_base_value: u64,
+        performance_score: u64,
+        goals: u64,
+        assists: u64,
+        rating: u64,
+        minutes_played: u64,
+        clean_sheets: u64,
+        walrus_blob_id: vector<u8>,
+        nautilus_signature: vector<u8>,
+        nautilus_public_key: vector<u8>,
+        nautilus_signature_hex: vector<u8>,
+        clock: &Clock,
+        _ctx: &mut TxContext
+    ) {
+        update_base_value_internal(
+            platform,
+            player_id,
+            season,
+            new_base_value,
+            performance_score,
+            goals,
+            assists,
+            rating,
+            minutes_played,
+            clean_sheets,
+            walrus_blob_id,
+            nautilus_signature,
+            nautilus_public_key,
+            string::utf8(nautilus_signature_hex),
+            true,
+            clock
+        )
+    }
+
+    fun update_base_value_internal(
+        platform: &mut Platform,
+        player_id: ID,
+        season: u8,
+        new_base_value: u64,
+        performance_score: u64,
+        goals: u64,
+        assists: u64,
+        rating: u64,
+        minutes_played: u64,
+        clean_sheets: u64,
+        walrus_blob_id: vector<u8>,
+        nautilus_signature: vector<u8>,
+        nautilus_public_key: vector<u8>,
+        nautilus_signature_hex: String,
+        nautilus_verified: bool,
+        clock: &Clock
+    ) {
         assert!(!platform.paused, EUnauthorized);
         assert!(
             !platform.circuit_breaker_active || 
@@ -514,6 +707,30 @@ module valor::valor {
         let blob_id_string = string::utf8(walrus_blob_id);
         let player = table::borrow_mut(&mut platform.players, player_id);
         assert!(player.active, EUnauthorized);
+
+        if (season == SEASON_MID) {
+            player.mid_season_base_value = new_base_value;
+            player.mid_season_walrus_blob_id = blob_id_string;
+            if (nautilus_verified) {
+                player.mid_season_nautilus_signature = nautilus_signature_hex;
+            };
+        } else if (season == SEASON_CURRENT) {
+            player.current_season_base_value = new_base_value;
+            player.current_season_walrus_blob_id = blob_id_string;
+            if (nautilus_verified) {
+                player.current_season_nautilus_signature = nautilus_signature_hex;
+            };
+        };
+
+        player.base_value = new_base_value;
+        player.walrus_blob_id = blob_id_string;
+
+        if (nautilus_verified) {
+            player.nautilus_signature = nautilus_signature;
+            player.nautilus_public_key = nautilus_public_key;
+            player.nautilus_timestamp = clock::timestamp_ms(clock);
+            player.nautilus_verified = true;
+        };
 
         let current_time = clock::timestamp_ms(clock);
         let old_base_value = player.base_value;
@@ -551,15 +768,6 @@ module valor::valor {
             return
         };
 
-        if (season == SEASON_MID) {
-            player.mid_season_base_value = new_base_value;
-        } else if (season == SEASON_CURRENT) {
-            player.current_season_base_value = new_base_value;
-        };
-
-        player.base_value = new_base_value;
-        player.walrus_blob_id = blob_id_string;
-
         if (new_base_value > player.all_time_high) {
             player.all_time_high = new_base_value;
         };
@@ -584,6 +792,7 @@ module valor::valor {
             clean_sheets,
             walrus_blob_id: blob_id_string,
             base_value: new_base_value,
+            nautilus_verified,
         };
 
         if (vector::length(&player.performance_history) >= MAX_HISTORY_RECORDS) {
@@ -605,12 +814,15 @@ module valor::valor {
             assists,
             rating,
             walrus_blob_id: blob_id_string,
+            nautilus_verified,
+            nautilus_signature: nautilus_signature_hex,
             timestamp: current_time,
         });
     }
 
     public entry fun buy_shares(
         platform: &mut Platform,
+        nft_registry: &mut valor_seal::NFTRegistry,
         player_id: ID,
         shares: u64,
         max_price_per_share: u64,
@@ -682,6 +894,14 @@ module valor::valor {
 
         platform.total_volume = platform.total_volume + total_cost;
 
+        valor_seal::register_nft_ownership(
+            nft_registry,
+            player_id,
+            tx_context::sender(ctx),
+            shares,
+            ctx
+        );
+
         event::emit(SharesPurchased {
             buyer: tx_context::sender(ctx),
             player_id,
@@ -709,6 +929,7 @@ module valor::valor {
 
     public entry fun sell_shares(
         platform: &mut Platform,
+        nft_registry: &mut valor_seal::NFTRegistry,
         nft: PlayerSharesNFT,
         shares_to_sell: u64,
         min_price_per_share: u64,
@@ -757,6 +978,14 @@ module valor::valor {
         };
 
         platform.total_volume = platform.total_volume + total_payout;
+
+        valor_seal::reduce_nft_ownership(
+            nft_registry,
+            nft.player_id,
+            tx_context::sender(ctx),
+            shares_to_sell,
+            ctx
+        );
 
         event::emit(SharesSold {
             seller: tx_context::sender(ctx),
@@ -1074,5 +1303,114 @@ module valor::valor {
 
     public fun get_nft_purchase_timestamp(nft: &PlayerSharesNFT): u64 {
         nft.purchase_timestamp
+    }
+
+    public fun get_early_season_walrus_blob_id(
+        platform: &Platform, 
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.early_season_walrus_blob_id
+    }
+
+    public fun get_mid_season_walrus_blob_id(
+        platform: &Platform, 
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.mid_season_walrus_blob_id
+    }
+
+    public fun get_current_season_walrus_blob_id(
+        platform: &Platform, 
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.current_season_walrus_blob_id
+    }
+
+    public fun is_nautilus_verified(platform: &Platform, player_id: ID): bool {
+        let player = table::borrow(&platform.players, player_id);
+        player.nautilus_verified
+    }
+
+    public fun get_nautilus_signature(platform: &Platform, player_id: ID): vector<u8> {
+        let player = table::borrow(&platform.players, player_id);
+        player.nautilus_signature
+    }
+
+    public fun get_nautilus_public_key(platform: &Platform, player_id: ID): vector<u8> {
+        let player = table::borrow(&platform.players, player_id);
+        player.nautilus_public_key
+    }
+
+    public fun get_nautilus_timestamp(platform: &Platform, player_id: ID): u64 {
+        let player = table::borrow(&platform.players, player_id);
+        player.nautilus_timestamp
+    }
+
+    public fun get_nautilus_attestation(
+        platform: &Platform, 
+        player_id: ID
+    ): (bool, vector<u8>, vector<u8>, u64) {
+        let player = table::borrow(&platform.players, player_id);
+        (
+            player.nautilus_verified,
+            player.nautilus_signature,
+            player.nautilus_public_key,
+            player.nautilus_timestamp
+        )
+    }
+
+    public fun get_early_season_nautilus_signature(
+        platform: &Platform,
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.early_season_nautilus_signature
+    }
+
+    public fun get_mid_season_nautilus_signature(
+        platform: &Platform,
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.mid_season_nautilus_signature
+    }
+
+    public fun get_current_season_nautilus_signature(
+        platform: &Platform,
+        player_id: ID
+    ): String {
+        let player = table::borrow(&platform.players, player_id);
+        player.current_season_nautilus_signature
+    }
+
+    public fun get_season_data(
+        platform: &Platform,
+        player_id: ID,
+        season: u8
+    ): (u64, String, String) {
+        let player = table::borrow(&platform.players, player_id);
+        
+        if (season == SEASON_EARLY) {
+            (
+                player.early_season_base_value,
+                player.early_season_walrus_blob_id,
+                player.early_season_nautilus_signature
+            )
+        } else if (season == SEASON_MID) {
+            (
+                player.mid_season_base_value,
+                player.mid_season_walrus_blob_id,
+                player.mid_season_nautilus_signature
+            )
+        } else {
+            (
+                player.current_season_base_value,
+                player.current_season_walrus_blob_id,
+                player.current_season_nautilus_signature
+            )
+        }
     }
 }

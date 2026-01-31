@@ -9,8 +9,27 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    transition:
+      background-color 300ms ease,
+      color 300ms ease;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition:
+      background-color 300ms ease,
+      border-color 300ms ease,
+      color 300ms ease,
+      fill 300ms ease,
+      stroke 300ms ease;
+  }
+
   :root {
-    --background: 0 0% 100%;
+    --background: 20 10% 4%;
+    /* Deep charcoal black */
+    --foreground: 40 30% 92%;
 
     --primary: 360 100% 65%;
     --primary-foreground: 0 0% 100%;
@@ -20,7 +39,16 @@
 
     --border: 240 5% 80%;
     --ring: 360 100% 65%;
+
+    --glow-secondary: 220 70% 50%;
   }
+
+  .light {
+    --background: 40 30% 96%;
+    --foreground: 20 10% 8%;
+
+  }
+
 }
 
 @layer base {
@@ -94,7 +122,7 @@
   }
 
   .nav-link {
-    @apply relative text-muted-foreground hover:text-foreground transition-colors duration-200;
+    @apply relative text-muted-foreground hover:text-primary/50 transition-colors duration-200;
   }
 
   .nav-link::after {
@@ -106,10 +134,15 @@
   }
 
   .nav-link-active {
-    @apply text-foreground;
+    @apply text-primary;
   }
 
   .nav-link-active::after {
     @apply w-full;
+  }
+
+  .connector-line {
+    @apply h-0.5;
+    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--border)) 100%);
   }
 }
