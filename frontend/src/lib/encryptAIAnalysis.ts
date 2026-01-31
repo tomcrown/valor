@@ -1,122 +1,141 @@
-import { createSealClient, type EncryptedAIBlob } from "./sealClient";
 import { walrusClient } from "./walrusClient";
-import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import type { AIAnalysis } from "./gemini";
 import type { SeasonPeriod } from "@/data/apiData";
 
+// Simplified AI blob structure without encryption
+export interface AIBlob {
+  public_data: PublicAIData;
+  premium_data: PremiumAIData;
+  player_id: string;
+  season: SeasonPeriod;
+  created_at: string;
+}
 
-export async function encryptAndUploadAI(
+export interface PublicAIData {
+  performance_score: number;
+  form_status: string;
+  performance_trend: string;
+  short_summary: string;
+}
+
+export interface PremiumAIData {
+  prediction: string;
+  key_factors: string[];
+  reasoning: string;
+}
+
+/**
+ * Upload AI analysis directly to Walrus without encryption
+ * Since Seal is removed, all data is stored in plaintext on Walrus
+ */
+export async function uploadAIAnalysis(
   playerId: string,
   season: SeasonPeriod,
   aiAnalysis: AIAnalysis,
 ): Promise<string> {
-
-
   try {
-    const network =
-      (typeof process !== "undefined" && process.env?.VITE_SUI_NETWORK) ||
-      (typeof import.meta !== "undefined" &&
-        (import.meta as any).env?.VITE_SUI_NETWORK) ||
-      "testnet";
-
-    const valorPackageId =
-      (typeof process !== "undefined" &&
-        process.env?.VITE_VALOR_SEAL_PACKAGE_ID) ||
-      (typeof import.meta !== "undefined" &&
-        (import.meta as any).env?.VITE_VALOR_SEAL_PACKAGE_ID);
-
-    if (!valorPackageId) {
-      throw new Error("VITE_VALOR_SEAL_PACKAGE_ID not found in environment");
-    }
-
-
-    const suiClient = new SuiClient({
-      url: getFullnodeUrl(network),
-    });
-    const sealClient = createSealClient(suiClient, valorPackageId);
-
-
-    const encryptedBlob = await sealClient.encryptPremiumAI(
-      playerId,
+    // Create the AI blob with both public and premium data
+    const aiBlob: AIBlob = {
+      public_data: {
+        performance_score: aiAnalysis.performance_score,
+        form_status: aiAnalysis.form_status,
+        performance_trend: aiAnalysis.performance_trend,
+        short_summary: aiAnalysis.short_summary,
+      },
+      premium_data: {
+        prediction: aiAnalysis.prediction,
+        key_factors: aiAnalysis.key_factors,
+        reasoning: aiAnalysis.reasoning,
+      },
+      player_id: playerId,
       season,
-      aiAnalysis,
-    );
+      created_at: new Date().toISOString(),
+    };
 
-    const blobId = await walrusClient.uploadJSON(encryptedBlob);
+    // Upload directly to Walrus
+    const blobId = await walrusClient.uploadJSON(aiBlob);
 
-
+    console.log(`✅ AI analysis uploaded to Walrus: ${blobId}`);
     return blobId;
   } catch (error: any) {
-    throw new Error(`Failed to encrypt AI analysis: ${error.message}`);
+    console.error("Failed to upload AI analysis:", error);
+    throw new Error(`Failed to upload AI analysis: ${error.message}`);
   }
 }
 
-export async function downloadEncryptedAI(
+/**
+ * Download AI analysis from Walrus
+ */
+export async function downloadAIAnalysis(
   blobId: string,
   options?: {
     maxRetries?: number;
     silent?: boolean;
   },
-): Promise<EncryptedAIBlob | null> {
+): Promise<AIBlob | null> {
   try {
     if (!options?.silent) {
-
+      console.log(`📥 Downloading AI analysis from Walrus: ${blobId}`);
     }
 
     // Use walrusClient's built-in retry logic
-    const blob = await walrusClient.downloadJSON<EncryptedAIBlob>(blobId, {
+    const blob = await walrusClient.downloadJSON<AIBlob>(blobId, {
       maxRetries: options?.maxRetries ?? 5,
       retryDelayMs: 2000,
       silent: options?.silent ?? false,
     });
 
     if (!options?.silent) {
-
+      console.log("✅ AI analysis downloaded successfully");
     }
 
     return blob;
   } catch (error: any) {
     if (!options?.silent) {
+      console.error("Failed to download AI analysis:", error);
     }
-
     return null;
   }
 }
 
-
-export function validateEncryptedBlob(blob: any): blob is EncryptedAIBlob {
+/**
+ * Validate that a blob has the correct AIBlob structure
+ */
+export function validateAIBlob(blob: any): blob is AIBlob {
   if (
     !blob ||
     typeof blob !== "object" ||
     !("public_data" in blob) ||
-    !("encrypted_premium" in blob) ||
+    !("premium_data" in blob) ||
     !("player_id" in blob) ||
     !("season" in blob)
   ) {
     return false;
   }
 
-  if (!(blob.encrypted_premium instanceof Uint8Array)) {
+  // Validate public_data structure
+  const publicData = blob.public_data;
+  if (
+    !publicData ||
+    typeof publicData !== "object" ||
+    typeof publicData.performance_score !== "number" ||
+    typeof publicData.form_status !== "string" ||
+    typeof publicData.performance_trend !== "string" ||
+    typeof publicData.short_summary !== "string"
+  ) {
+    return false;
+  }
 
-    const encryptedObj = blob.encrypted_premium;
-
-    if (typeof encryptedObj !== "object" || encryptedObj === null) {
-      return false;
-    }
-
-    const keys = Object.keys(encryptedObj);
-    const length = keys.length;
-
-    if (length === 0) {
-      return false;
-    }
-
-    const uint8Array = new Uint8Array(length);
-    for (let i = 0; i < length; i++) {
-      uint8Array[i] = encryptedObj[i.toString()];
-    }
-
-    blob.encrypted_premium = uint8Array;
+  // Validate premium_data structure
+  const premiumData = blob.premium_data;
+  if (
+    !premiumData ||
+    typeof premiumData !== "object" ||
+    typeof premiumData.prediction !== "string" ||
+    !Array.isArray(premiumData.key_factors) ||
+    typeof premiumData.reasoning !== "string"
+  ) {
+    return false;
   }
 
   return true;

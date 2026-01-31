@@ -14,11 +14,11 @@ import {
   getSeasonWalrusBlobId,
 } from "@/lib/suiDataFetcher";
 import {
-  downloadEncryptedAI,
-  validateEncryptedBlob,
+  downloadAIAnalysis,
+  validateAIBlob,
+  type AIBlob,
 } from "@/lib/encryptAIAnalysis";
 import type { Player, SeasonPeriod } from "@/data/apiData";
-import type { EncryptedAIBlob } from "@/lib/sealClient";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
 interface PlayerCardProps {
@@ -31,52 +31,51 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
   const account = useCurrentAccount();
   const isLoggedIn = !!account;
 
-  const [encryptedAIBlob, setEncryptedAIBlob] =
-    useState<EncryptedAIBlob | null>(null);
+  const [aiBlob, setAiBlob] = useState<AIBlob | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
 
   const seasonStats = player.seasonalStats[selectedSeason];
   const displayPrice = getSeasonBaseValue(player as any, selectedSeason);
 
   useEffect(() => {
-    const loadEncryptedAI = async () => {
+    const loadAI = async () => {
       const seasonBlobId = getSeasonWalrusBlobId(player as any, selectedSeason);
 
       if (!seasonBlobId) {
-        setEncryptedAIBlob(null);
+        setAiBlob(null);
         return;
       }
 
       setIsLoadingAI(true);
 
       try {
-        const blob = await downloadEncryptedAI(seasonBlobId, {
+        const blob = await downloadAIAnalysis(seasonBlobId, {
           maxRetries: 3,
           silent: true,
         });
 
-        if (blob && validateEncryptedBlob(blob)) {
-          setEncryptedAIBlob(blob);
+        if (blob && validateAIBlob(blob)) {
+          setAiBlob(blob);
         } else {
-          setEncryptedAIBlob(null);
+          setAiBlob(null);
         }
       } catch (error) {
-        setEncryptedAIBlob(null);
+        setAiBlob(null);
       } finally {
         setIsLoadingAI(false);
       }
     };
 
-    loadEncryptedAI();
+    loadAI();
   }, [player, selectedSeason]);
 
   const displayAiScore =
-    encryptedAIBlob?.public_data?.performance_score ?? player.aiScore;
+    aiBlob?.public_data?.performance_score ?? player.aiScore;
 
-  const displayTrend = encryptedAIBlob?.public_data?.performance_trend
-    ? encryptedAIBlob.public_data.performance_trend === "improving"
+  const displayTrend = aiBlob?.public_data?.performance_trend
+    ? aiBlob.public_data.performance_trend === "improving"
       ? "up"
-      : encryptedAIBlob.public_data.performance_trend === "declining"
+      : aiBlob.public_data.performance_trend === "declining"
         ? "down"
         : "stable"
     : player.weeklyChange > 5
@@ -144,7 +143,7 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
           <div
             className={cn(
               "absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm border transition-all",
-              encryptedAIBlob
+              aiBlob
                 ? "bg-black/80 border-accent"
                 : isLoadingAI
                   ? "bg-card/80 border-primary/50 animate-pulse"
@@ -157,19 +156,19 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
               <Zap
                 className={cn(
                   "w-3.5 h-3.5",
-                  encryptedAIBlob ? "text-white" : "text-warning",
+                  aiBlob ? "text-white" : "text-warning",
                 )}
               />
             )}
             <span
               className={cn(
                 "text-xs font-semibold",
-                encryptedAIBlob ? "text-white" : "",
+                aiBlob ? "text-white" : "",
               )}
             >
               {displayAiScore}
             </span>
-            {encryptedAIBlob && (
+            {aiBlob && (
               <span className="text-[10px] text-white/80 ml-0.5">AI</span>
             )}
           </div>
@@ -191,7 +190,7 @@ const PlayerCard = ({ player, onBuy, selectedSeason }: PlayerCardProps) => {
             >
               {getTrendIcon()}
               <span className="uppercase text-[10px]">
-                {encryptedAIBlob ? "FORM" : "TREND"}
+                {aiBlob ? "FORM" : "TREND"}
               </span>
             </div>
           )}

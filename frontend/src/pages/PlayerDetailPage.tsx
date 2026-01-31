@@ -2,12 +2,12 @@ import { useParams, Link, useLocation } from "react-router-dom";
 import { SwapModal } from "@/components/SwapModal";
 import { useState, useEffect } from "react";
 import { PremiumAIPanelEnhanced } from "@/components/PremiumAIPanel";
-import { useUserPoints } from "@/hooks/useUserPoints";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useOnChainPlayer } from "@/hooks/useOnChainPlayers";
 import {
-  downloadEncryptedAI,
-  validateEncryptedBlob,
+  downloadAIAnalysis,
+  validateAIBlob,
+  type AIBlob,
 } from "@/lib/encryptAIAnalysis";
 import { checkPlayerNFTOwnership } from "@/lib/checkNFTOwnership";
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
@@ -19,7 +19,6 @@ import {
   getCurrentSeasonBaseValue,
 } from "@/lib/suiDataFetcher";
 import type { SeasonPeriod } from "@/data/apiData";
-import type { EncryptedAIBlob } from "@/lib/sealClient";
 import {
   ArrowLeft,
   Shield,
@@ -68,10 +67,10 @@ const PlayerDetailPage = () => {
     (location.state?.selectedSeason as SeasonPeriod) || "current",
   );
 
-  const [encryptedAIBlobs, setEncryptedAIBlobs] = useState<{
-    early: EncryptedAIBlob | null;
-    mid: EncryptedAIBlob | null;
-    current: EncryptedAIBlob | null;
+  const [aiBlobs, setAiBlobs] = useState<{
+    early: AIBlob | null;
+    mid: AIBlob | null;
+    current: AIBlob | null;
   }>({
     early: null,
     mid: null,
@@ -113,8 +112,8 @@ const PlayerDetailPage = () => {
     autoFetch: true,
   });
 
-  // Load encrypted AI from Walrus for a specific season
-  const loadEncryptedAIForSeason = async (season: SeasonPeriod) => {
+  // Load AI analysis from Walrus for a specific season
+  const loadAIForSeason = async (season: SeasonPeriod) => {
     if (!mergedPlayer) {
       return;
     }
@@ -123,7 +122,7 @@ const PlayerDetailPage = () => {
     const seasonBlobId = getSeasonWalrusBlobId(mergedPlayer as any, season);
 
     if (!seasonBlobId) {
-      setEncryptedAIBlobs((prev) => ({ ...prev, [season]: null }));
+      setAiBlobs((prev) => ({ ...prev, [season]: null }));
       setIsLoadingAI((prev) => ({ ...prev, [season]: false }));
       setAiLoadError((prev) => ({
         ...prev,
@@ -136,24 +135,23 @@ const PlayerDetailPage = () => {
     setAiLoadError((prev) => ({ ...prev, [season]: null }));
 
     try {
-
-      const blob = await downloadEncryptedAI(seasonBlobId, {
+      const blob = await downloadAIAnalysis(seasonBlobId, {
         maxRetries: 5,
         silent: false,
       });
 
-      if (blob && validateEncryptedBlob(blob)) {
-        setEncryptedAIBlobs((prev) => ({ ...prev, [season]: blob }));
+      if (blob && validateAIBlob(blob)) {
+        setAiBlobs((prev) => ({ ...prev, [season]: blob }));
         setAiLoadError((prev) => ({ ...prev, [season]: null }));
       } else {
-        setEncryptedAIBlobs((prev) => ({ ...prev, [season]: null }));
+        setAiBlobs((prev) => ({ ...prev, [season]: null }));
         setAiLoadError((prev) => ({
           ...prev,
           [season]: "Invalid blob format",
         }));
       }
     } catch (error: any) {
-      setEncryptedAIBlobs((prev) => ({ ...prev, [season]: null }));
+      setAiBlobs((prev) => ({ ...prev, [season]: null }));
 
       // Provide user-friendly error messages
       if (error.message.includes("404")) {
@@ -186,9 +184,9 @@ const PlayerDetailPage = () => {
     // Load AI data for all three seasons
     (async () => {
       await Promise.all([
-        loadEncryptedAIForSeason("early"),
-        loadEncryptedAIForSeason("mid"),
-        loadEncryptedAIForSeason("current"),
+        loadAIForSeason("early"),
+        loadAIForSeason("mid"),
+        loadAIForSeason("current"),
       ]);
     })();
   }, [mergedPlayer, retryCount]);
@@ -314,8 +312,8 @@ const PlayerDetailPage = () => {
     selectedSeason,
   );
 
-  // Get current season's encrypted AI blob for display
-  const currentEncryptedAIBlob = encryptedAIBlobs[selectedSeason];
+  // Get current season's AI blob for display
+  const currentAIBlob = aiBlobs[selectedSeason];
   const currentIsLoadingAI = isLoadingAI[selectedSeason];
   const currentAiLoadError = aiLoadError[selectedSeason];
 
@@ -382,7 +380,7 @@ const PlayerDetailPage = () => {
               <div className="grid grid-cols-3 gap-2">
                 {(["early", "mid", "current"] as SeasonPeriod[]).map(
                   (season) => {
-                    const hasData = !!encryptedAIBlobs[season];
+                    const hasData = !!aiBlobs[season];
                     const isLoading = isLoadingAI[season];
 
                     return (
@@ -487,7 +485,7 @@ const PlayerDetailPage = () => {
               </div>
             </div>
 
-            {/* PREMIUM AI SECTION - Now season-aware */}
+            {/* AI INSIGHTS SECTION - Now without Seal encryption */}
             <div className="glass-card p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
@@ -503,7 +501,7 @@ const PlayerDetailPage = () => {
                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
                   <Loader2 className="w-12 h-12 animate-spin text-accent" />
                   <p className="text-sm text-muted-foreground">
-                    Loading encrypted AI analysis for{" "}
+                    Loading AI analysis for{" "}
                     {SEASON_LABELS[selectedSeason].toLowerCase()}...
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -533,10 +531,10 @@ const PlayerDetailPage = () => {
                     Retry Loading
                   </Button>
                 </div>
-              ) : currentEncryptedAIBlob ? (
+              ) : currentAIBlob ? (
                 <PremiumAIPanelEnhanced
-                  publicData={currentEncryptedAIBlob.public_data}
-                  encryptedPremium={currentEncryptedAIBlob.encrypted_premium}
+                  publicData={currentAIBlob.public_data}
+                  premiumData={currentAIBlob.premium_data}
                   playerId={mergedPlayer.onChainPlayerId || mergedPlayer.id}
                   playerName={mergedPlayer.name}
                   season={selectedSeason}
@@ -553,15 +551,13 @@ const PlayerDetailPage = () => {
                     {SEASON_LABELS[selectedSeason].toLowerCase()} yet.
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Premium insights will be encrypted and stored on Walrus once
-                    generated.
+                    AI insights will be stored on Walrus once generated.
                   </p>
                 </div>
               )}
             </div>
 
             {/* Walrus Verification - now season-aware */}
-            {/* ✅ ENHANCED Walrus + Nautilus Verification Card */}
             <div className="glass-card p-6 border border-accent/30">
               <div className="space-y-4">
                 {/* Header */}
@@ -591,9 +587,8 @@ const PlayerDetailPage = () => {
                   {seasonWalrusBlobId ? (
                     <>
                       <p className="text-xs text-muted-foreground mb-2">
-                        {currentEncryptedAIBlob
-                          ? " Seal encrypted AI insights stored on Walrus. Only NFT holders can decrypt premium analysis."
-                          : "Performance data and AI analysis stored on decentralized Walrus network."}
+                        Performance data and AI analysis stored on decentralized
+                        Walrus network.
                       </p>
                       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/50 border border-border/30">
                         <span className="text-xs text-muted-foreground">
@@ -612,7 +607,7 @@ const PlayerDetailPage = () => {
                   )}
                 </div>
 
-                {/* ✅ NEW: Nautilus Hardware Attestation Section */}
+                {/* Nautilus Hardware Attestation Section */}
                 <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle className="w-4 h-4 text-success" />
@@ -654,7 +649,7 @@ const PlayerDetailPage = () => {
                 </div>
 
                 {/* Info footer */}
-                {(seasonWalrusBlobId || getSeasonNautilusSignature) && (
+                {(seasonWalrusBlobId || seasonNautilusSignature) && (
                   <div className="flex items-start gap-2 pt-2">
                     <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-muted-foreground">

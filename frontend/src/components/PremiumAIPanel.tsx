@@ -11,21 +11,27 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  createSealClient,
-  type PublicAIData,
-  type PremiumAIData,
-} from "@/lib/sealClient";
-import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
-import { useCurrentAccount, useSignPersonalMessage } from "@mysten/dapp-kit";
 import { usePointsOperations } from "@/hooks/usePointsOperations";
 import { PULSE_POINTS_CONFIG } from "@/config/pulse-points.config";
 import { cn } from "@/lib/utils";
 import type { SeasonPeriod } from "@/data/apiData";
 
+export interface PublicAIData {
+  performance_score: number;
+  form_status: string;
+  performance_trend: string;
+  short_summary: string;
+}
+
+export interface PremiumAIData {
+  prediction: string;
+  key_factors: string[];
+  reasoning: string;
+}
+
 interface PremiumAIPanelEnhancedProps {
   publicData: PublicAIData;
-  encryptedPremium: Uint8Array;
+  premiumData: PremiumAIData;
   playerId: string;
   playerName: string;
   season: SeasonPeriod;
@@ -39,7 +45,7 @@ type UnlockMethod = "nft" | "points";
 
 export function PremiumAIPanelEnhanced({
   publicData,
-  encryptedPremium,
+  premiumData,
   playerId,
   playerName,
   season,
@@ -48,12 +54,9 @@ export function PremiumAIPanelEnhanced({
   userPoints,
   userPointsBalanceId,
 }: PremiumAIPanelEnhancedProps) {
-  const account = useCurrentAccount();
-  const [premiumData, setPremiumData] = useState<PremiumAIData | null>(null);
-  const [isDecrypting, setIsDecrypting] = useState(false);
-  const [decryptError, setDecryptError] = useState<string | null>(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [unlockError, setUnlockError] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<UnlockMethod>("nft");
-  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const { spendPointsForAI, isProcessing } = usePointsOperations();
 
   const canUnlockWithNFT = userOwnsNFT;
@@ -62,96 +65,23 @@ export function PremiumAIPanelEnhanced({
   const canUnlock = canUnlockWithNFT || canUnlockWithPoints;
 
   const handleUnlockWithNFT = async () => {
-    if (!account?.address) {
-      setDecryptError("Please connect your wallet first");
-      return;
-    }
-
     if (!userOwnsNFT) {
-      setDecryptError("You need to own shares to access premium insights");
+      setUnlockError("You need to own shares to access premium insights");
       return;
     }
 
-    setIsDecrypting(true);
-    setDecryptError(null);
-
-    try {
-      const suiClient = new SuiClient({
-        url: getFullnodeUrl(import.meta.env.VITE_SUI_NETWORK || "testnet"),
-      });
-
-      const walletClient = {
-        getAddress: async () => account.address,
-        getPublicKey: async () => {
-          if (!account.publicKey) {
-            throw new Error("No public key available");
-          }
-          return account.publicKey;
-        },
-        signPersonalMessage: async (input: Uint8Array) => {
-          const result = await signPersonalMessage({
-            message: input,
-          });
-          return {
-            signature: result.signature,
-            bytes: result.bytes,
-          };
-        },
-      };
-
-      const sealClient = createSealClient(suiClient);
-
-      const encryptedBlob = {
-        public_data: publicData,
-        encrypted_premium: encryptedPremium,
-        player_id: playerId,
-        season,
-        encrypted_at: new Date().toISOString(),
-        seal_metadata: {
-          threshold: 1,
-          services: [import.meta.env.VITE_SEAL_KEY_SERVER_TESTNET],
-        },
-      };
-
-      const decrypted = await sealClient.decryptPremiumAI(
-        encryptedBlob,
-        account.address,
-        import.meta.env.VITE_NFT_REGISTRY_ID,
-        walletClient,
-      );
-
-      if (decrypted) {
-        setPremiumData(decrypted);
-      } else {
-        setDecryptError("Failed to decrypt premium data");
-      }
-    } catch (error: any) {
-      if (
-        error.message?.includes("User rejected") ||
-        error.message?.includes("rejected")
-      ) {
-        setDecryptError("Signature request was rejected");
-      } else {
-        setDecryptError(error.message || "Failed to decrypt");
-      }
-    } finally {
-      setIsDecrypting(false);
-    }
+    setUnlockError(null);
+    setIsUnlocked(true);
   };
 
   const handleUnlockWithPoints = async () => {
-    if (!account?.address) {
-      setDecryptError("Please connect your wallet first");
-      return;
-    }
-
     if (!userPointsBalanceId) {
-      setDecryptError("Points balance not initialized");
+      setUnlockError("Points balance not initialized");
       return;
     }
 
     if (!canUnlockWithPoints) {
-      setDecryptError(
+      setUnlockError(
         `You need ${PULSE_POINTS_CONFIG.aiUnlockThreshold} points to unlock`,
       );
       return;
@@ -160,7 +90,10 @@ export function PremiumAIPanelEnhanced({
     const success = await spendPointsForAI(userPointsBalanceId);
 
     if (success) {
-      await handleUnlockWithNFT();
+      setUnlockError(null);
+      setIsUnlocked(true);
+    } else {
+      setUnlockError("Failed to spend points. Please try again.");
     }
   };
 
@@ -218,7 +151,11 @@ export function PremiumAIPanelEnhanced({
       <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Lock className="w-5 h-5 text-warning" />
+            {isUnlocked ? (
+              <Unlock className="w-5 h-5 text-success" />
+            ) : (
+              <Lock className="w-5 h-5 text-warning" />
+            )}
             <h3 className="font-semibold">Premium Insights</h3>
           </div>
 
@@ -238,7 +175,7 @@ export function PremiumAIPanelEnhanced({
           </div>
         </div>
 
-        {!premiumData ? (
+        {!isUnlocked ? (
           <div className="space-y-4">
             <div className="bg-muted/20 backdrop-blur-sm rounded-xl p-6 border-2 border-dashed border-warning/30">
               <div className="text-center space-y-4">
@@ -275,17 +212,11 @@ export function PremiumAIPanelEnhanced({
                       <TabsContent value="nft" className="mt-4">
                         <Button
                           onClick={handleUnlockWithNFT}
-                          disabled={isDecrypting || !canUnlockWithNFT}
+                          disabled={!canUnlockWithNFT}
                           className="w-full"
                         >
-                          {isDecrypting ? (
-                            <>Decrypting...</>
-                          ) : (
-                            <>
-                              <Unlock className="w-4 h-4 mr-2" />
-                              Unlock with NFT
-                            </>
-                          )}
+                          <Unlock className="w-4 h-4 mr-2" />
+                          Unlock with NFT
                         </Button>
                         <p className="text-xs text-center mt-2 text-muted-foreground">
                           You own {userShares} share
@@ -332,8 +263,8 @@ export function PremiumAIPanelEnhanced({
                   </div>
                 )}
 
-                {decryptError && (
-                  <p className="text-sm text-destructive">{decryptError}</p>
+                {unlockError && (
+                  <p className="text-sm text-destructive">{unlockError}</p>
                 )}
               </div>
             </div>
