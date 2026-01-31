@@ -23,4 +23,10 @@ export default defineConfig({
   optimizeDeps: {
     include: ["axios"],
   },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
+  },
 });
