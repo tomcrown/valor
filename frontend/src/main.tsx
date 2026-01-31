@@ -63,5 +63,5 @@ createRoot(document.getElementById("root")!).render(
         </TooltipProvider>
       </WalletProvider>
     </SuiClientProvider>
-  </QueryClientProvider>
+  </QueryClientProvider>,
 );
