@@ -1,3 +1,6 @@
+import { Buffer } from "buffer";
+window.Buffer = Buffer;
+
 import { createRoot } from "react-dom/client";
 import {
   SuiClientProvider,
@@ -51,7 +54,6 @@ function RegisterEnokiWallets() {
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
-
     <SuiClientProvider networks={networks} defaultNetwork="testnet">
       <RegisterEnokiWallets />
       <WalletProvider autoConnect>
@@ -64,7 +66,5 @@ createRoot(document.getElementById("root")!).render(
         </TooltipProvider>
       </WalletProvider>
     </SuiClientProvider>
-
-
-  </QueryClientProvider>
+  </QueryClientProvider>,
 );

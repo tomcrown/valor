@@ -1,5 +1,4 @@
-import * as axiosModule from "axios";
-const axios = (axiosModule as any).default || axiosModule;
+import axios from "axios";
 import { SUI_CONFIG } from "../config/sui.config.ts";
 import type { AIAnalysis } from "./gemini.ts";
 import type { SeasonPeriod } from "@/data/apiData.ts";
